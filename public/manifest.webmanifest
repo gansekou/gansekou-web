@@ -1,0 +1,15 @@
+{
+  "name": "Gansekou",
+  "short_name": "Gansekou",
+  "description": "Plateforme educative intelligente pour le Cameroun",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#f8faf5",
+  "theme_color": "#071d3a",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "/icon.png", "sizes": "192x192 512x512", "type": "image/png" },
+    { "src": "/apple-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

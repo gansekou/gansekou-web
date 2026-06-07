@@ -1,0 +1,11 @@
+
+> gansekou-web@0.1.0 dev
+> next dev -p 3200
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3200
+- Network:       http://192.168.1.100:3200
+- Environments: .env.local
+✓ Ready in 1190ms
+
+○ Compiling /courses ...

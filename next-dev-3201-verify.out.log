@@ -1,0 +1,16 @@
+
+> gansekou-web@0.1.0 dev
+> next dev -p 3201 --webpack
+
+▲ Next.js 16.2.6 (webpack)
+- Local:         http://localhost:3201
+- Network:       http://192.168.1.100:3201
+- Environments: .env.local
+✓ Ready in 1210ms
+
+○ Compiling / ...
+ GET / 200 in 7.5s (next.js: 6.0s, application-code: 1573ms)
+○ Compiling proxy ...
+ GET /courses 200 in 1908ms (next.js: 1346ms, application-code: 562ms)
+○ Compiling /analytics ...
+ GET /analytics 200 in 9.3s (next.js: 8.4s, application-code: 881ms)
