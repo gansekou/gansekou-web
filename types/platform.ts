@@ -34,10 +34,17 @@ export type Subject = {
   id: UUID;
   level_id: UUID;
   specialty_id?: UUID | null;
+  code?: string | null;
   name_fr: string;
   name_en: string;
+  description_fr?: string | null;
+  description_en?: string | null;
+  icon?: string | null;
+  color?: string | null;
+  is_active?: boolean;
   coefficient: number;
   created_at?: string;
+  updated_at?: string;
 };
 
 export type TeacherSubject = {

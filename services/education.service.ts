@@ -25,9 +25,9 @@ export const educationService = {
   deleteSpecialty: (id: string) =>
     apiFetch<Specialty>(ENDPOINTS.education.specialtyById(id), { method: "DELETE" }),
   subjects: () => apiFetch<Subject[]>(ENDPOINTS.education.subjects),
-  createSubject: (payload: Omit<Subject, "id" | "created_at">) =>
+  createSubject: (payload: Omit<Subject, "id" | "created_at" | "updated_at">) =>
     apiFetch<Subject>(ENDPOINTS.education.subjects, { method: "POST", body: payload }),
-  updateSubject: (id: string, payload: Omit<Subject, "id" | "created_at">) =>
+  updateSubject: (id: string, payload: Omit<Subject, "id" | "created_at" | "updated_at">) =>
     apiFetch<Subject>(ENDPOINTS.education.subjectById(id), { method: "PUT", body: payload }),
   deleteSubject: (id: string) =>
     apiFetch<Subject>(ENDPOINTS.education.subjectById(id), { method: "DELETE" }),

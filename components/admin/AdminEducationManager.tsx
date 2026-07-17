@@ -1,6 +1,7 @@
 "use client";
 
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { BookOpen, Pencil, Plus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { CrudModal } from "@/components/admin/CrudModal";
@@ -9,7 +10,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { ApiError } from "@/lib/api";
 import { canManageEducation } from "@/lib/permissions";
 import { platformService } from "@/services/platform.service";
-import type { EducationCycle, Level, PageData, Specialty, UUID } from "@/types/platform";
+import type { EducationCycle, Level, PageData, Specialty, Subject, UUID } from "@/types/platform";
 import type { User } from "@/types/user";
 
 type CycleForm = {
@@ -70,6 +71,7 @@ export function AdminEducationManager({
   const dataCycles = useMemo(() => (data.cycles as EducationCycle[]) || [], [data.cycles]);
   const dataLevels = useMemo(() => (data.levels as Level[]) || [], [data.levels]);
   const dataSpecialties = useMemo(() => (data.specialties as Specialty[]) || [], [data.specialties]);
+  const dataSubjects = useMemo(() => (data.subjects as Subject[]) || [], [data.subjects]);
   const cycles = localCycles ?? dataCycles;
   const levels = localLevels ?? dataLevels;
   const specialties = localSpecialties ?? dataSpecialties;
@@ -282,6 +284,21 @@ export function AdminEducationManager({
           <EmptyState title={t("specialty.empty")} message={t("specialty.emptyHelp")} />
         )}
       </AdminBlock>
+
+      <section className="ds-card rounded-[1.75rem] p-6">
+        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <h3 className="text-2xl font-black text-[#071d3a]">Matieres</h3>
+            <p className="mt-1 text-sm font-bold text-slate-500">
+              {dataSubjects.length} matiere{dataSubjects.length > 1 ? "s" : ""} configuree{dataSubjects.length > 1 ? "s" : ""} pour les contenus, quiz et questions.
+            </p>
+          </div>
+          <Link href="/admin/education/subjects" className="ds-button-primary inline-flex items-center gap-2">
+            <BookOpen size={18} />
+            Gerer les matieres
+          </Link>
+        </div>
+      </section>
 
       {status && <p className="text-sm font-black text-[#0f5f3a]">{status}</p>}
       {error && <p className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</p>}

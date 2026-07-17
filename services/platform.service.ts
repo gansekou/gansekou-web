@@ -73,9 +73,33 @@ export const platformService = {
       apiFetch<Specialty>(ENDPOINTS.education.specialtyById(id), { method: "DELETE" }),
     subjects: () => apiFetch<Subject[]>(ENDPOINTS.education.subjects),
     subjectById: (id: UUID) => apiFetch<Subject>(ENDPOINTS.education.subjectById(id)),
-    createSubject: (payload: { level_id: UUID; specialty_id?: UUID | null; name_fr: string; name_en: string; coefficient: number }) =>
+    createSubject: (payload: {
+      level_id: UUID;
+      specialty_id?: UUID | null;
+      code?: string | null;
+      name_fr: string;
+      name_en: string;
+      description_fr?: string | null;
+      description_en?: string | null;
+      icon?: string | null;
+      color?: string | null;
+      is_active?: boolean;
+      coefficient: number;
+    }) =>
       apiFetch<Subject>(ENDPOINTS.education.subjects, { method: "POST", body: payload }),
-    updateSubject: (id: UUID, payload: { level_id: UUID; specialty_id?: UUID | null; name_fr: string; name_en: string; coefficient: number }) =>
+    updateSubject: (id: UUID, payload: {
+      level_id: UUID;
+      specialty_id?: UUID | null;
+      code?: string | null;
+      name_fr: string;
+      name_en: string;
+      description_fr?: string | null;
+      description_en?: string | null;
+      icon?: string | null;
+      color?: string | null;
+      is_active?: boolean;
+      coefficient: number;
+    }) =>
       apiFetch<Subject>(ENDPOINTS.education.subjectById(id), { method: "PUT", body: payload }),
     deleteSubject: (id: UUID) =>
       apiFetch<Subject>(ENDPOINTS.education.subjectById(id), { method: "DELETE" }),
