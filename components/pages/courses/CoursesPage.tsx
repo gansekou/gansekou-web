@@ -83,13 +83,50 @@ function CourseCatalog({ user, contents, levels, subjects }: { user: User; conte
       ) : (
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((item) => (
-            <Link key={item.id} href={`/courses/${item.id}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg">
-              <div className="mb-4 flex items-center justify-between">
-                <span className="rounded-full bg-[#0f5f3a]/10 px-3 py-1 text-xs font-black text-[#0f5f3a]">COURS</span>
-                {item.is_premium ? <span className="rounded-full bg-[#f6c445] px-3 py-1 text-xs font-black text-[#082f1f]">Premium</span> : null}
+            <Link
+              key={item.id}
+              href={`/courses/${item.id}`}
+              className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
+            >
+          
+              {item.thumbnail_url ? (
+                <img
+                  src={platformService.getFileUrl(item.thumbnail_url)}
+                  alt={item.title || "Affiche du cours"}
+                  className="h-48 w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-48 items-center justify-center bg-[#0f5f3a]/10 text-[#0f5f3a] font-black">
+                  GANSEKOU
+                </div>
+              )}
+          
+              <div className="p-5">
+          
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="rounded-full bg-[#0f5f3a]/10 px-3 py-1 text-xs font-black text-[#0f5f3a]">
+                    COURS
+                  </span>
+          
+                  {item.is_premium ? (
+                    <span className="rounded-full bg-[#f6c445] px-3 py-1 text-xs font-black text-[#082f1f]">
+                      Premium
+                    </span>
+                  ) : null}
+          
+                </div>
+          
+          
+                <p className="font-black text-[#082f1f]">
+                  {item.title || `Ressource ${item.id.slice(0,8)}`}
+                </p>
+          
+                <p className="mt-2 line-clamp-2 text-sm text-slate-500">
+                  {item.description || item.status || "APPROVED"}
+                </p>
+          
               </div>
-              <p className="font-black text-[#082f1f]">{item.title || `Ressource ${item.id.slice(0, 8)}`}</p>
-              <p className="mt-2 line-clamp-2 text-sm text-slate-500">{item.description || item.status || "APPROVED"}</p>
+          
             </Link>
           ))}
         </div>
