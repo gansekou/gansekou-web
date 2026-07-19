@@ -127,17 +127,25 @@ export const ENDPOINTS = {
   uploads: {
     profile: `${API_BASE_URL}/uploads/profile`,
     proof: `${API_BASE_URL}/uploads/proof`,
+
     contentFile: `${API_BASE_URL}/uploads/content/file`,
     contentThumbnail: `${API_BASE_URL}/uploads/content/thumbnail`,
     contentVideo: `${API_BASE_URL}/uploads/content/video`,
     contentAudio: `${API_BASE_URL}/uploads/content/audio`,
+
     questionImage: `${API_BASE_URL}/uploads/question-image`,
     teacherAnswer: `${API_BASE_URL}/uploads/teacher-answer`,
+
+    // fichiers protégés
     file: `${API_BASE_URL}/uploads/file`,
     stream: `${API_BASE_URL}/uploads/stream`,
     download: `${API_BASE_URL}/uploads/download`,
+
+    // nouveau : images publiques
+    publicFile: `${API_BASE_URL}/uploads/public-file`,
+
     limits: `${API_BASE_URL}/uploads/limits`,
-  },
+},
 
   ai: {
     chat: `${API_BASE_URL}/ai/chat`,
