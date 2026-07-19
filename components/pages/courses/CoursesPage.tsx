@@ -91,15 +91,14 @@ function CourseCatalog({ user, contents, levels, subjects }: { user: User; conte
               className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
             >
           
-              <div className="relative h-48 w-full">
-
-              <Image
-                src={getThumbnailUrl(item.thumbnail_url)}
-                alt={item.title || "Cours Gansekou"}
-                fill
-                className="object-cover"
-              />
-              
+              <div className="mb-4 overflow-hidden rounded-xl">
+                <Image
+                  src={getThumbnailUrl(item.thumbnail_url)}
+                  alt={item.title || "Cours Gansekou"}
+                  width={400}
+                  height={220}
+                  className="h-48 w-full object-cover"
+                />
               </div>
           
               <div className="p-5">
