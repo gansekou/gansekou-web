@@ -431,14 +431,20 @@ export const platformService = {
     contentAudio: (file: File) => uploadFile(ENDPOINTS.uploads.contentAudio, file),
     profile: (file: File) => uploadFile(ENDPOINTS.uploads.profile, file),
     proof: (file: File) => uploadFile(ENDPOINTS.uploads.proof, file),
+    publicFileUrl: (fileUrl: string) => {
+      const cleanPath = fileUrl
+        .replace(/^\/app\/uploads\//, "")
+        .replace(/^\/uploads\//, "")
+        .replace(/^\//, "");
+
+      return `${ENDPOINTS.uploads.file}?file_url=${encodeURIComponent(cleanPath)}`;
+    },
     fileUrl: (fileUrl: string) =>
       `${ENDPOINTS.uploads.file}?file_url=${encodeURIComponent(fileUrl)}`,
     downloadUrl: (fileUrl: string) =>
       `${ENDPOINTS.uploads.download}?file_url=${encodeURIComponent(fileUrl)}`,
     streamUrl: (fileUrl: string) =>
       `${ENDPOINTS.uploads.stream}?file_url=${encodeURIComponent(fileUrl)}`,
-    publicFileUrl: (fileUrl: string) =>
-      `${ENDPOINTS.uploads.publicFile}?file_url=${encodeURIComponent(fileUrl)}`,
   },
 
   admin: {
