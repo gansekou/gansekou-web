@@ -10,6 +10,8 @@ import { canCreateCourse } from "@/lib/permissions";
 import type { Content } from "@/types/content";
 import type { Level, PageData, Subject } from "@/types/platform";
 import type { User } from "@/types/user";
+import Image from "next/image";
+import { getThumbnailUrl } from "@/lib/files";
 
 export function CoursesPage() {
   const load = useCallback(async (): Promise<PageData> => {
@@ -89,17 +91,16 @@ function CourseCatalog({ user, contents, levels, subjects }: { user: User; conte
               className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
             >
           
-              {item.thumbnail_url ? (
-                <img
-                  src={platformService.getFileUrl(item.thumbnail_url)}
-                  alt={item.title || "Affiche du cours"}
-                  className="h-48 w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-48 items-center justify-center bg-[#0f5f3a]/10 text-[#0f5f3a] font-black">
-                  GANSEKOU
-                </div>
-              )}
+              <div className="relative h-48 w-full">
+
+              <Image
+                src={getThumbnailUrl(item.thumbnail_url)}
+                alt={item.title || "Cours Gansekou"}
+                fill
+                className="object-cover"
+              />
+              
+              </div>
           
               <div className="p-5">
           
