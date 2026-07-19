@@ -437,6 +437,8 @@ export const platformService = {
       `${ENDPOINTS.uploads.download}?file_url=${encodeURIComponent(fileUrl)}`,
     streamUrl: (fileUrl: string) =>
       `${ENDPOINTS.uploads.stream}?file_url=${encodeURIComponent(fileUrl)}`,
+    publicFileUrl: (fileUrl: string) =>
+      `${ENDPOINTS.uploads.publicFile}?file_url=${encodeURIComponent(fileUrl)}`,
   },
 
   admin: {
