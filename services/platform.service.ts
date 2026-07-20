@@ -436,8 +436,8 @@ export const platformService = {
         .replace(/^\/app\/uploads\//, "")
         .replace(/^\/uploads\//, "")
         .replace(/^\//, "");
-
-      return `${ENDPOINTS.uploads.file}?file_url=${encodeURIComponent(cleanPath)}`;
+    
+      return `${ENDPOINTS.uploads.publicFile}?file_url=${encodeURIComponent(cleanPath)}`;
     },
     fileUrl: (fileUrl: string) =>
       `${ENDPOINTS.uploads.file}?file_url=${encodeURIComponent(fileUrl)}`,
