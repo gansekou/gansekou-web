@@ -127,7 +127,7 @@ export function StudentQuestionForm({
               {user.preferred_language === "EN"
                 ? subject.name_en
                 : subject.name_fr}
-            </option>)}
+            </option>))}
         </select>
         <textarea
           disabled={submitting}
