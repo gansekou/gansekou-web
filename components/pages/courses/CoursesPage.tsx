@@ -118,21 +118,10 @@ function CourseCatalog({ user, contents, levels, subjects }: { user: User; conte
         
                 {/* Contenu */}
                 <div className="p-5">
-        
-                  <h3 className="line-clamp-2 text-lg font-extrabold text-[#082f1f]">
-                    {item.title || "Cours sans titre"}
-                  </h3>
-        
-                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
-                    {item.description || "Aucune description disponible."}
-                  </p>
+
         
                   <div className="mt-5 flex items-center justify-between border-t pt-4">
-        
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-                      {item.status || "APPROVED"}
-                    </span>
-        
+      
                     <span className="text-sm font-bold text-[#0f5f3a] transition group-hover:translate-x-1">
                       Voir le cours →
                     </span>
