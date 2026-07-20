@@ -144,8 +144,7 @@ function CourseCatalog({ user, contents, levels, subjects }: { user: User; conte
             ))}
           </div>
         )}
-        </div>
-      )}
+       
     </section>
   );
 }
