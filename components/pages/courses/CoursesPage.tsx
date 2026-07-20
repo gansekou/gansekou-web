@@ -81,54 +81,69 @@ function CourseCatalog({ user, contents, levels, subjects }: { user: User; conte
         </button>
       </div>
       {!filtered.length ? (
-        <EmptyState title="Aucun cours" message="Les cours publies apparaitront ici." />
-      ) : (
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((item) => (
-            <Link
-              key={item.id}
-              href={`/courses/${item.id}`}
-              className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
-            >
-          
-              <div className="mb-4 overflow-hidden rounded-xl">
-                <Image
-                  src={getThumbnailUrl(item.thumbnail_url)}
-                  alt={item.title || "Cours Gansekou"}
-                  width={400}
-                  height={220}
-                  className="h-48 w-full object-cover"
-                />
-              </div>
-          
-              <div className="p-5">
-          
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="rounded-full bg-[#0f5f3a]/10 px-3 py-1 text-xs font-black text-[#0f5f3a]">
-                    COURS
+  <EmptyState
+    title="Aucun cours disponible"
+    message="Les cours publiés apparaîtront ici."
+  />
+) : (
+  <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+    {filtered.map((item) => (
+              <Link
+                key={item.id}
+                href={`/courses/${item.id}`}
+                className="group overflow-hidden rounded-3xl bg-white shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl"
+              >
+                {/* Image */}
+                <div className="relative overflow-hidden">
+                  <Image
+                    src={getThumbnailUrl(item.thumbnail_url)}
+                    alt={item.title || "Cours Gansekou"}
+                    width={400}
+                    height={240}
+                    className="h-56 w-full object-cover transition duration-500 group-hover:scale-110"
+                  />
+        
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        
+                  <span className="absolute left-4 top-4 rounded-full bg-[#0f5f3a] px-3 py-1 text-xs font-bold text-white shadow">
+                    📘 COURS
                   </span>
-          
-                  {item.is_premium ? (
-                    <span className="rounded-full bg-[#f6c445] px-3 py-1 text-xs font-black text-[#082f1f]">
-                      Premium
+        
+                  {item.is_premium && (
+                    <span className="absolute right-4 top-4 rounded-full bg-[#f6c445] px-3 py-1 text-xs font-black text-[#082f1f] shadow-lg">
+                      ⭐ PREMIUM
                     </span>
-                  ) : null}
-          
+                  )}
                 </div>
-          
-          
-                <p className="font-black text-[#082f1f]">
-                  {item.title || `Ressource ${item.id.slice(0,8)}`}
-                </p>
-          
-                <p className="mt-2 line-clamp-2 text-sm text-slate-500">
-                  {item.description || item.status || "APPROVED"}
-                </p>
-          
-              </div>
-          
-            </Link>
-          ))}
+        
+                {/* Contenu */}
+                <div className="p-5">
+        
+                  <h3 className="line-clamp-2 text-lg font-extrabold text-[#082f1f]">
+                    {item.title || "Cours sans titre"}
+                  </h3>
+        
+                  <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+                    {item.description || "Aucune description disponible."}
+                  </p>
+        
+                  <div className="mt-5 flex items-center justify-between border-t pt-4">
+        
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                      {item.status || "APPROVED"}
+                    </span>
+        
+                    <span className="text-sm font-bold text-[#0f5f3a] transition group-hover:translate-x-1">
+                      Voir le cours →
+                    </span>
+        
+                  </div>
+        
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
         </div>
       )}
     </section>
