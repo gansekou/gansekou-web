@@ -12,9 +12,10 @@ export function NewQuestionPage() {
       platformService.education.subjects().catch(() => [] as Subject[]),
       platformService.education.levels().catch(() => [] as Level[]),
     ]);
+    console.log("Subjects :", subjects);
     return { subjects, levels };
   }, []);
-  console.log(subjects);
+  
   return (
     <AuthenticatedPage loadingLabel="Chargement du formulaire..." load={load}>
       {({ user, data }) => (
