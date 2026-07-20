@@ -116,10 +116,18 @@ export function StudentQuestionForm({
           }}
           className="rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none"
         >
-          <option value="">Choisir la matière</option>
-          {subjects
-            .filter((subject) => !subject.level_id || subject.level_id === user.level_id)
-            .map((subject) => <option key={subject.id} value={subject.id}>{subject.name_fr}</option>)}
+          <option value="">
+            {user.preferred_language === "EN"
+              ? "Select a subject"
+              : "Choisir la matière"}
+          </option>
+          
+          {subjects.map((subject) => (
+            <option key={subject.id} value={subject.id}>
+              {user.preferred_language === "EN"
+                ? subject.name_en
+                : subject.name_fr}
+            </option>)}
         </select>
         <textarea
           disabled={submitting}
