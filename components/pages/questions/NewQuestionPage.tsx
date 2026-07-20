@@ -14,7 +14,7 @@ export function NewQuestionPage() {
     ]);
     return { subjects, levels };
   }, []);
-
+  console.log(subjects);
   return (
     <AuthenticatedPage loadingLabel="Chargement du formulaire..." load={load}>
       {({ user, data }) => (
