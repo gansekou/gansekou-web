@@ -2,29 +2,29 @@
 
 
 import {
-useEffect,
-useState,
-useRef
+  useEffect,
+  useState,
+  useRef
 } from "react";
 
 
 import {
-chatService
+  chatService
 } from "@/services/chat.service";
 
 
 import type {
-ChatMessage
+  ChatMessage
 } from "@/types/chat";
 
 
 import {
-ChatMessage as Message
+  ChatMessage as Message
 } from "./ChatMessage";
 
 
 import {
-ChatInput
+  ChatInput
 } from "./ChatInput";
 
 
@@ -33,271 +33,377 @@ ChatInput
 export function KoumaChat(){
 
 
-const [conversationId,setConversationId]
-=
-useState<string|null>(null);
+  const [
+    conversationId,
+    setConversationId
+  ] =
+  useState<string | null>(null);
 
 
 
-const [
-messages,
-setMessages
-]
-=
-useState<ChatMessage[]>([]);
+  const [
+    messages,
+    setMessages
+  ] =
+  useState<ChatMessage[]>([]);
 
 
 
-const [
-loading,
-setLoading
-]
-=
-useState(false);
+  const [
+    loading,
+    setLoading
+  ] =
+  useState(false);
 
 
 
-const bottomRef =
-useRef<HTMLDivElement>(null);
+  const bottomRef =
+    useRef<HTMLDivElement>(null);
 
 
 
 
 
-useEffect(()=>{
+  useEffect(()=>{
 
 
-async function init(){
+    async function init(){
 
 
-let id =
-localStorage.getItem(
-"kouma_conversation_id"
-);
+      try{
 
 
+        let id =
+          localStorage.getItem(
+            "kouma_conversation_id"
+          );
 
-if(!id){
 
-const conv =
-await chatService.start();
 
+        if(!id){
 
-id=conv.id;
 
+          const conv =
+            await chatService.start();
 
-localStorage.setItem(
-"kouma_conversation_id",
-id
-);
 
-}
 
+          id = conv.id;
 
 
-setConversationId(id);
 
+          localStorage.setItem(
+            "kouma_conversation_id",
+            id
+          );
 
+        }
 
-const history =
-await chatService.getConversation(id);
 
 
-setMessages(
-history.messages
-);
+        setConversationId(id);
 
 
-}
 
+        const history =
+          await chatService.getConversation(id);
 
 
-init();
 
+        setMessages(
+          history.messages
+        );
 
-},[]);
 
 
+      }
+      catch(error){
 
 
+        console.error(
+          "Erreur initialisation Kouma:",
+          error
+        );
 
-useEffect(()=>{
 
+      }
 
-bottomRef.current?.scrollIntoView({
-behavior:"smooth"
-});
 
+    }
 
-},[messages,loading]);
 
 
+    init();
 
 
+  },[]);
 
 
-async function send(
-text:string
-){
 
 
-if(!conversationId)
-return;
 
 
 
-const temp:ChatMessage={
+  useEffect(()=>{
 
-id:
-crypto.randomUUID(),
 
-role:"USER",
+    bottomRef.current?.scrollIntoView({
+      behavior:"smooth"
+    });
 
-content:text,
 
-created_at:
-new Date().toISOString()
+  },[
+    messages,
+    loading
+  ]);
 
-};
 
 
 
-setMessages(
-prev=>[
-...prev,
-temp
-]
-);
 
 
 
-setLoading(true);
 
 
+  async function send(
+    text:string
+  ){
 
-try{
 
+    if(
+      !conversationId ||
+      !text.trim()
+    )
+    return;
 
-const response =
-await chatService.sendMessage(
-conversationId,
-text
-);
 
 
 
-setMessages(
-prev=>[
-...prev,
-response
-]
-);
+    const temp:ChatMessage={
 
 
+      id:
+        crypto.randomUUID(),
 
-}
 
-catch(error){
+      role:
+        "USER",
 
 
-setMessages(
-prev=>[
-...prev,
-{
-id:
-crypto.randomUUID(),
+      content:
+        text,
 
-role:"ASSISTANT",
 
-content:
-"Une erreur est survenue. Réessaie dans quelques secondes.",
+      created_at:
+        new Date().toISOString()
 
-created_at:
-new Date().toISOString()
-}
-]
-);
 
+    };
 
-}
 
-finally{
 
-setLoading(false);
 
-}
+    setMessages(
+      previous=>[
+        ...previous,
+        temp
+      ]
+    );
 
 
-}
 
 
+    setLoading(true);
 
 
-return (
 
-<div
-className="
-flex
-h-full
-flex-col
-bg-slate-50
-rounded-3xl
-"
->
 
 
-<div
-className="
-flex-1
-overflow-y-auto
-p-5
-"
->
+    try{
 
 
-{
-messages.map(
-msg=>
-<Message
-key={msg.id}
-message={msg}
-/>
-)
-}
+      const response =
+        await chatService.sendMessage(
+          conversationId,
+          text
+        );
 
 
-{
-loading &&
-<div
-className="
-text-sm
-font-bold
-text-slate-400
-"
->
-Kouma réfléchit...
-</div>
-}
 
 
-<div ref={bottomRef}/>
+      setMessages(
+        previous=>[
+          ...previous,
+          response
+        ]
+      );
 
 
-</div>
 
+    }
 
 
-<ChatInput
+    catch(error){
 
-loading={loading}
 
-onSend={send}
 
-/>
+      console.error(
+        "Erreur Kouma:",
+        error
+      );
 
 
-</div>
 
-);
+      setMessages(
+        previous=>[
+          ...previous,
+
+          {
+
+            id:
+              crypto.randomUUID(),
+
+
+            role:
+              "ASSISTANT",
+
+
+            content:
+              "Une erreur est survenue. Réessaie dans quelques secondes.",
+
+
+            created_at:
+              new Date().toISOString()
+
+          }
+
+        ]
+      );
+
+
+
+    }
+
+
+
+    finally{
+
+
+      setLoading(false);
+
+
+    }
+
+
+  }
+
+
+
+
+
+
+
+
+  return (
+
+
+    <div
+      className="
+        flex
+        h-full
+        flex-col
+        bg-slate-50
+        rounded-3xl
+      "
+    >
+
+
+
+      <div
+        className="
+          flex-1
+          overflow-y-auto
+          p-5
+        "
+      >
+
+
+
+        {
+          messages.map(
+            msg=>(
+
+              <Message
+
+                key={
+                  msg.id
+                }
+
+                message={
+                  msg
+                }
+
+              />
+
+            )
+          )
+        }
+
+
+
+
+
+        {
+          loading &&
+
+          <div
+            className="
+              text-sm
+              font-bold
+              text-slate-400
+            "
+          >
+
+            Kouma réfléchit...
+
+          </div>
+
+        }
+
+
+
+
+
+        <div
+          ref={bottomRef}
+        />
+
+
+
+      </div>
+
+
+
+
+
+      <ChatInput
+
+        loading={
+          loading
+        }
+
+        onSend={
+          send
+        }
+
+      />
+
+
+
+    </div>
+
+
+  );
+
 
 }
