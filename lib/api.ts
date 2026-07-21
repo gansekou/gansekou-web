@@ -105,3 +105,76 @@ export async function apiFetch<T>(
 
   return data as T;
 }
+
+// =====================================================
+// API CLIENT SHORTCUT
+// =====================================================
+
+export const api = {
+
+  get<T>(
+    url: string,
+  ) {
+    return apiFetch<T>(
+      url,
+      {
+        method: "GET",
+      }
+    );
+  },
+
+
+  post<T>(
+    url: string,
+    body?: unknown,
+  ) {
+    return apiFetch<T>(
+      url,
+      {
+        method: "POST",
+        body,
+      }
+    );
+  },
+
+
+  put<T>(
+    url: string,
+    body?: unknown,
+  ) {
+    return apiFetch<T>(
+      url,
+      {
+        method: "PUT",
+        body,
+      }
+    );
+  },
+
+
+  patch<T>(
+    url: string,
+    body?: unknown,
+  ) {
+    return apiFetch<T>(
+      url,
+      {
+        method: "PATCH",
+        body,
+      }
+    );
+  },
+
+
+  delete<T>(
+    url: string,
+  ) {
+    return apiFetch<T>(
+      url,
+      {
+        method: "DELETE",
+      }
+    );
+  },
+
+};
