@@ -241,6 +241,7 @@ flex
 h-full
 flex-col
 bg-slate-50
+rounded-3xl
 "
 >
 
