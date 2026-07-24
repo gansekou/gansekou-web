@@ -108,6 +108,8 @@ export async function fetchAuthenticatedContentBlob({
       const data = await response.json().catch(() => null);
       detail = data && typeof data === "object" && "detail" in data ? String((data as { detail: unknown }).detail) : detail;
     }
+    console.log("RAW PATH =", getContentMainUrl(content));
+    console.log("STREAM URL =", url);
     console.log("[content-reader]", {
       contentId: content.id,
       rawPath: getContentMainUrl(content),
