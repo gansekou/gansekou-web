@@ -29,6 +29,7 @@ export function UserRoleManager({
   const [role, setRole] = useState<GansekouRole>(user.role);
   const [status, setStatus] = useState<string | null>(null);
   const isPendingTeacher = user.role === "ENSEIGNANT_EN_ATTENTE";
+  console.log("proof_url =", user.proof_url);
 
   async function updateRole(nextRole: GansekouRole) {
     setStatus(language === "EN" ? "Updating..." : "Mise a jour...");
