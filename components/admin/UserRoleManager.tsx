@@ -29,7 +29,9 @@ export function UserRoleManager({
   const [role, setRole] = useState<GansekouRole>(user.role);
   const [status, setStatus] = useState<string | null>(null);
   const isPendingTeacher = user.role === "ENSEIGNANT_EN_ATTENTE";
-  console.log("proof_url =", user.proof_url);
+  const proofUrl = user.proof_url
+  ? `${process.env.NEXT_PUBLIC_API_URL}/${user.proof_url}`
+  : null;
 
   async function updateRole(nextRole: GansekouRole) {
     setStatus(language === "EN" ? "Updating..." : "Mise a jour...");
@@ -83,8 +85,13 @@ export function UserRoleManager({
         </button>
       </div>
 
-      {user.proof_url && (
-        <a href={user.proof_url} target="_blank" rel="noreferrer" className="mt-4 block text-sm font-black text-[#0f5f3a]">
+      {proofUrl && (
+        <a
+          href={proofUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-4 block text-sm font-black text-[#0f5f3a]"
+        >
           {t("admin.teacherProof")}
         </a>
       )}
