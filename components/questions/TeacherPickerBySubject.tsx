@@ -28,10 +28,12 @@ export function TeacherPickerBySubject({
 
   useEffect(() => {
     if (!subjectId) {
+      setTeachers([]);
       return;
     }
 
     let active = true;
+    setLoading(true);
     platformService.teacher
       .teachersBySubject(subjectId)
       .then((items) => {
@@ -68,8 +70,16 @@ export function TeacherPickerBySubject({
 
   if (!teachers.length) {
     return (
-      <div className="rounded-2xl bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-800">
-        Aucun enseignant disponible pour cette matière pour le moment. Vous pouvez demander à Kouma IA ou envoyer la question à la file d&apos;attente enseignant.
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+        <h3 className="text-lg font-black text-amber-900">
+          Aucun enseignant disponible
+        </h3>
+  
+        <p className="mt-3 text-sm leading-6 text-amber-800">
+          Aucun enseignant n'est actuellement disponible pour la matière sélectionnée.
+          <br /><br />
+          Nous vous invitons à choisir une autre matière afin que votre question puisse être prise en charge par un enseignant qualifié.
+        </p>
       </div>
     );
   }
