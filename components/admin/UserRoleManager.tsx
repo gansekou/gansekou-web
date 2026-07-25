@@ -85,9 +85,9 @@ export function UserRoleManager({
         </button>
       </div>
 
-      {proofUrl && (
+      {user.proof_url && (
         <a
-          href={proofUrl}
+          href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/uploads/file?file_url=${encodeURIComponent(user.proof_url)}`}
           target="_blank"
           rel="noreferrer"
           className="mt-4 block text-sm font-black text-[#0f5f3a]"
