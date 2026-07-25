@@ -8,6 +8,7 @@ import { ApiError } from "@/lib/api";
 import { platformService } from "@/services/platform.service";
 import type { Level, Subject } from "@/types/platform";
 import type { User } from "@/types/user";
+import { QuestionAnswerModeDialog } from "@/components/questions/QuestionAnswerModeDialog";
 
 export function StudentQuestionForm({
   user,
@@ -87,7 +88,9 @@ export function StudentQuestionForm({
       setImage(null);
       setTeacherId(null);
       setDialogOpen(false);
-      setStatus(answerMode === "AI" ? "Question envoyée à Kouma IA." : "Question envoyée à l'espace enseignant.");
+      setStatus(
+        "Votre question a été transmise avec succès à l'enseignant sélectionné. Vous serez notifié dès qu'une réponse sera disponible."
+      );
       router.push("/questions");
     } catch (error) {
       setStatus(error instanceof ApiError ? error.message : "Envoi impossible.");
