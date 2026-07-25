@@ -8,7 +8,6 @@ import { ApiError } from "@/lib/api";
 import { platformService } from "@/services/platform.service";
 import type { Level, Subject } from "@/types/platform";
 import type { User } from "@/types/user";
-import { QuestionAnswerModeDialog, type QuestionAnswerMode } from "@/components/questions/QuestionAnswerModeDialog";
 
 export function StudentQuestionForm({
   user,
@@ -24,7 +23,6 @@ export function StudentQuestionForm({
   const [subjectId, setSubjectId] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [answerMode, setAnswerMode] = useState<QuestionAnswerMode>("AI");
   const [teacherId, setTeacherId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
@@ -60,6 +58,10 @@ export function StudentQuestionForm({
 
   async function submit() {
     if (submitting) return;
+    if (!teacherId) {
+      setStatus("Veuillez sélectionner un enseignant.");
+      return;
+    }
     setSubmitting(true);
     setStatus("Envoi...");
 
@@ -77,8 +79,8 @@ export function StudentQuestionForm({
         level_id: user.level_id || undefined,
         question_image_url,
         language: user.preferred_language || "FR",
-        answer_mode: answerMode,
-        requested_teacher_id: answerMode === "TEACHER" ? teacherId : null,
+        answer_mode: "TEACHER",
+        requested_teacher_id: teacherId,
       });
 
       setQuestion("");
