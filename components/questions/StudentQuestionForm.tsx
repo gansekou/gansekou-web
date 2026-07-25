@@ -163,10 +163,8 @@ export function StudentQuestionForm({
       <QuestionAnswerModeDialog
         open={dialogOpen}
         subjectId={subjectId}
-        selectedMode={answerMode}
         selectedTeacherId={teacherId}
         submitting={submitting}
-        onModeChange={setAnswerMode}
         onTeacherChange={setTeacherId}
         onCancel={() => setDialogOpen(false)}
         onConfirm={submit}
