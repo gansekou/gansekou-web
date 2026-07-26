@@ -95,57 +95,202 @@ export async function fetchAuthenticatedContentBlob({
   url: string;
 }) {
   const token = getAuthToken();
-  const isBackendUpload = isBackendUploadUrl(url);
-  const response = await fetch(url, {
-    cache: "no-store",
-    headers: token && isBackendUpload ? { Authorization: `Bearer ${token}` } : {},
-  });
-  const responseContentType = response.headers.get("content-type") || "";
 
-  if (!response.ok) {
-    let detail = response.statusText;
-    if (responseContentType.includes("application/json")) {
-      const data = await response.json().catch(() => null);
-      detail = data && typeof data === "object" && "detail" in data ? String((data as { detail: unknown }).detail) : detail;
-    }
-    console.log("RAW PATH =", getContentMainUrl(content));
-    console.log("STREAM URL =", url);
-    console.log("[content-reader]", {
-      contentId: content.id,
-      rawPath: getContentMainUrl(content),
-      streamUrl: url,
-      downloadUrl: getContentDownloadUrl(content),
-      hasToken: Boolean(token),
-      responseStatus: response.status,
-      responseContentType,
-      blobSize: 0,
-      detectedKind: getContentKind(content),
-    });
-    throw new Error(detail || `HTTP ${response.status}`);
+  const isBackendUpload = isBackendUploadUrl(url);
+
+  /*
+   * Détection rapide du type avant téléchargement complet
+   */
+  const guessedKind = getContentKind(content);
+
+
+  /*
+   * Pour VIDEO / AUDIO :
+   * On ne transforme PAS en blob.
+   * On retourne directement l'URL stream.
+   *
+   * Le navigateur gère :
+   * - buffering
+   * - lecture progressive
+   * - gros fichiers
+   * - seek
+   */
+  if (
+    guessedKind === "video" ||
+    guessedKind === "audio"
+  ) {
+
+    return {
+
+      blob: null,
+
+      blobUrl: url,
+
+      contentType:
+        guessedKind === "video"
+          ? "video/*"
+          : "audio/*",
+
+      kind: guessedKind,
+
+      streaming: true,
+    };
   }
 
-  const blob = await response.blob();
-  const detectedKind = getContentKindFromMimeType(blob.type || responseContentType, content);
-  console.log("[content-reader]", {
-    contentId: content.id,
-    rawPath: getContentMainUrl(content),
-    streamUrl: url,
-    downloadUrl: getContentDownloadUrl(content),
-    hasToken: Boolean(token),
-    responseStatus: response.status,
-    responseContentType: blob.type || responseContentType,
-    blobSize: blob.size,
-    detectedKind,
-  });
+
+
+  /*
+   * PDF / images / petits fichiers
+   * restent en blob pour avoir :
+   * - zoom
+   * - annotation
+   * - iframe
+   */
+
+  const response = await fetch(
+    url,
+    {
+      cache: "no-store",
+
+      headers:
+        token && isBackendUpload
+          ? {
+              Authorization:
+                `Bearer ${token}`,
+            }
+          : {},
+    }
+  );
+
+
+  const responseContentType =
+    response.headers.get(
+      "content-type"
+    ) || "";
+
+
+
+  if (!response.ok) {
+
+
+    let detail =
+      response.statusText;
+
+
+    if (
+      responseContentType.includes(
+        "application/json"
+      )
+    ) {
+
+      const data =
+        await response
+          .json()
+          .catch(() => null);
+
+
+      if (
+        data &&
+        typeof data === "object" &&
+        "detail" in data
+      ) {
+
+        detail =
+          String(
+            (
+              data as {
+                detail: unknown;
+              }
+            ).detail
+          );
+      }
+    }
+
+
+    console.log(
+      "[CONTENT ERROR]",
+      {
+        contentId: content.id,
+        url,
+        status: response.status,
+        type: responseContentType,
+      }
+    );
+
+
+    throw new Error(
+      detail ||
+      `HTTP ${response.status}`
+    );
+  }
+
+
+
+  const blob =
+    await response.blob();
+
+
+
+  const detectedKind =
+    getContentKindFromMimeType(
+      blob.type ||
+      responseContentType,
+      content
+    );
+
+
+
+  const blobUrl =
+    URL.createObjectURL(
+      blob
+    );
+
+
+
+  console.log(
+    "[CONTENT READER]",
+    {
+      contentId: content.id,
+
+      rawPath:
+        getContentMainUrl(content),
+
+      streamUrl:
+        url,
+
+      hasToken:
+        Boolean(token),
+
+      size:
+        blob.size,
+
+      type:
+        blob.type ||
+        responseContentType,
+
+      kind:
+        detectedKind,
+    }
+  );
+
+
 
   return {
+
     blob,
-    blobUrl: URL.createObjectURL(blob),
-    contentType: blob.type || responseContentType,
-    kind: detectedKind,
+
+    blobUrl,
+
+    contentType:
+      blob.type ||
+      responseContentType,
+
+    kind:
+      detectedKind,
+
+    streaming:false,
   };
 }
-
 export async function downloadAuthenticatedFile(content: Partial<Content>) {
   const url = getContentDownloadUrl(content) || getContentStreamUrl(content);
   if (!url) throw new Error("No file URL");
