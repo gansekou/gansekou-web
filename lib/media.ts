@@ -86,29 +86,6 @@ export function getProfileImageUrl(
   return resolveMediaUrl(normalized);
 }
 
-export function normalizeUploadPath(path: string): string | null {
-  let normalized = path.trim().replace(/\\/g, "/");
-
-  try {
-    normalized = decodeURIComponent(normalized);
-  } catch {
-    // Keep the original value if it is not percent-encoded correctly.
-  }
-
-  normalized = normalized
-    .replace(/^https?:\/\/[^/]+\/api\/v1\/uploads\/(?:file|stream|download)\?file_url=/i, "")
-    .replace(/^\/?api\/v1\/uploads\/(?:file|stream|download)\?file_url=/i, "")
-    .replace(/^https?:\/\/[^/]+\/admin\/uploads\//i, "uploads/")
-    .replace(/^https?:\/\/[^/]+\/uploads\//i, "uploads/")
-    .replace(/^\/?admin\/uploads\//i, "uploads/")
-    .replace(/^\/?uploads\//i, "uploads/")
-    .replace(/^\/+/, "");
-
-  if (!normalized) return null;
-  if (!normalized.startsWith("uploads/")) normalized = `uploads/${normalized}`;
-
-  return normalized;
-}
 
 export function isProtectedBackendMediaUrl(url: string) {
   return url.startsWith(`${BACKEND_URL}/api/v1/uploads/`);
