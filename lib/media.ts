@@ -24,9 +24,42 @@ export function resolveMediaUrl(path?: string | null): string | null {
   return `${ENDPOINTS.uploads.file}?file_url=${encodeURIComponent(uploadPath)}`;
 }
 
-export function normalizeUploadUrl(path?: string | null): string | null {
-  if (!path) return null;
-  return normalizeUploadPath(path);
+export function normalizeUploadPath(path: string): string | null {
+
+  let normalized = path.trim().replace(/\\/g, "/");
+
+
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {
+  }
+
+
+  normalized = normalized
+    .replace(
+      /^https?:\/\/[^/]+\/api\/v1\/uploads\/(?:file|stream|download)\?file_url=/i,
+      ""
+    )
+    .replace(
+      /^\/?api\/v1\/uploads\/(?:file|stream|download)\?file_url=/i,
+      ""
+    )
+    .replace(/^\/+/, "");
+
+
+
+  if (!normalized) {
+    return null;
+  }
+
+
+  // IMPORTANT R2
+  // On garde exactement la clé R2
+  // profiles/...
+  // contents/...
+  // questions/...
+
+  return normalized;
 }
 
 export function getProfileImageUrl(
