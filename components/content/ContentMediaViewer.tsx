@@ -238,15 +238,29 @@ export function ContentMediaViewer({
         </div>
       ) : kind === "video" ? (
         <MediaWithNotes bookmarks={bookmarks} note={note} onNoteChange={saveNote} onSeek={(second) => { if (mediaRef.current) mediaRef.current.currentTime = second; }}>
-          <video ref={(node) => { mediaRef.current = node; }} controls playsInline className="aspect-video w-full bg-black">
-            <source src={blobUrl} />
-          </video>
+          <video
+           ref={(node)=>{
+             mediaRef.current=node;
+           }}
+           controls
+           playsInline
+           preload="metadata"
+           className="aspect-video w-full bg-black"
+           src={blobUrl}
+          />
         </MediaWithNotes>
       ) : kind === "audio" ? (
         <MediaWithNotes bookmarks={bookmarks} note={note} onNoteChange={saveNote} onSeek={(second) => { if (mediaRef.current) mediaRef.current.currentTime = second; }}>
           <div className="sticky bottom-3 z-20 p-6">
             <p className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-slate-400">{t("content.audioPlayer")}</p>
-            <audio ref={(node) => { mediaRef.current = node; }} controls src={blobUrl} className="w-full rounded-2xl" />
+            <audio
+             ref={(node)=>{
+               mediaRef.current=node;
+             }}
+             controls
+             preload="metadata"
+             src={blobUrl}
+            />
           </div>
         </MediaWithNotes>
       ) : (
