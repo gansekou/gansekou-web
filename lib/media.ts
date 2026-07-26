@@ -29,8 +29,32 @@ export function normalizeUploadUrl(path?: string | null): string | null {
   return normalizeUploadPath(path);
 }
 
-export function getProfileImageUrl(path?: string | null): string | null {
-  return resolveMediaUrl(path);
+export function getProfileImageUrl(
+  path?: string | null
+): string | null {
+
+  if (!path) return null;
+
+  const normalized = path.trim().replace(/\\/g, "/");
+
+  if (!normalized) return null;
+
+
+  // Déjà une URL complète
+  if (/^https?:\/\//i.test(normalized)) {
+    return encodeURI(normalized);
+  }
+
+
+  // Photo de profil stockée dans R2
+  if (normalized.startsWith("profiles/")) {
+
+    return `${ENDPOINTS.uploads.publicFile}?file_url=${encodeURIComponent(normalized)}`;
+
+  }
+
+
+  return resolveMediaUrl(normalized);
 }
 
 export function normalizeUploadPath(path: string): string | null {
