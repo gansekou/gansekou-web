@@ -68,19 +68,15 @@ export function getProfileImageUrl(
 
   if (!path) return null;
 
-  const normalized = path.trim().replace(/\\/g, "/");
 
-  if (!normalized) return null;
-
-
-  // Déjà une URL complète
-  if (/^https?:\/\//i.test(normalized)) {
-    return encodeURI(normalized);
-  }
+  const normalized = path
+    .replace(/\\/g, "/")
+    .trim();
 
 
-  // Photo de profil stockée dans R2
-  if (normalized.startsWith("profiles/")) {
+  if (
+    normalized.startsWith("profiles/")
+  ) {
 
     return `${ENDPOINTS.uploads.publicFile}?file_url=${encodeURIComponent(normalized)}`;
 
