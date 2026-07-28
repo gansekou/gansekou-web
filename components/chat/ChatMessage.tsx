@@ -1,3 +1,5 @@
+// components/chat/ChatMessage.tsx
+
 "use client";
 
 import ReactMarkdown from "react-markdown";
@@ -7,39 +9,39 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import type { ChatMessage as ChatMessageType } from "@/types/chat";
 
-// Fonction de normalisation améliorée
+// Fonction de normalisation LaTeX améliorée
 function normalizeLatex(content: string) {
   let normalized = content;
 
-  // Étape 1: Remplacer les \(...\) par $...$ (inline math)
+  // 1. Remplacer \(...\) par $...$ (inline math)
   normalized = normalized.replace(
     /\\\(([\s\S]*?)\\\)/g,
     (_, math) => `$${math.trim()}$`
   );
 
-  // Étape 2: Remplacer les \[...\] par $$...$$ (display math)
+  // 2. Remplacer \[...\] par $$...$$ (display math)
   normalized = normalized.replace(
     /\\\[([\s\S]*?)\\\]/g,
     (_, math) => `$$${math.trim()}$$`
   );
 
-  // Étape 3: Gérer les cas où des parenthèses simples sont utilisées
-  // (comme dans votre exemple: (\frac{2}{5} + \frac{1}{5}))
+  // 3. Gérer les parenthèses simples avec \frac
   normalized = normalized.replace(
-    /\(([^()]*?\\frac[^()]*?)\)/g,
-    (_, math) => `$${math.trim()}$`
+    /\(\\frac\{([^}]*)\}\{([^}]*)\}\)/g,
+    (_, num, den) => `$\\frac{${num}}{${den}}$`
   );
 
-  // Étape 4: Gérer les crochets simples
+  // 4. Gérer les fractions avec opérateurs
   normalized = normalized.replace(
-    /\[\s*([\s\S]*?\\frac[\s\S]*?)\s*\]/g,
-    (_, math) => `$$${math.trim()}$$`
+    /\(\\frac\{([^}]*)\}\{([^}]*)\}\s*([\+\-\*\/])\s*\\frac\{([^}]*)\}\{([^}]*)\}\)/g,
+    (_, n1, d1, op, n2, d2) => `$\\frac{${n1}}{${d1}} ${op} \\frac{${n2}}{${d2}}$`
   );
 
-  // Étape 5: Nettoyer les cas où il y a déjà des $ autour des formules
-  // pour éviter les doubles dollars
-  normalized = normalized.replace(/\$\s*\$(\w)/g, '$$$1');
-  normalized = normalized.replace(/(\w)\$\s*\$/, '$1$$');
+  // 5. Gérer les crochets simples
+  normalized = normalized.replace(
+    /\[\s*\\frac\{([^}]*)\}\{([^}]*)\}\s*\]/g,
+    (_, num, den) => `$$\\frac{${num}}{${den}}$$`
+  );
 
   return normalized;
 }
@@ -108,13 +110,7 @@ export function ChatMessage({ message }: Props) {
                   className={
                     className
                       ? className
-                      : `
-                        bg-slate-100
-                        rounded
-                        px-1
-                        py-0.5
-                        text-pink-600
-                      `
+                      : "bg-slate-100 rounded px-1 py-0.5 text-pink-600"
                   }
                 >
                   {children}
@@ -123,15 +119,7 @@ export function ChatMessage({ message }: Props) {
             },
             blockquote({ children }) {
               return (
-                <blockquote
-                  className="
-                    border-l-4
-                    border-emerald-500
-                    pl-4
-                    italic
-                    my-3
-                  "
-                >
+                <blockquote className="border-l-4 border-emerald-500 pl-4 italic my-3">
                   {children}
                 </blockquote>
               );
@@ -141,13 +129,7 @@ export function ChatMessage({ message }: Props) {
           {normalizeLatex(message.content)}
         </ReactMarkdown>
 
-        <div
-          className="
-            text-xs
-            opacity-50
-            mt-3
-          "
-        >
+        <div className="text-xs opacity-50 mt-3">
           {message.created_at
             ? new Date(message.created_at).toLocaleTimeString("fr-FR", {
                 hour: "2-digit",
