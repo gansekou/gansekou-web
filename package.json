@@ -25,6 +25,9 @@
     "katex": "^0.16.21",
     "zustand": "^5.0.13"
   },
+  "overrides": {
+    "pdfjs-dist": "5.7.284"
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/js-cookie": "^3.0.6",
