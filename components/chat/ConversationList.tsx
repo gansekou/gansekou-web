@@ -3,8 +3,8 @@
 "use client";
 
 import { useState, useMemo } from "react";
-// ✅ Importez le bon type
-import type { ChatConversationSummary } from "@/services/chat.service";
+// ✅ Importez ConversationItem depuis chat.service
+import type { ConversationItem } from "@/services/chat.service";
 import { 
   PlusIcon, 
   ChatBubbleLeftRightIcon,
@@ -12,8 +12,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 type Props = {
-  // ✅ Utilisez ChatConversationSummary au lieu de ConversationItem
-  conversations: ChatConversationSummary[];
+  conversations: ConversationItem[];
   activeId: string | null;
   onSelect: (id: string) => void;
   onNewChat: () => void;
