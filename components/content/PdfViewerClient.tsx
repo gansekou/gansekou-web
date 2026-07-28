@@ -62,7 +62,13 @@ export function PdfViewer({
             Impossible d'ouvrir ce document PDF.
           </div>
         }
-        onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+        onLoadSuccess={({ numPages }) => {
+          console.log("✅ PDF chargé :", numPages);
+          setNumPages(numPages);
+        }}
+        onLoadError={(error) => {
+          console.error("❌ PDF.js Error :", error);
+        }}
       >
         {Array.from({ length: numPages }, (_, index) => (
           <div
