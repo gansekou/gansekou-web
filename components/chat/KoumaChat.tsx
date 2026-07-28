@@ -95,23 +95,43 @@ export function KoumaChat() {
     }
   }, [loadConversations]);
 
-  const deleteConversation = useCallback(async (id: string) => {
-    try {
-      // Si la conversation supprimée est active, créer une nouvelle
-      if (id === conversationId) {
-        await createNewChat();
+  const deleteConversation = useCallback(
+    async (id: string) => {
+      try {
+        setLoading(true);
+  
+        // Suppression dans la base
+        await chatService.deleteConversation(id);
+  
+        // Mise à jour locale
+        const remaining = conversations.filter(
+          (conv) => conv.id !== id
+        );
+  
+        setConversations(remaining);
+  
+        // Si on supprimait la conversation ouverte
+        if (conversationId === id) {
+          if (remaining.length > 0) {
+            await openConversation(remaining[0].id);
+          } else {
+            await createNewChat();
+          }
+        }
+      } catch (error) {
+        console.error("Erreur suppression :", error);
+        alert("Impossible de supprimer cette discussion.");
+      } finally {
+        setLoading(false);
       }
-
-      // Mettre à jour la liste
-      setConversations(prev => prev.filter(conv => conv.id !== id));
-      
-      // Optionnel: appeler l'API pour supprimer
-      // await chatService.deleteConversation(id);
-    } catch (error) {
-      console.error("Erreur suppression conversation:", error);
-    }
-  }, [conversationId, createNewChat]);
-
+    },
+    [
+      conversations,
+      conversationId,
+      openConversation,
+      createNewChat,
+    ]
+  );
   // ============ Gestion des messages ============
 
   const sendMessage = useCallback(async (text: string) => {
