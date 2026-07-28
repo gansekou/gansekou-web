@@ -204,6 +204,7 @@ export function ContentMediaViewer({
         </div>
       ) : kind === "pdf" ? (
       <div className="bg-slate-100">
+        console.log("Blob URL envoyé à PdfViewer :", blobUrl);
         <PdfViewer
           file={blobUrl}
           zoom={zoom / 100}
