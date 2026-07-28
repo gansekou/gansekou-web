@@ -3,7 +3,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-// ✅ Importez ConversationItem depuis chat.service
 import type { ConversationItem } from "@/services/chat.service";
 import { 
   PlusIcon, 
