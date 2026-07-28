@@ -253,7 +253,6 @@ export function KoumaChat() {
         <ChatInput
           loading={loading}
           onSend={sendMessage}
-          placeholder="Posez votre question à Kouma..."
         />
       </div>
     </div>
