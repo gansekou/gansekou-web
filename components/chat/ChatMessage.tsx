@@ -10,26 +10,18 @@ import "katex/dist/katex.min.css";
 import type { ChatMessage as ChatMessageType } from "@/types/chat";
 
 function normalizeLatex(content: string) {
-
   return content
-    // (\frac{a}{b}) => $\frac{a}{b}$
+    // (\frac{}{}) => $\frac{}{}$
     .replace(
-      /\((\\frac\{.*?\}\{.*?\})\)/g,
-      "$$$1$"
-    )
-
-    // (\sqrt{x}) => $\sqrt{x}$
-    .replace(
-      /\((\\sqrt\{.*?\})\)/g,
-      "$$$1$"
+      /\((\\(?:frac|sqrt|sum|int|times|div).*?)\)/g,
+      (_, formula) => `$${formula}$`
     )
 
     // [ \frac{}{} ] => $$ \frac{}{} $$
     .replace(
-      /\[\s*(\\(?:frac|sqrt|sum|int)[\s\S]*?)\s*\]/g,
-      "$$$$ $1 $$$$"
+      /\[\s*(\\(?:frac|sqrt|sum|int|times|div).*?)\s*\]/gs,
+      (_, formula) => `$$${formula}$$`
     );
-
 }
 
 type Props = {
