@@ -1,48 +1,53 @@
 import { api } from "@/lib/api";
 
 import type {
- ChatConversation,
- ChatMessage
+  ChatConversation,
+  ChatMessage
 } from "@/types/chat";
+
+
+type KoumaResponse = {
+  answer: string;
+};
 
 
 
 export const chatService = {
 
 
- async start(){
+  async start(){
 
-   return api.post<ChatConversation>(
-     "/api/v1/chat/start"
-   );
+    return api.post<ChatConversation>(
+      "/api/v1/chat/start"
+    );
 
- },
-
-
- async getConversation(
-   conversationId:string
- ){
-
-   return api.get<ChatConversation>(
-    `/api/v1/chat/${conversationId}`
-   );
-
- },
+  },
 
 
+  async getConversation(
+    conversationId:string
+  ){
 
- async sendMessage(
+    return api.get<ChatConversation>(
+      `/api/v1/chat/${conversationId}`
+    );
+
+  },
+
+
+
+  async sendMessage(
     conversationId:string,
     message:string
- ){
+  ){
 
-   return api.post<ChatMessage>(
-     `/api/v1/chat/${conversationId}/message`,
-     {
-       message
-     }
-   );
+    return api.post<KoumaResponse>(
+      `/api/v1/chat/${conversationId}/message`,
+      {
+        message
+      }
+    );
 
- }
+  }
 
 };
