@@ -6,7 +6,6 @@ import {
   PlusIcon, 
   ChatBubbleLeftRightIcon,
   TrashIcon,
-  EllipsisVerticalIcon 
 } from "@heroicons/react/24/outline";
 
 type Props = {
@@ -27,7 +26,6 @@ export function ConversationList({
   isLoading = false,
 }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
-  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
 
   // Trier les conversations par date (plus récente en premier)
   const sortedConversations = useMemo(() => {
@@ -149,10 +147,7 @@ export function ConversationList({
               key={conversation.id}
               className="relative group"
               onMouseEnter={() => setHoveredId(conversation.id)}
-              onMouseLeave={() => {
-                setHoveredId(null);
-                setMenuOpenId(null);
-              }}
+              onMouseLeave={() => setHoveredId(null)}
             >
               <button
                 onClick={() => onSelect(conversation.id)}
@@ -174,7 +169,7 @@ export function ConversationList({
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
                     <div
-                      className="
+                      className={`
                         font-medium
                         text-sm
                         truncate
@@ -184,7 +179,7 @@ export function ConversationList({
                             ? "text-emerald-700"
                             : "text-slate-700"
                         }
-                      "
+                      `}
                     >
                       {truncateTitle(conversation.title)}
                     </div>
