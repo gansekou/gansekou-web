@@ -5,6 +5,7 @@ import { Document, Page, pdfjs } from "react-pdf";
 
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
+import type { DocumentProps } from "react-pdf";
 
 // Worker PDF.js
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -12,11 +13,13 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
+type PdfFile = NonNullable<DocumentProps["file"]>;
+
 export function PdfViewer({
   file,
   zoom = 1,
 }: {
-  file: string | Uint8Array | ArrayBuffer;
+  file: PdfFile;
   zoom?: number;
 }) {
   const [numPages, setNumPages] = useState(0);
