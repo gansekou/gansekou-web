@@ -228,8 +228,7 @@ export function KoumaChat(){
           text
         );
 
-
-
+      console.log("REPONSE KOUMA =", response);
 
       setMessages(
         previous=>[
