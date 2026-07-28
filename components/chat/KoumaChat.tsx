@@ -227,16 +227,34 @@ export function KoumaChat(){
           conversationId,
           text
         );
-
+      
       console.log("REPONSE KOUMA =", response);
-
+      
+      
+      const koumaMessage: ChatMessage = {
+      
+        id:
+          crypto.randomUUID(),
+      
+        role:
+          "ASSISTANT",
+      
+        content:
+          response.answer,
+      
+        created_at:
+          new Date().toISOString()
+      
+      };
+      
+      
       setMessages(
         previous=>[
           ...previous,
-          response
+          koumaMessage
         ]
       );
-
+      
 
 
     }
@@ -244,43 +262,33 @@ export function KoumaChat(){
 
     catch(error){
 
-
-
       console.error(
         "Erreur Kouma:",
         error
       );
-
-
-
+    
+    
       setMessages(
         previous=>[
           ...previous,
-
+    
           {
-
             id:
               crypto.randomUUID(),
-
-
+    
             role:
               "ASSISTANT",
-
-
+    
             content:
               "Une erreur est survenue. Réessaie dans quelques secondes.",
-
-
+    
             created_at:
               new Date().toISOString()
-
           }
-
+    
         ]
       );
-
-
-
+    
     }
 
 
