@@ -1,34 +1,13 @@
 // services/chat.service.ts
 
 import { api } from "@/lib/api";
+import type {
+  ChatMessage,
+  ChatConversation,
+  ChatConversationSummary,
+} from "@/types/chat";
 
-// ============ TYPES ============
-
-export interface ChatMessage {
-  id: string;
-  role: "USER" | "ASSISTANT" | "SYSTEM";
-  content: string;
-  created_at: string;
-}
-
-export interface ChatConversation {
-  id: string;
-  title: string;
-  language: string;
-  messages: ChatMessage[];
-  created_at: string;
-  last_message_at: string;
-}
-
-export interface ChatConversationSummary {
-  id: string;
-  title: string;
-  language: string;
-  created_at: string;
-  last_message_at: string;
-  last_message?: string;
-  message_count?: number;
-}
+// ============ TYPES SPÉCIFIQUES À L'API ============
 
 export interface ChatStartResponse {
   id: string;
@@ -109,13 +88,11 @@ export const chatService = {
 
 // ============ EXPORT DES TYPES ============
 
-export type { 
+export type {
   ChatMessage,
   ChatConversation,
   ChatConversationSummary,
-  ChatStartResponse,
-  ChatMessageResponse,
 };
 
-// Alias pour la compatibilité
+// Alias pour la compatibilité avec ConversationList
 export type ConversationItem = ChatConversationSummary;
