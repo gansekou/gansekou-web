@@ -9,6 +9,28 @@ import "katex/dist/katex.min.css";
 
 import type { ChatMessage as ChatMessageType } from "@/types/chat";
 
+function normalizeLatex(content: string) {
+
+  return content
+    // (\frac{a}{b}) => $\frac{a}{b}$
+    .replace(
+      /\((\\frac\{.*?\}\{.*?\})\)/g,
+      "$$$1$"
+    )
+
+    // (\sqrt{x}) => $\sqrt{x}$
+    .replace(
+      /\((\\sqrt\{.*?\})\)/g,
+      "$$$1$"
+    )
+
+    // [ \frac{a}{b} ] => $$\frac{a}{b}$$
+    .replace(
+      /\[\s*(\\(?:frac|sqrt|sum|int).*?)\s*\]/gs,
+      "$$$$ $1 $$$$"
+    );
+}
+
 
 type Props = {
   message: ChatMessageType;
@@ -129,20 +151,26 @@ export function ChatMessage({ message }: Props) {
             },
 
 
-            code({children}) {
+            code({children, className}) {
+
               return (
                 <code
-                  className="
-                    bg-slate-100
-                    rounded
-                    px-1
-                    py-0.5
-                    text-pink-600
-                  "
+                  className={
+                    className
+                      ? className
+                      : `
+                        bg-slate-100
+                        rounded
+                        px-1
+                        py-0.5
+                        text-pink-600
+                      `
+                  }
                 >
                   {children}
                 </code>
               );
+            
             },
 
 
@@ -164,7 +192,7 @@ export function ChatMessage({ message }: Props) {
 
           }}
         >
-          {message.content}
+          {normalizeLatex(message.content)}
         </ReactMarkdown>
 
 
