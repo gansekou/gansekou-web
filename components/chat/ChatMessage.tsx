@@ -24,13 +24,13 @@ function normalizeLatex(content: string) {
       "$$$1$"
     )
 
-    // [ \frac{a}{b} ] => $$\frac{a}{b}$$
+    // [ \frac{}{} ] => $$ \frac{}{} $$
     .replace(
-      /\[\s*(\\(?:frac|sqrt|sum|int).*?)\s*\]/gs,
+      /\[\s*(\\(?:frac|sqrt|sum|int)[\s\S]*?)\s*\]/g,
       "$$$$ $1 $$$$"
     );
-}
 
+}
 
 type Props = {
   message: ChatMessageType;
