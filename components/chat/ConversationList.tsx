@@ -1,6 +1,9 @@
+// components/chat/ConversationList.tsx
+
 "use client";
 
 import { useState, useMemo } from "react";
+// ✅ Importez le bon type
 import type { ChatConversationSummary } from "@/services/chat.service";
 import { 
   PlusIcon, 
@@ -9,7 +12,8 @@ import {
 } from "@heroicons/react/24/outline";
 
 type Props = {
-  conversations: ConversationItem[];
+  // ✅ Utilisez ChatConversationSummary au lieu de ConversationItem
+  conversations: ChatConversationSummary[];
   activeId: string | null;
   onSelect: (id: string) => void;
   onNewChat: () => void;
