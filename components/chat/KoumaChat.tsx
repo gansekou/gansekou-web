@@ -7,10 +7,7 @@ import {
   useCallback,
 } from "react";
 
-import {
-  chatService,
-  ConversationItem,
-} from "@/services/chat.service";
+import { chatService, ChatConversationSummary } from "@/services/chat.service";
 
 import type {
   ChatMessage,
