@@ -33,3 +33,11 @@ export interface ChatConversation {
   last_message_at: string;
 
 }
+
+export interface ChatConversationSummary {
+  id: string;
+  title: string;
+  language: string;
+  created_at: string;
+  last_message_at: string;
+}
