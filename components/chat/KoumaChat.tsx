@@ -179,7 +179,7 @@ export function KoumaChat(){
 
 
 
-    const temp:ChatMessage={
+    const userMessage: ChatMessage = {
 
 
       id:
@@ -206,7 +206,7 @@ export function KoumaChat(){
     setMessages(
       previous=>[
         ...previous,
-        temp
+        userMessage
       ]
     );
 
@@ -227,34 +227,46 @@ export function KoumaChat(){
           conversationId,
           text
         );
-      
-      console.log("REPONSE KOUMA =", response);
-      
-      
+
+
+
+      console.log(
+        "REPONSE KOUMA =",
+        response
+      );
+
+
+
       const koumaMessage: ChatMessage = {
-      
+
+
         id:
           crypto.randomUUID(),
-      
+
+
         role:
           "ASSISTANT",
-      
+
+
         content:
           response.answer,
-      
+
+
         created_at:
           new Date().toISOString()
-      
+
+
       };
-      
-      
+
+
+
       setMessages(
         previous=>[
           ...previous,
           koumaMessage
         ]
       );
-      
+
 
 
     }
@@ -262,33 +274,47 @@ export function KoumaChat(){
 
     catch(error){
 
+
+
       console.error(
         "Erreur Kouma:",
         error
       );
-    
-    
+
+
+
+      const errorMessage: ChatMessage = {
+
+
+        id:
+          crypto.randomUUID(),
+
+
+        role:
+          "ASSISTANT",
+
+
+        content:
+          "Une erreur est survenue. Réessaie dans quelques secondes.",
+
+
+        created_at:
+          new Date().toISOString()
+
+
+      };
+
+
+
       setMessages(
         previous=>[
           ...previous,
-    
-          {
-            id:
-              crypto.randomUUID(),
-    
-            role:
-              "ASSISTANT",
-    
-            content:
-              "Une erreur est survenue. Réessaie dans quelques secondes.",
-    
-            created_at:
-              new Date().toISOString()
-          }
-    
+          errorMessage
         ]
       );
-    
+
+
+
     }
 
 
