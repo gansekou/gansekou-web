@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { ConversationItem } from "@/services/chat.service";
+import type { ChatConversationSummary } from "@/services/chat.service";
 import { 
   PlusIcon, 
   ChatBubbleLeftRightIcon,
