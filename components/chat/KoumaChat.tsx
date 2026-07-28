@@ -32,7 +32,7 @@ const MAX_CONVERSATIONS = 20;
 export function KoumaChat() {
   // États
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [conversations, setConversations] = useState<ChatConversationSummary[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
