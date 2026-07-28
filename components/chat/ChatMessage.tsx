@@ -175,13 +175,15 @@ export function ChatMessage({ message }: Props) {
             mt-3
           "
         >
-          {new Date(message.created_at).toLocaleTimeString(
-            "fr-FR",
-            {
-              hour:"2-digit",
-              minute:"2-digit"
-            }
-          )}
+          {message.created_at
+            ? new Date(message.created_at).toLocaleTimeString(
+                "fr-FR",
+                {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }
+              )
+            : ""}
         </div>
 
 
