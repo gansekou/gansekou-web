@@ -12,6 +12,7 @@ import {
   downloadAuthenticatedFile,
 } from "@/lib/content-media";
 import type { Content } from "@/types/content";
+import { PdfViewer } from "@/components/content/PdfViewer";
 
 export function ContentMediaViewer({
   content,
@@ -202,23 +203,25 @@ export function ContentMediaViewer({
           <EmptyState title={t("content.noMainFile")} message={t("content.noMainFile")} />
         </div>
       ) : kind === "pdf" ? (
-        <div className="bg-slate-100">
-          <div className="overflow-auto p-3" style={{ backgroundColor: highlightColor }}>
-            <iframe title={t("content.pdfReader")} src={blobUrl} className="h-[75vh] origin-top-left rounded-2xl bg-slate-50 transition-transform" style={{ width: `${zoom}%` }} />
-          </div>
-          <ReaderCompanionPanel
-            bookmarks={bookmarks}
-            note={note}
-            labels={{
-              bookmarks: t("content.bookmarks"),
-              emptyBookmarks: t("content.emptyBookmarks"),
-              personalNotes: t("content.personalNotes"),
-              notePlaceholder: t("content.notePlaceholder"),
-            }}
-            onNoteChange={saveNote}
-          />
-        </div>
-      ) : kind === "image" ? (
+      <div className="bg-slate-100">
+        <PdfViewer
+          file={blobUrl}
+          zoom={zoom / 100}
+        />
+    
+        <ReaderCompanionPanel
+          bookmarks={bookmarks}
+          note={note}
+          labels={{
+            bookmarks: t("content.bookmarks"),
+            emptyBookmarks: t("content.emptyBookmarks"),
+            personalNotes: t("content.personalNotes"),
+            notePlaceholder: t("content.notePlaceholder"),
+          }}
+          onNoteChange={saveNote}
+        />
+      </div>
+    ) : kind === "image" ? (
         <div className="bg-slate-100">
           <div className="overflow-auto p-3" style={{ backgroundColor: highlightColor }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
