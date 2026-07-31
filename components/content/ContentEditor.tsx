@@ -72,62 +72,16 @@ export function ContentEditor({
           return;
         }
   
-        const contents = await platformService.contents.all();
-  
         const currentType = lockedType || form.content_type;
   
-        const targetType =
-          currentType === "COURS"
-            ? "EXERCICE"
-            : currentType === "EXERCICE"
-              ? "COURS"
-              : null;
-  
-  
-        const filtered = contents.filter((item) => {
-  
-          // Ne pas se lier avec soi-même
-          if (item.id === content?.id) {
-            return false;
-          }
-  
-  
-          // Même niveau obligatoire
-          if (item.level_id !== form.level_id) {
-            return false;
-          }
-  
-  
-          // Même matière obligatoire
-          if (item.subject_id !== form.subject_id) {
-            return false;
-          }
-  
-  
-          // Même spécialité si elle existe
-          if (
-            form.specialty_id &&
-            item.specialty_id !== form.specialty_id
-          ) {
-            return false;
-          }
-  
-  
-          // Type opposé
-          if (
-            targetType &&
-            item.content_type !== targetType
-          ) {
-            return false;
-          }
-  
-  
-          return true;
+        const contents = await platformService.contents.relatedOptions({
+          level_id: form.level_id,
+          subject_id: form.subject_id,
+          target_type: currentType,
+          exclude_id: content?.id,
         });
   
-  
-        setAvailableContents(filtered);
-  
+        setAvailableContents(contents);
   
       } catch (error) {
         console.error(
@@ -139,18 +93,15 @@ export function ContentEditor({
       }
     }
   
-  
     loadRelatedContents();
   
   }, [
     form.subject_id,
     form.level_id,
-    form.specialty_id,
     form.content_type,
     lockedType,
     content?.id
   ]);
-
 
   
   const [saving, setSaving] = useState(false);
