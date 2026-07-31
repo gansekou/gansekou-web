@@ -147,10 +147,12 @@ export function ContentManager({
             >
               <div className="flex gap-5">
         
-                {content.thumbnail_url && (
+                {(content.thumbnail_url || content.thumbnail_path) && (
                   <div className="relative h-32 w-48 shrink-0 overflow-hidden rounded-xl">
                     <Image
-                      src={getThumbnailUrl(content.thumbnail_url)}
+                      src={getThumbnailUrl(
+                          content.thumbnail_url || content.thumbnail_path || ""
+                        )}
                       alt={content.title || "Thumbnail exercice"}
                       fill
                       className="object-cover"
