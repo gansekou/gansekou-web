@@ -146,6 +146,7 @@ export const platformService = {
       apiFetch<{ message: string }>(ENDPOINTS.contents.like(id), {
         method: "POST",
       }),
+    
     translations: (id: UUID) => apiFetch(ENDPOINTS.contents.contentTranslations(id)),
     createTranslation: (payload: {
       content_id: UUID;
@@ -158,7 +159,29 @@ export const platformService = {
         body: payload,
       }),
     analytics: (id: UUID) => apiFetch(ENDPOINTS.contents.analytics(id)),
-    related: (id: UUID) => apiFetch<Content[]>(ENDPOINTS.contents.related(id)),
+        related: (id: UUID) =>
+      apiFetch<Content[]>(ENDPOINTS.contents.related(id)),
+
+    createRelation: (payload: {
+      parent_content_id: UUID;
+      child_content_id: UUID;
+      relation_type?: string;
+    }) =>
+      apiFetch(
+        ENDPOINTS.contents.relations,
+        {
+          method: "POST",
+          body: payload,
+        }
+      ),
+
+    deleteRelation: (id: UUID) =>
+      apiFetch(
+        ENDPOINTS.contents.relationById(id),
+        {
+          method: "DELETE",
+        }
+      ),
   },
 
   questions: {
