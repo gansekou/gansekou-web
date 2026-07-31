@@ -182,6 +182,15 @@ export const platformService = {
           method: "DELETE",
         }
       ),
+    relatedOptions: (params: {
+      level_id: string;
+      subject_id: string;
+      target_type: string;
+      exclude_id?: string;
+    }) =>
+      api.get<Content[]>("/contents/related-options", {
+        params,
+      }),
   },
 
   questions: {
