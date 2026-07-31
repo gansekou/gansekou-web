@@ -310,4 +310,13 @@ export const ENDPOINTS = {
     root: "http://127.0.0.1:8000/",
     health: "http://127.0.0.1:8000/health",
   },
+
+  relations:
+  `${API_URL}/api/v1/contents/relations`,
+
+  relationById:
+  (id: string) =>
+    `${API_URL}/api/v1/contents/relations/${id}`,
+
+  
 } as const;
