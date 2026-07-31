@@ -35,6 +35,7 @@ export type Content = {
   published_at?: string | null;
   created_at?: string;
   updated_at?: string;
+  related_contents?: RelatedContent[];
 };
 
 export type ContentCreatePayload = {
@@ -81,4 +82,10 @@ export type ContentRelation = {
   child_content_id: string;
   relation_type: string;
   created_at?: string;
+};
+
+export type RelatedContent = {
+  id: string;
+  title?: string | null;
+  content_type: ContentType | string;
 };
