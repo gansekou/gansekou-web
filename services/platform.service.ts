@@ -185,12 +185,26 @@ export const platformService = {
     relatedOptions: (params: {
       level_id: string;
       subject_id: string;
-      target_type: string;
+      target_type?: string;
       exclude_id?: string;
-    }) =>
-      api.get<Content[]>("/contents/related-options", {
-        params,
-      }),
+    }) => {
+      const query = new URLSearchParams();
+    
+      query.append("level_id", params.level_id);
+      query.append("subject_id", params.subject_id);
+    
+      if (params.target_type) {
+        query.append("target_type", params.target_type);
+      }
+    
+      if (params.exclude_id) {
+        query.append("exclude_id", params.exclude_id);
+      }
+    
+      return apiFetch<Content[]>(
+        `${ENDPOINTS.contents.relatedOptions}?${query.toString()}`
+      );
+    },
   },
  
   questions: {
