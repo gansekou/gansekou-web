@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Archive, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import Image from "next/image";
+import { getThumbnailUrl } from "@/lib/files";
 import { EmptyState } from "@/components/app/StateViews";
 import { useI18n } from "@/hooks/useI18n";
 import { ApiError } from "@/lib/api";
@@ -139,26 +141,23 @@ export function ContentManager({
 
         <div className="mt-6 grid gap-4">
           {visibleContents.map((content, index) => (
-            <article key={`content-row-${scope}-${content.id}-${index}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
-              <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-black text-[#071d3a]">{content.title || `${content.content_type} ${content.id.slice(0, 8)}`}</h3>
-                    <StatusBadge status={content.status} t={t} />
-                    {content.is_premium && <span className="rounded-full bg-[#f6c445] px-3 py-1 text-xs font-black text-[#071d3a]">Premium</span>}
+            <article
+              key={`content-row-${scope}-${content.id}-${index}`}
+              className="rounded-2xl border border-slate-100 bg-slate-50 p-5"
+            > 
+              <div className="flex gap-5">
+                {content.thumbnail_url && (
+                  <div className="relative h-32 w-48 shrink-0 overflow-hidden rounded-xl">
+                    <Image
+                      src={getThumbnailUrl(content.thumbnail_url)}
+                      alt={content.title || "Thumbnail exercice"}
+                      fill
+                      className="object-cover"
+                    />
                   </div>
-                  <p className="mt-2 text-sm font-bold text-slate-500">
-                    {content.content_type} - {subjectById.get(content.subject_id)?.name_fr || "-"} - {levelById.get(content.level_id)?.name_fr || "-"}
-                  </p>
-                  <p className="mt-1 text-xs font-bold text-slate-400">{content.created_at || "-"}</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Link href={`${basePath}/${content.id}`} className="inline-flex items-center gap-2 rounded-full bg-[#0f5f3a] px-4 py-2 text-sm font-black text-white"><Eye size={16} />{t("content.details")}</Link>
-                  {canEditContent(user, content) && <Link href={`${basePath}/${content.id}/edit`} className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-[#071d3a] shadow-sm"><Pencil size={16} />{t("action.edit")}</Link>}
-                  {canPublishContent(user) && content.status !== "APPROVED" && <button type="button" onClick={() => moderate(content, "publish")} className="rounded-full bg-[#f6c445] px-4 py-2 text-sm font-black text-[#071d3a]">{t("content.publish")}</button>}
-                  {canArchiveContent(user) && content.status !== "ARCHIVED" && <button type="button" onClick={() => moderate(content, "archive")} className="inline-flex items-center gap-2 rounded-full bg-slate-200 px-4 py-2 text-sm font-black text-[#071d3a]"><Archive size={16} />{t("content.archive")}</button>}
-                  {canDeleteContent(user, content) && <button type="button" onClick={() => moderate(content, "delete")} className="inline-flex items-center gap-2 rounded-full bg-red-50 px-4 py-2 text-sm font-black text-red-700"><Trash2 size={16} />{t("action.delete")}</button>}
-                </div>
+                )}
+            
+                <div className="flex-1">
               </div>
             </article>
           ))}
