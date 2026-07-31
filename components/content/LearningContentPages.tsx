@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
+import Image from "next/image";
+import { getThumbnailUrl } from "@/lib/files";
 import { ContentEditor } from "@/components/content/ContentEditor";
 import { ContentMediaViewer } from "@/components/content/ContentMediaViewer";
 import { ContentManager } from "@/components/content/ContentManager";
@@ -273,24 +275,87 @@ function LearningContentCatalog({
         ) : (
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {filtered.map((item) => (
-              <article key={item.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg">
+              <article
+                key={item.id}
+                className="rounded-2xl border border-slate-100 bg-slate-50 p-5 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
+              >
+          
+                {item.thumbnail_url && (
+                  <div className="relative mb-4 h-40 w-full overflow-hidden rounded-xl">
+                    <Image
+                      src={getThumbnailUrl(item.thumbnail_url)}
+                      alt={item.title || "Thumbnail exercice"}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                )}
+          
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <span className="rounded-full bg-[#0f5f3a]/10 px-3 py-1 text-xs font-black text-[#0f5f3a]">{item.content_type}</span>
-                  {item.is_available_offline ? <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600">{t("content.offline")}</span> : null}
+                  <span className="rounded-full bg-[#0f5f3a]/10 px-3 py-1 text-xs font-black text-[#0f5f3a]">
+                    {item.content_type}
+                  </span>
+          
+                  {item.is_available_offline ? (
+                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600">
+                      {t("content.offline")}
+                    </span>
+                  ) : null}
                 </div>
-                <h3 className="font-black text-[#082f1f]">{item.title || `${item.content_type} ${item.id.slice(0, 8)}`}</h3>
-                <p className="mt-2 line-clamp-2 text-sm font-bold text-slate-500">{item.description || item.status}</p>
+          
+                <h3 className="font-black text-[#082f1f]">
+                  {item.title || `${item.content_type} ${item.id.slice(0, 8)}`}
+                </h3>
+          
+                <p className="mt-2 line-clamp-2 text-sm font-bold text-slate-500">
+                  {item.description || item.status}
+                </p>
+          
                 <dl className="mt-4 grid gap-2 text-xs font-bold text-slate-500">
-                  <Meta label={t("common.subject")} value={subjectById.get(item.subject_id)?.name_fr || "-"} />
-                  <Meta label={t("common.level")} value={levelById.get(item.level_id)?.name_fr || "-"} />
-                  <Meta label={t("content.author")} value={shortId(item.author_id)} />
-                  <Meta label={t("content.date")} value={formatDate(item.created_at)} />
-                  {kind === "subjects" ? <Meta label={t("content.year")} value={readYear(item) || "-"} /> : null}
+                  <Meta
+                    label={t("common.subject")}
+                    value={subjectById.get(item.subject_id)?.name_fr || "-"}
+                  />
+          
+                  <Meta
+                    label={t("common.level")}
+                    value={levelById.get(item.level_id)?.name_fr || "-"}
+                  />
+          
+                  <Meta
+                    label={t("content.author")}
+                    value={shortId(item.author_id)}
+                  />
+          
+                  <Meta
+                    label={t("content.date")}
+                    value={formatDate(item.created_at)}
+                  />
+          
+                  {kind === "subjects" ? (
+                    <Meta
+                      label={t("content.year")}
+                      value={readYear(item) || "-"}
+                    />
+                  ) : null}
                 </dl>
+          
                 <div className="mt-5 flex flex-wrap gap-2">
-                  <Link href={`${settings.basePath}/${item.id}`} className="rounded-full bg-[#0f5f3a] px-4 py-2 text-sm font-black text-white">{t(settings.actionKey)}</Link>
-                  {item.is_premium && getContentMainUrl(item) ? <DownloadButton content={item} label={t("content.download")} /> : null}
+                  <Link
+                    href={`${settings.basePath}/${item.id}`}
+                    className="rounded-full bg-[#0f5f3a] px-4 py-2 text-sm font-black text-white"
+                  >
+                    {t(settings.actionKey)}
+                  </Link>
+          
+                  {item.is_premium && getContentMainUrl(item) ? (
+                    <DownloadButton
+                      content={item}
+                      label={t("content.download")}
+                    />
+                  ) : null}
                 </div>
+          
               </article>
             ))}
           </div>
