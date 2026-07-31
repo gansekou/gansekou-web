@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { EmptyState } from "@/components/app/StateViews";
 import { useI18n } from "@/hooks/useI18n";
+import { useEffect } from "react";
 import { ApiError } from "@/lib/api";
 import { canCreateContent, canEditContent, isAdminRole } from "@/lib/permissions";
 import { platformService } from "@/services/platform.service";
@@ -58,7 +59,102 @@ export function ContentEditor({
   });
   const [file, setFile] = useState<File | null>(null);
   const [thumbnail, setThumbnail] = useState<File | null>(null);
+  const [relatedContentIds, setRelatedContentIds] = useState<string[]>(
+    content?.related_contents?.map((item) => item.id) || []
+  );
+  const [availableContents, setAvailableContents] = useState<Content[]>([]);
+
+  useEffect(() => {
+    async function loadRelatedContents() {
+      try {
+        if (!form.subject_id || !form.level_id) {
+          setAvailableContents([]);
+          return;
+        }
+  
+        const contents = await platformService.contents.all();
+  
+        const currentType = lockedType || form.content_type;
+  
+        const targetType =
+          currentType === "COURS"
+            ? "EXERCICE"
+            : currentType === "EXERCICE"
+              ? "COURS"
+              : null;
+  
+  
+        const filtered = contents.filter((item) => {
+  
+          // Ne pas se lier avec soi-même
+          if (item.id === content?.id) {
+            return false;
+          }
+  
+  
+          // Même niveau obligatoire
+          if (item.level_id !== form.level_id) {
+            return false;
+          }
+  
+  
+          // Même matière obligatoire
+          if (item.subject_id !== form.subject_id) {
+            return false;
+          }
+  
+  
+          // Même spécialité si elle existe
+          if (
+            form.specialty_id &&
+            item.specialty_id !== form.specialty_id
+          ) {
+            return false;
+          }
+  
+  
+          // Type opposé
+          if (
+            targetType &&
+            item.content_type !== targetType
+          ) {
+            return false;
+          }
+  
+  
+          return true;
+        });
+  
+  
+        setAvailableContents(filtered);
+  
+  
+      } catch (error) {
+        console.error(
+          "Erreur chargement contenus liés",
+          error
+        );
+  
+        setAvailableContents([]);
+      }
+    }
+  
+  
+    loadRelatedContents();
+  
+  }, [
+    form.subject_id,
+    form.level_id,
+    form.specialty_id,
+    form.content_type,
+    lockedType,
+    content?.id
+  ]);
+
+
+  
   const [saving, setSaving] = useState(false);
+  
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -90,6 +186,7 @@ export function ContentEditor({
         author_id: content?.author_id || user.id,
         subject_id: form.subject_id,
         level_id: form.level_id,
+        related_content_ids: relatedContentIds,
         specialty_id: form.specialty_id || null,
         content_type: lockedType || form.content_type,
         file_url: fileUrl,
@@ -155,6 +252,37 @@ export function ContentEditor({
         {isAdminRole(user) && <Field label={t("common.status")}><select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))} className={inputClass}><option value="PENDING">{t("content.pendingReview")}</option><option value="APPROVED">{t("content.published")}</option><option value="ARCHIVED">{t("content.archived")}</option></select></Field>}
       </div>
       <Field label={t("content.description")}><textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className={`${inputClass} min-h-32`} /></Field>
+      {form.subject_id && form.level_id && (
+      <Field label="Contenus liés (optionnel)">
+        <select
+          multiple
+          value={relatedContentIds}
+          onChange={(e) => {
+            setRelatedContentIds(
+              Array.from(
+                e.target.selectedOptions
+              ).map(
+                option => option.value
+              )
+            );
+          }}
+          className={`${inputClass} min-h-44`}
+        >
+          {availableContents.map((item) => (
+            <option
+              key={item.id}
+              value={item.id}
+            >
+              {item.title || item.content_type}
+            </option>
+          ))}
+        </select>
+      
+        <p className="text-xs text-slate-500 mt-2">
+          Vous pouvez sélectionner plusieurs contenus ou aucun.
+        </p>
+      </Field>
+      )}
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <UploadField label={t("content.mainFile")} file={file} onChange={setFile} accept={form.content_type === "VIDEO" ? "video/*" : form.content_type === "AUDIO" ? "audio/*" : undefined} />
         <UploadField label={t("content.thumbnail")} file={thumbnail} onChange={setThumbnail} accept="image/*" />
