@@ -13,6 +13,7 @@ export type Content = {
   content_type: ContentType | string;
   file_url?: string | null;
   thumbnail_url?: string | null;
+  thumbnail_path?: string | null;
   video_url?: string | null;
   audio_url?: string | null;
   external_url?: string | null;
