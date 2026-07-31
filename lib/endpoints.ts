@@ -76,11 +76,11 @@ export const ENDPOINTS = {
     related: (contentId: string) =>
       `${API_BASE_URL}/contents/${contentId}/related`,
     relations:
-      `${API_URL}/api/v1/contents/relations`,
+      `${API_BASE_URL}/contents/relations`,
     
     relationById:
     (id: string) =>
-      `${API_URL}/api/v1/contents/relations/${id}`,
+      `${API_BASE_URL}/contents/relations/${id}`,
 
     translations: `${API_BASE_URL}/contents/translations`,
     translationById: (translationId: string) =>
