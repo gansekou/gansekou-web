@@ -75,6 +75,7 @@ export const ENDPOINTS = {
       `${API_BASE_URL}/contents/${contentId}/analytics`,
     related: (contentId: string) =>
       `${API_BASE_URL}/contents/${contentId}/related`,
+    relatedOptions: `${API_BASE_URL}/contents/related-options`,
     relations:
       `${API_BASE_URL}/contents/relations`,
     
