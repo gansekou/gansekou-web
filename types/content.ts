@@ -74,3 +74,11 @@ export type ContentAnalytics = {
   shares: number;
   rating: number | null;
 };
+
+export type ContentRelation = {
+  id: string;
+  parent_content_id: string;
+  child_content_id: string;
+  relation_type: string;
+  created_at?: string;
+};
