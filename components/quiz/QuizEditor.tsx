@@ -63,7 +63,13 @@ export function QuizEditor({ user, quiz, subjects, levels, courses }: Props) {
       course_id: courseId || null,
       subject_id: course?.subject_id || current.subject_id,
       level_id: course?.level_id || current.level_id,
-      title: course && !isEditing ? `Quiz - ${course.title || course.id.slice(0, 8)}` : current.title,
+      title: course && !isEditing
+        ? `Quiz - ${
+            course.translations?.[0]?.title ??
+            course.title ??
+            course.id.slice(0, 8)
+          }`
+        : current.title,
     }));
   }
 
@@ -159,7 +165,11 @@ export function QuizEditor({ user, quiz, subjects, levels, courses }: Props) {
             <select value={form.course_id || ""} onChange={(event) => selectCourse(event.target.value)} className="quiz-input">
               <option value="">{text.linkedCoursePlaceholder}</option>
               {courses.map((course) => (
-                <option key={course.id} value={course.id}>{course.title || `COURS ${course.id.slice(0, 8)}`}</option>
+                <option key={course.id} value={course.id}>
+                  {course.translations?.[0]?.title ??
+                    course.title ??
+                    `COURS ${course.id.slice(0, 8)}`}
+                </option>
               ))}
             </select>
           </Field>
