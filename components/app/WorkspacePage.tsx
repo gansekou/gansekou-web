@@ -140,7 +140,7 @@ export function WorkspacePage({ kind }: { kind: WorkspaceKind }) {
     if (
       isStudentRole(user) &&
       !user.level_id &&
-      kind !== "settings"
+      !["settings", "profile"].includes(kind)
     ) {
       router.replace("/onboarding/profile");
     }
