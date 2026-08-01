@@ -284,7 +284,7 @@ function LearningContentCatalog({
                   <div className="relative mb-4 h-40 w-full overflow-hidden rounded-xl">
                     <Image
                       src={getThumbnailUrl(item.thumbnail_url)}
-                      alt={item.title || "Thumbnail exercice"}
+                      alt={item.translations?.[0]?.title || "Thumbnail exercice"}
                       fill
                       className="object-cover"
                     />
@@ -308,7 +308,7 @@ function LearningContentCatalog({
                 </h3>
           
                 <p className="mt-2 line-clamp-2 text-sm font-bold text-slate-500">
-                  {item.description || item.status}
+                  {item.translations?.[0]?.description || item.status}
                 </p>
           
                 <dl className="mt-4 grid gap-2 text-xs font-bold text-slate-500">
@@ -320,16 +320,6 @@ function LearningContentCatalog({
                   <Meta
                     label={t("common.level")}
                     value={levelById.get(item.level_id)?.name_fr || "-"}
-                  />
-          
-                  <Meta
-                    label={t("content.author")}
-                    value={shortId(item.author_id)}
-                  />
-          
-                  <Meta
-                    label={t("content.date")}
-                    value={formatDate(item.created_at)}
                   />
           
                   {kind === "subjects" ? (
@@ -431,7 +421,7 @@ function LearningContentDetail({
           <h3 className="text-2xl font-black text-[#071d3a]">{t("content.recommendedCourse")}</h3>
           <Link href={`/courses/${recommendedCourse.id}`} className="mt-5 block rounded-2xl bg-slate-50 p-5 font-black text-[#071d3a] transition hover:bg-white hover:shadow-lg">
             <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">COURS</span>
-            <p className="mt-3">{recommendedCourse.title || `COURS ${recommendedCourse.id.slice(0, 8)}`}</p>
+            <p className="mt-3">{recommendedCourse.translations?.[0]?.title || `COURS ${recommendedCourse.id.slice(0, 8)}`}</p>
             <p className="mt-2 text-sm text-slate-500">{recommendedCourse.description || recommendedCourse.status}</p>
           </Link>
         </section>
