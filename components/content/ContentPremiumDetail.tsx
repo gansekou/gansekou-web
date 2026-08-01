@@ -204,9 +204,20 @@ function AssociatedRail({ title, items, basePath, emptyLabel }: { title: string;
       <h3 className="text-2xl font-black text-[#071d3a]">{title}</h3>
       <div className="mt-5 grid gap-3">
         {items.map((item) => (
-          <Link key={item.id} href={`${basePath}/${item.id}`} className="rounded-2xl bg-slate-50 p-4 font-black text-[#071d3a] transition hover:bg-white hover:shadow-lg">
-            <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">{item.content_type}</span>
-            <p className="mt-2">{item.title || item.id.slice(0, 8)}</p>
+          <Link
+            key={item.id}
+            href={`${basePath}/${item.id}`}
+            className="rounded-2xl bg-slate-50 p-4 font-black text-[#071d3a] transition hover:bg-white hover:shadow-lg"
+          >
+            <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">
+              {item.content_type}
+            </span>
+        
+            <p className="mt-2">
+              {item.translations?.[0]?.title ??
+                item.title ??
+                item.id.slice(0, 8)}
+            </p>
           </Link>
         ))}
       </div>
