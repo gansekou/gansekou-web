@@ -220,11 +220,8 @@ export function ContentEditor({
           className={`${inputClass} min-h-44`}
         >
           {availableContents.map((item) => (
-            <option
-              key={item.id}
-              value={item.id}
-            >
-              {item.title || item.content_type}
+            <option key={item.id} value={item.id}>
+              {item.translations?.[0]?.title ?? item.content_type}
             </option>
           ))}
         </select>
