@@ -185,7 +185,7 @@ export function ContentPremiumDetail({
       <section className="rounded-[2rem] bg-white p-6 shadow-xl shadow-[#082f1f]/5">
         <h3 className="text-2xl font-black text-[#071d3a]">{t("content.related")}</h3>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
-          {related.map((item, index) => <Link key={`related-content-${item.id}-${index}`} href={`${basePath}/${item.id}`} className="rounded-2xl bg-slate-50 p-4 font-black text-[#071d3a]">{item.title || item.content_type}</Link>)}
+          {related.map((item, index) => <Link key={`related-content-${item.id}-${index}`} href={`${basePath}/${item.id}`} className="rounded-2xl bg-slate-50 p-4 font-black text-[#071d3a]">{item.translations?.[0]?.title || item.content_type}</Link>)}
         </div>
         {!related.length && <EmptyState title={t("content.noRelated")} message={t("content.noRelated")} />}
       </section>
