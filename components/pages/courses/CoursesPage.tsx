@@ -86,52 +86,77 @@ function CourseCatalog({ user, contents, levels, subjects }: { user: User; conte
     message="Les cours publiés apparaîtront ici."
   />
 ) : (
-  <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+  <div className="mt-8 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
     {filtered.map((item) => (
-              <Link
-                key={item.id}
-                href={`/courses/${item.id}`}
-                className="group overflow-hidden rounded-3xl bg-white shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl"
-              >
-                {/* Image */}
-                <div className="relative overflow-hidden">
-                  <Image
-                    src={getThumbnailUrl(item.thumbnail_url)}
-                    alt={item.title || "Cours Gansekou"}
-                    width={400}
-                    height={240}
-                    className="h-56 w-full object-cover transition duration-500 group-hover:scale-110"
-                  />
-        
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        
-                  <span className="absolute left-4 top-4 rounded-full bg-[#0f5f3a] px-3 py-1 text-xs font-bold text-white shadow">
-                    📘 COURS
-                  </span>
-        
-                  {item.is_premium && (
-                    <span className="absolute right-4 top-4 rounded-full bg-[#f6c445] px-3 py-1 text-xs font-black text-[#082f1f] shadow-lg">
-                      ⭐ PREMIUM
-                    </span>
-                  )}
-                </div>
-        
-                {/* Contenu */}
-                <div className="p-5">
-
-        
-                  <div className="mt-5 flex items-center justify-between border-t pt-4">
-      
-                    <span className="text-sm font-bold text-[#0f5f3a] transition group-hover:translate-x-1">
-                      Voir le cours →
-                    </span>
-        
-                  </div>
-        
-                </div>
-              </Link>
-            ))}
+      <Link
+        key={item.id}
+        href={`/courses/${item.id}`}
+        className="group overflow-hidden rounded-3xl bg-white shadow-md transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl"
+      >
+        {/* Image */}
+        <div className="relative">
+          <Image
+            src={getThumbnailUrl(item.thumbnail_url)}
+            alt={item.translations?.[0]?.title || item.title || "Cours"}
+            width={500}
+            height={280}
+            className="h-52 w-full object-cover transition duration-500 group-hover:scale-110"
+          />
+  
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+  
+          <span className="absolute left-4 top-4 rounded-full bg-[#0f5f3a] px-3 py-1 text-xs font-bold text-white shadow">
+            📘 COURS
+          </span>
+  
+          {item.is_premium && (
+            <span className="absolute right-4 top-4 rounded-full bg-[#f6c445] px-3 py-1 text-xs font-black text-[#071d3a] shadow-lg">
+              ⭐ PREMIUM
+            </span>
+          )}
+        </div>
+  
+        {/* Contenu */}
+        <div className="p-5">
+          {/* Matière + Niveau */}
+          <div className="flex flex-wrap gap-2">
+            <span className="rounded-full bg-[#eef7f2] px-3 py-1 text-xs font-bold text-[#0f5f3a]">
+              📚 {subjectById.get(item.subject_id)?.name_fr || "-"}
+            </span>
+  
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+              🎓 {levelById.get(item.level_id)?.name_fr || "-"}
+            </span>
           </div>
+  
+          {/* Titre */}
+          <h3 className="mt-4 line-clamp-2 text-xl font-black text-[#082f1f] transition-colors group-hover:text-[#0f5f3a]">
+            {item.translations?.[0]?.title ||
+              item.title ||
+              `COURS ${item.id.slice(0, 8)}`}
+          </h3>
+  
+          {/* Description */}
+          <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-500">
+            {item.translations?.[0]?.description ||
+              item.description ||
+              "Aucune description disponible."}
+          </p>
+  
+          {/* Footer */}
+          <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4">
+            <span className="text-xs font-semibold text-slate-400">
+              {formatDate(item.created_at)}
+            </span>
+  
+            <span className="font-bold text-[#0f5f3a] transition group-hover:translate-x-1">
+              Voir le cours →
+            </span>
+          </div>
+        </div>
+      </Link>
+    ))}
+  </div>
         )}
        
     </section>
