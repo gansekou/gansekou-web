@@ -163,7 +163,7 @@ export function ContentManager({
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-black text-[#071d3a]">
-                      {content.title || `${content.content_type} ${content.id.slice(0, 8)}`}
+                      {content.translations?.[0]?.title || `${content.content_type} ${content.id.slice(0, 8)}`}
                     </h3>
         
                     <StatusBadge status={content.status} t={t} />
