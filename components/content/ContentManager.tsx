@@ -153,7 +153,7 @@ export function ContentManager({
                       src={getThumbnailUrl(
                         content.thumbnail_url || content.thumbnail_path || ""
                       )}
-                      alt={content.title || "Thumbnail"}
+                      alt={content.translations?.[0]?.title || "Thumbnail"}
                       fill
                       className="object-cover"
                     />
