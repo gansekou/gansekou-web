@@ -82,6 +82,7 @@ export function ContentEditor({
         });
   
         setAvailableContents(contents);
+        console.log(contents);
   
       } catch (error) {
         console.error(
