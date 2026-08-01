@@ -10,6 +10,7 @@ export type Content = {
   specialty_id?: string | null;
   title?: string | null;
   description?: string | null;
+  translations?: ContentTranslation[];
   content_type: ContentType | string;
   file_url?: string | null;
   thumbnail_url?: string | null;
