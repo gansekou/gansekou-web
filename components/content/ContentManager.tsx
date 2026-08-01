@@ -245,3 +245,19 @@ export function StatusBadge({ status, t }: { status?: string; t: (key: string) =
   const color = status === "APPROVED" ? "bg-[#0f5f3a]/10 text-[#0f5f3a]" : status === "ARCHIVED" ? "bg-slate-200 text-slate-600" : "bg-[#f6c445] text-[#071d3a]";
   return <span className={`rounded-full px-3 py-1 text-xs font-black ${color}`}>{label}</span>;
 }
+
+function formatDate(value?: string | null) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
