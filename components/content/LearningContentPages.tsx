@@ -419,8 +419,6 @@ function LearningContentDetail({
         <Info label={t("common.subject")} value={subjectById.get(content.subject_id)?.name_fr || "-"} />
         <Info label={t("common.level")} value={levelById.get(content.level_id)?.name_fr || "-"} />
         <Info label={t("subject.specialty")} value={content.specialty_id ? specialtyById.get(content.specialty_id)?.name_fr || "-" : "-"} />
-        <Info label={t("content.author")} value={shortId(content.author_id)} />
-        <Info label={t("content.date")} value={formatDate(content.created_at)} />
         {kind === "subjects" ? <Info label={t("content.year")} value={readYear(content) || "-"} /> : null}
         {kind === "subjects" ? <Info label={t("content.examType")} value={readExamType(content) || "-"} /> : null}
         <Info label={t("content.offline")} value={content.is_available_offline ? t("common.yes") : t("common.no")} />
