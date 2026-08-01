@@ -42,6 +42,15 @@ function CourseCatalog({ user, contents, levels, subjects }: { user: User; conte
   const [levelId, setLevelId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [premiumOnly, setPremiumOnly] = useState(false);
+  const subjectById = useMemo(
+    () => new Map(subjects.map((item) => [item.id, item])),
+    [subjects]
+  );
+  
+  const levelById = useMemo(
+    () => new Map(levels.map((item) => [item.id, item])),
+    [levels]
+  );
   const filtered = useMemo(
     () =>
       contents.filter((item) => {
@@ -161,5 +170,21 @@ function CourseCatalog({ user, contents, levels, subjects }: { user: User; conte
        
     </section>
   );
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
 }
 
