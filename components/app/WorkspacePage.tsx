@@ -134,6 +134,18 @@ export function WorkspacePage({ kind }: { kind: WorkspaceKind }) {
     if (authStatus === "unauthenticated") router.replace("/login");
   }, [authStatus, router]);
 
+  useEffect(() => {
+    if (!user) return;
+  
+    if (
+      isStudentRole(user) &&
+      !user.level_id &&
+      kind !== "settings"
+    ) {
+      router.replace("/onboarding/profile");
+    }
+  }, [user, kind, router]);
+
   const loader = useMemo(() => {
     return () => loadWorkspaceData(kind, user, routeId);
   }, [kind, routeId, user]);
