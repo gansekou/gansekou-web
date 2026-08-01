@@ -304,7 +304,7 @@ function LearningContentCatalog({
                 </div>
           
                 <h3 className="font-black text-[#082f1f]">
-                  {item.title || `${item.content_type} ${item.id.slice(0, 8)}`}
+                  {item.translations?.[0]?.title || `${item.content_type} ${item.id.slice(0, 8)}`}
                 </h3>
           
                 <p className="mt-2 line-clamp-2 text-sm font-bold text-slate-500">
