@@ -143,69 +143,74 @@ export function ContentManager({
           {visibleContents.map((content, index) => (
             <article
               key={`content-row-${scope}-${content.id}-${index}`}
-              className="rounded-2xl border border-slate-100 bg-slate-50 p-5"
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-lg"
             >
-              <div className="flex gap-5">
-        
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
+            
                 {(content.thumbnail_url || content.thumbnail_path) && (
-                  <div className="relative h-32 w-48 shrink-0 overflow-hidden rounded-xl">
+                  <div className="relative h-40 w-full overflow-hidden rounded-xl lg:h-28 lg:w-44 lg:flex-shrink-0">
                     <Image
                       src={getThumbnailUrl(
-                          content.thumbnail_url || content.thumbnail_path || ""
-                        )}
-                      alt={content.title || "Thumbnail exercice"}
+                        content.thumbnail_url || content.thumbnail_path || ""
+                      )}
+                      alt={content.title || "Thumbnail"}
                       fill
                       className="object-cover"
                     />
                   </div>
                 )}
-        
-                <div className="flex-1">
+            
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-black text-[#071d3a]">
-                      {content.translations?.[0]?.title || `${content.content_type} ${content.id.slice(0, 8)}`}
+                    <h3 className="text-lg font-extrabold text-[#071d3a]">
+                      {content.translations?.[0]?.title ||
+                        `${content.content_type} ${content.id.slice(0, 8)}`}
                     </h3>
-        
+            
                     <StatusBadge status={content.status} t={t} />
-        
+            
                     {content.is_premium && (
                       <span className="rounded-full bg-[#f6c445] px-3 py-1 text-xs font-black text-[#071d3a]">
                         Premium
                       </span>
                     )}
                   </div>
-        
-                  <p className="mt-2 text-sm font-bold text-slate-500">
-                    {content.content_type} -{" "}
-                    {subjectById.get(content.subject_id)?.name_fr || "-"} -{" "}
-                    {levelById.get(content.level_id)?.name_fr || "-"}
+            
+                  <p className="mt-2 text-sm text-slate-600">
+                    <span className="font-semibold">{content.content_type}</span>
+                    <span className="mx-2">•</span>
+                    {subjectById.get(content.subject_id)?.name_fr}
+                    <span className="mx-2">•</span>
+                    {levelById.get(content.level_id)?.name_fr}
                   </p>
-        
-                  <p className="mt-1 text-xs font-bold text-slate-400">
-                    {content.created_at || "-"}
+            
+                  <p className="mt-1 text-xs text-slate-400">
+                    {formatDate(content.created_at)}
                   </p>
                 </div>
-        
-                <div className="flex flex-wrap gap-2">
+            
+                <div className="flex flex-row gap-2 lg:flex-col lg:items-end lg:justify-center">
+            
                   <Link
                     href={`${basePath}/${content.id}`}
-                    className="inline-flex items-center gap-2 rounded-full bg-[#0f5f3a] px-4 py-2 text-sm font-black text-white"
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#0f5f3a] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0b4b2e]"
                   >
                     <Eye size={16} />
                     {t("content.details")}
                   </Link>
-        
+            
                   {canEditContent(user, content) && (
                     <Link
                       href={`${basePath}/${content.id}/edit`}
-                      className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-[#071d3a] shadow-sm"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-[#071d3a] transition hover:bg-slate-50"
                     >
                       <Pencil size={16} />
                       {t("action.edit")}
                     </Link>
                   )}
+            
                 </div>
-        
+            
               </div>
             </article>
           ))}
