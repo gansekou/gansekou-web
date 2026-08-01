@@ -206,31 +206,64 @@ export function ContentEditor({
       <Field label={t("content.description")}><textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className={`${inputClass} min-h-32`} /></Field>
       {form.subject_id && form.level_id && (
       <Field label="Contenus liés (optionnel)">
-        <select
-          multiple
-          value={relatedContentIds}
-          onChange={(e) => {
-            setRelatedContentIds(
-              Array.from(
-                e.target.selectedOptions
-              ).map(
-                option => option.value
-              )
-            );
-          }}
-          className={`${inputClass} min-h-44`}
-        >
-          {availableContents.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.translations?.[0]?.title ?? item.content_type}
-            </option>
-          ))}
-        </select>
-      
-        <p className="text-xs text-slate-500 mt-2">
-          Vous pouvez sélectionner plusieurs contenus ou aucun.
-        </p>
-      </Field>
+          <div className="max-h-60 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4">
+            {availableContents.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                Aucun contenu disponible pour ce niveau et cette matière.
+              </p>
+            ) : (
+              availableContents.map((item) => {
+                const checked = relatedContentIds.includes(item.id);
+        
+                return (
+                  <label
+                    key={item.id}
+                    className="flex cursor-pointer items-center gap-3 rounded-lg p-2 transition hover:bg-slate-50"
+                  >
+                    <input
+                      type="checkbox"
+                      value={item.id}
+                      checked={checked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setRelatedContentIds((prev) => [
+                            ...prev,
+                            item.id,
+                          ]);
+                        } else {
+                          setRelatedContentIds((prev) =>
+                            prev.filter(
+                              (id) => id !== item.id
+                            )
+                          );
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+        
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-slate-700">
+                        {item.translations?.[0]?.title ??
+                          item.title ??
+                          "Sans titre"}
+                      </span>
+        
+                      <span className="text-xs text-slate-400">
+                        {item.content_type}
+                      </span>
+                    </div>
+                  </label>
+                );
+              })
+            )}
+          </div>
+        
+          {relatedContentIds.length > 0 && (
+            <p className="mt-2 text-xs text-slate-500">
+              {relatedContentIds.length} contenu(s) sélectionné(s)
+            </p>
+          )}
+        </Field>
       )}
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <UploadField label={t("content.mainFile")} file={file} onChange={setFile} accept={form.content_type === "VIDEO" ? "video/*" : form.content_type === "AUDIO" ? "audio/*" : undefined} />
