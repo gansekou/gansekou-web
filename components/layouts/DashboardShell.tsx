@@ -103,6 +103,32 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
             !["/teacher/questions/pending", "/teacher/questions/assigned"].includes(item.href)
           )
         : studentNavItems;
+  const mobileNavItems =
+    user && isAdminRole(user)
+      ? [
+          adminNavItems.find((item) => item.href === "/admin/dashboard")!,
+          adminNavItems.find((item) => item.href === "/courses")!,
+          adminNavItems.find((item) => item.href === "/subjects")!,
+          adminNavItems.find((item) => item.href === "/quizzes")!,
+          adminNavItems.find((item) => item.href === "/admin/users")!,
+        ]
+      : user && canAccessTeacherStudio(user)
+      ? [
+          teacherNavItems.find((item) => item.href === "/teacher/dashboard")!,
+          teacherNavItems.find((item) => item.href === "/teacher/subjects")!,
+          teacherNavItems.find((item) => item.href === "/teacher/contents")!,
+          teacherNavItems.find((item) => item.href === "/teacher/questions/pending")!,
+          teacherNavItems.find((item) => item.href === "/settings")!,
+        ]
+      : [
+          studentNavItems.find((item) => item.href === "/dashboard")!,
+          studentNavItems.find((item) => item.href === "/courses")!,
+          studentNavItems.find((item) => item.href === "/exercises")!,
+          studentNavItems.find((item) => item.href === "/subjects")!,
+          studentNavItems.find((item) => item.href === "/quizzes")!,
+          studentNavItems.find((item) => item.href === "/questions")!,
+        ];
+  
 
   useEffect(() => {
     const storedTheme = window.localStorage.getItem("gansekou_theme");
@@ -235,8 +261,8 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
           </div>
         </section>
       </div>
-      <nav className="mobile-safe-bottom fixed inset-x-3 bottom-3 z-40 grid grid-cols-5 gap-1 rounded-[1.5rem] border border-slate-200 bg-white/92 p-2 shadow-2xl shadow-[#071d3a]/15 backdrop-blur-xl lg:hidden">
-        {navItems.slice(0, 5).map((item) => {
+      <nav className="mobile-safe-bottom fixed inset-x-3 bottom-3 z-40 grid grid-cols-6 gap-1 rounded-[1.5rem] border border-slate-200 bg-white/92 p-2 shadow-2xl shadow-[#071d3a]/15 backdrop-blur-xl lg:hidden">
+        {mobileNavItems.map((item) => {
           const Icon = item.icon;
           const isActive =
             pathname === item.href ||
