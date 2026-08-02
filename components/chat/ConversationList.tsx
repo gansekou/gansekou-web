@@ -223,11 +223,16 @@ export function ConversationList({
               </button>
 
               {/* Bouton de suppression (visible au survol) */}
-              {onDelete && hoveredId === conversation.id && (
+              {onDelete && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (confirm("Voulez-vous vraiment supprimer cette discussion ?")) {
+              
+                    if (
+                      confirm(
+                        "Voulez-vous vraiment supprimer cette discussion ?"
+                      )
+                    ) {
                       onDelete(conversation.id);
                     }
                   }}
@@ -236,20 +241,28 @@ export function ConversationList({
                     right-2
                     top-1/2
                     -translate-y-1/2
-                    p-1.5
+              
+                    p-2
                     rounded-lg
+              
                     bg-white
                     border
                     border-slate-200
+              
                     text-slate-400
+              
                     hover:text-red-500
                     hover:border-red-200
                     hover:bg-red-50
-                    transition-all
-                    duration-200
+              
+                    transition
+              
                     shadow-sm
-                    opacity-0
-                    group-hover:opacity-100
+              
+                    opacity-100
+              
+                    md:opacity-0
+                    md:group-hover:opacity-100
                   "
                   title="Supprimer cette discussion"
                 >
