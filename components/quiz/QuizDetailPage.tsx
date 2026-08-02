@@ -63,6 +63,11 @@ export function QuizDetailPage({ user, quizId }: { user: User; quizId: string })
   const questions = quiz.questions || [];
   const playableQuestions = questions.length;
   const currentQuiz = quiz;
+  const canPreviewQuestions =
+    user.role === "ENSEIGNANT" ||
+    user.role === "ADMIN" ||
+    user.role === "ADMINISTRATEUR" ||
+    user.role === "PROMOTEUR";
 
   async function deleteQuiz() {
     const confirmed = window.confirm(labels.confirmDelete);
@@ -113,30 +118,98 @@ export function QuizDetailPage({ user, quizId }: { user: User; quizId: string })
         <Info label={labels.level} value={level ? (language === "EN" ? level.name_en : level.name_fr) : "-"} />
       </section>
 
-      <section className="ds-card rounded-[1.5rem] p-5">
-        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-          <h2 className="text-xl font-black text-[#071d3a]">{t("quiz.questions")}</h2>
-          <div className="flex flex-wrap gap-2">
-            {quiz.is_premium && <span className="rounded-full bg-[#fff7df] px-3 py-1 text-xs font-black text-[#071d3a]"><Lock size={13} className="inline" /> Premium</span>}
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">{quiz.status || "PUBLISHED"}</span>
-          </div>
-        </div>
-        <div className="mt-5 space-y-3">
-          {questions.slice(0, 12).map((question, index) => (
-            <div key={`quiz-question-preview-${question.id}-${index}`} className="rounded-2xl bg-slate-50 p-4">
-              <p className="font-black text-[#071d3a]">{index + 1}. {question.question_text}</p>
-              <div className="mt-3 grid gap-2 md:grid-cols-2">
-                {(question.choices || []).map((choice, choiceIndex) => (
-                  <span key={`quiz-choice-preview-${question.id}-${choice.id}-${choiceIndex}`} className="rounded-xl bg-white px-3 py-2 text-sm font-bold text-slate-500">
-                    {choice.choice_text}
-                  </span>
-                ))}
-              </div>
+      {canPreviewQuestions ? (
+        <section className="ds-card rounded-[1.5rem] p-5">
+          <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+            <h2 className="text-xl font-black text-[#071d3a]">
+              {t("quiz.questions")}
+            </h2>
+      
+            <div className="flex flex-wrap gap-2">
+              {quiz.is_premium && (
+                <span className="rounded-full bg-[#fff7df] px-3 py-1 text-xs font-black text-[#071d3a]">
+                  <Lock size={13} className="inline" /> Premium
+                </span>
+              )}
+      
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                {quiz.status || "PUBLISHED"}
+              </span>
             </div>
-          ))}
-          {!questions.length && <p className="text-sm font-bold text-slate-500">{labels.noPreview}</p>}
-        </div>
-      </section>
+          </div>
+      
+          <div className="mt-5 space-y-3">
+            {questions.slice(0, 12).map((question, index) => (
+              <div
+                key={question.id}
+                className="rounded-2xl bg-slate-50 p-4"
+              >
+                <p className="font-black text-[#071d3a]">
+                  {index + 1}. {question.question_text}
+                </p>
+      
+                <div className="mt-3 grid gap-2 md:grid-cols-2">
+                  {(question.choices || []).map((choice) => (
+                    <span
+                      key={choice.id}
+                      className="rounded-xl bg-white px-3 py-2 text-sm font-bold text-slate-500"
+                    >
+                      {choice.choice_text}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+      
+            {!questions.length && (
+              <p className="text-sm font-bold text-slate-500">
+                {labels.noPreview}
+              </p>
+            )}
+          </div>
+        </section>
+      ) : (
+        <section className="ds-card rounded-[1.5rem] p-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#fff7df]">
+              <Lock className="h-8 w-8 text-[#d29b00]" />
+            </div>
+      
+            <h2 className="mt-5 text-2xl font-black text-[#071d3a]">
+              Les questions sont protégées
+            </h2>
+      
+            <p className="mt-4 text-base leading-7 text-slate-600">
+              Pour garantir une évaluation équitable, les questions et les propositions
+              de réponses ne sont visibles qu'après le démarrage du quiz.
+            </p>
+      
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-700">
+                {playableQuestions} questions
+              </span>
+      
+              <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-700">
+                {quiz.estimated_duration_minutes} min
+              </span>
+      
+              <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-700">
+                {quiz.passing_score}% requis
+              </span>
+            </div>
+      
+            {canPlay && playableQuestions > 0 && (
+              <Link
+                href={`/quizzes/${quiz.id}/play`}
+                className="ds-button-premium mt-8 inline-flex"
+              >
+                <Play size={18} />
+                {t("quiz.startQuiz")}
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
 
       {canDelete && (
         <button type="button" onClick={deleteQuiz} className="inline-flex w-fit items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-black text-red-700">
