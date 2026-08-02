@@ -214,7 +214,7 @@ export default function RegisterPage() {
               <UserRound size={20} className="text-slate-400" />
               <input
                 required
-                placeholder="Marcel"
+                placeholder="Wilfried"
                 className="w-full bg-transparent outline-none"
                 value={form.prenom}
                 onChange={(event) => updateField("prenom", event.target.value)}
@@ -230,7 +230,7 @@ export default function RegisterPage() {
               <UserRound size={20} className="text-slate-400" />
               <input
                 required
-                placeholder="Pouomegne"
+                placeholder="Sheffer"
                 className="w-full bg-transparent outline-none"
                 value={form.nom}
                 onChange={(event) => updateField("nom", event.target.value)}
