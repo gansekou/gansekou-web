@@ -26,7 +26,6 @@ import {
 } from "./ConversationList";
 
 // Constantes
-const STORAGE_KEY = "kouma_conversation_id";
 const MAX_CONVERSATIONS = 20;
 
 export function KoumaChat() {
@@ -54,49 +53,61 @@ export function KoumaChat() {
   }, []);
 
   const openConversation = useCallback(async (id: string) => {
-    if (id === conversationId) return;
 
     try {
       setConversationId(id);
       setShowSidebar(false);
       setLoading(true);
-
+  
       const history = await chatService.getConversation(id);
+  
       setMessages(history.messages || []);
-      localStorage.setItem(STORAGE_KEY, id);
+  
     } catch (error) {
+  
       console.error("Erreur ouverture conversation:", error);
-      // Afficher un message d'erreur à l'utilisateur
+  
       setMessages([
         {
           id: crypto.randomUUID(),
           role: "ASSISTANT",
-          content: "Impossible de charger la conversation. Veuillez réessayer.",
+          content:
+            "Impossible de charger la conversation. Veuillez réessayer.",
           created_at: new Date().toISOString(),
         },
       ]);
+  
     } finally {
       setLoading(false);
     }
-  }, [conversationId]);
+  
+  }, []);
 
   const createNewChat = useCallback(async () => {
     try {
+  
       const conversation = await chatService.start();
-      const id = conversation.id;
-
-      setConversationId(id);
+  
+      setConversationId(conversation.id);
       setMessages([]);
-      localStorage.setItem(STORAGE_KEY, id);
-
-      await loadConversations();
-      
-      // Sélectionner automatiquement la nouvelle conversation
-      setConversations(prev => [conversation, ...prev]);
+  
+      // recharge la liste depuis le backend
+      const data = await chatService.listConversations();
+  
+      setConversations(
+        data.slice(0, MAX_CONVERSATIONS)
+      );
+  
     } catch (error) {
-      console.error("Erreur création chat:", error);
+  
+      console.error(
+        "Erreur création discussion:",
+        error
+      );
+  
     }
-  }, [loadConversations]);
+  
+  }, []);
 
   const deleteConversation = useCallback(
     async (id: string) => {
@@ -118,7 +129,8 @@ export function KoumaChat() {
           if (remaining.length > 0) {
             await openConversation(remaining[0].id);
           } else {
-            await createNewChat();
+              setConversationId(null);
+              setMessages([]);
           }
         }
       } catch (error) {
@@ -183,32 +195,58 @@ export function KoumaChat() {
   // ============ Initialisation ============
 
   useEffect(() => {
+
     const init = async () => {
+  
       try {
+  
         const data = await chatService.listConversations();
-    
-        setConversations(data.slice(0, MAX_CONVERSATIONS));
-    
-        const savedId = localStorage.getItem(STORAGE_KEY);
-    
-        if (
-          savedId &&
-          data.some((conversation) => conversation.id === savedId)
-        ) {
-          await openConversation(savedId);
-        } else {
-          await createNewChat();
+  
+        const list = data.slice(
+          0,
+          MAX_CONVERSATIONS
+        );
+  
+        setConversations(list);
+  
+  
+        // Il existe déjà des discussions
+        if (list.length > 0) {
+  
+          await openConversation(
+            list[0].id
+          );
+  
         }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setInitialized(true);
+  
+        // Première utilisation
+        else {
+  
+          await createNewChat();
+  
+        }
+  
+  
+      } catch(error) {
+  
+        console.error(
+          "Erreur initialisation Kouma:",
+          error
+        );
+  
       }
+      finally {
+  
+        setInitialized(true);
+  
+      }
+  
     };
-
+  
+  
     init();
-  }, []); // Exécuté une seule fois
-
+  
+  }, []);
   // ============ Scroll automatique ============
 
   useEffect(() => {
@@ -323,7 +361,7 @@ export function KoumaChat() {
                 Bienvenue sur Kouma
               </h3>
               <p className="text-sm text-slate-500 max-w-sm mt-2">
-                Posez votre question sur les mathématiques, et Kouma vous aidera
+                Posez votre question, et Kouma vous aidera
                 à comprendre étape par étape.
               </p>
             </div>
