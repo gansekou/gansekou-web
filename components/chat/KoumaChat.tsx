@@ -355,20 +355,58 @@ export function KoumaChat() {
         "
       >
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="text-6xl mb-4">👋</div>
-              <h3 className="text-lg font-semibold text-slate-700">
-                Bienvenue sur Kouma
+            <div className="flex flex-col items-center justify-center h-full text-center px-4">
+          
+              <div className="text-6xl mb-4">
+                🤖
+              </div>
+          
+              <h3 className="text-xl font-semibold text-slate-700">
+                Discutez avec Kouma IA
               </h3>
+          
               <p className="text-sm text-slate-500 max-w-sm mt-2">
-                Posez votre question, et Kouma vous aidera
-                à comprendre étape par étape.
+                Posez vos questions en mathématiques,
+                sciences ou autres matières et Kouma vous accompagnera.
               </p>
+          
+          
+              {/* Bouton seulement si aucune conversation */}
+              {conversations.length === 0 && (
+                <button
+                  onClick={createNewChat}
+                  className="
+                    mt-6
+                    rounded-xl
+                    bg-emerald-600
+                    px-6
+                    py-3
+                    text-white
+                    font-medium
+                    hover:bg-emerald-700
+                    transition
+                    shadow-sm
+                  "
+                >
+                  Commencer une discussion avec Kouma IA
+                </button>
+              )}
+          
             </div>
+          
           ) : (
-            messages.map((msg) => (
-              <Message key={msg.id} message={msg} />
-            ))
+          
+            <div className="mx-auto max-w-4xl space-y-2">
+          
+              {messages.map((msg) => (
+                <Message
+                  key={msg.id}
+                  message={msg}
+                />
+              ))}
+          
+            </div>
+          
           )}
 
           {loading && (
