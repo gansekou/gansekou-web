@@ -8,6 +8,8 @@ import { useAsyncData } from "@/hooks/useAsyncData";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import type { PageData } from "@/types/platform";
 import type { User } from "@/types/user";
+import { isStudentRole } from "@/lib/permissions";
+import { StudentLevelOnboarding } from "@/components/onboarding/StudentLevelOnboarding";
 
 type AuthenticatedPageProps = {
   loadingLabel?: string;
@@ -41,6 +43,14 @@ export function AuthenticatedPage({ loadingLabel = "Chargement...", load, childr
     return (
       <DashboardShell user={null}>
         <ErrorState title="Session requise" message={authError} />
+      </DashboardShell>
+    );
+  }
+
+  if (isStudentRole(user) && !user.level_id) {
+    return (
+      <DashboardShell user={user}>
+        <StudentLevelOnboarding />
       </DashboardShell>
     );
   }
