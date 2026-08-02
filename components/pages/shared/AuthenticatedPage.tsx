@@ -48,12 +48,38 @@ export function AuthenticatedPage({ loadingLabel = "Chargement...", load, childr
   }
 
   if (isStudentRole(user) && !user.level_id) {
-    return (
-      <DashboardShell user={user}>
-        <StudentLevelOnboarding />
-      </DashboardShell>
-    );
-  }
+  return (
+    <DashboardShell user={user}>
+      <div className="mx-auto max-w-3xl py-10">
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-8">
+          <h1 className="text-3xl font-black text-slate-900">
+            Bienvenue sur Gansekou 🎓
+          </h1>
+
+          <p className="mt-4 text-slate-700 leading-7">
+            Avant de commencer, vous devez sélectionner votre niveau d'étude.
+          </p>
+
+          <p className="mt-3 text-slate-600 leading-7">
+            Gansekou adapte automatiquement :
+          </p>
+
+          <ul className="mt-4 list-disc space-y-2 pl-6 text-slate-700">
+            <li>les cours disponibles ;</li>
+            <li>les exercices et quiz ;</li>
+            <li>les sujets d'examen ;</li>
+            <li>les recommandations de Kouma IA ;</li>
+            <li>votre progression scolaire.</li>
+          </ul>
+
+          <div className="mt-8">
+            <StudentLevelOnboarding />
+          </div>
+        </div>
+      </div>
+    </DashboardShell>
+  );
+}
 
   return (
     <DashboardShell user={user}>
