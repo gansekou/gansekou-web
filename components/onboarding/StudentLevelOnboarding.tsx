@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export function StudentLevelOnboarding({
   children,
 }: {
@@ -36,9 +38,25 @@ export function StudentLevelOnboarding({
           </ul>
         </div>
 
-        <div className="mt-8">
-          {children}
+        <div className="mt-8 flex flex-col items-center gap-4">
+          <Link
+            href="/settings"
+            className="inline-flex items-center justify-center rounded-2xl bg-[#0f5f3a] px-8 py-3 text-base font-bold text-white transition hover:bg-[#0b4b2d]"
+          >
+            Renseigner mon niveau d'étude
+          </Link>
+
+          <p className="text-center text-sm text-slate-500">
+            Vous pourrez modifier cette information ultérieurement depuis les
+            paramètres de votre profil.
+          </p>
         </div>
+
+        {children && (
+          <div className="mt-8 border-t border-slate-200 pt-8">
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );
