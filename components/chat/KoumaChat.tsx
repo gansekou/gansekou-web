@@ -6,7 +6,7 @@ import {
   useRef,
   useCallback,
 } from "react";
-
+import { Menu, X } from "lucide-react";
 import { chatService, ChatConversationSummary } from "@/services/chat.service";
 
 import type {
@@ -37,6 +37,8 @@ export function KoumaChat() {
   const [loading, setLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
+  const [showSidebar, setShowSidebar] = useState(false);
+
   // Refs
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -56,6 +58,7 @@ export function KoumaChat() {
 
     try {
       setConversationId(id);
+      setShowSidebar(false);
       setLoading(true);
 
       const history = await chatService.getConversation(id);
@@ -182,22 +185,22 @@ export function KoumaChat() {
   useEffect(() => {
     const init = async () => {
       try {
-        await loadConversations();
-
+        const data = await chatService.listConversations();
+    
+        setConversations(data.slice(0, MAX_CONVERSATIONS));
+    
         const savedId = localStorage.getItem(STORAGE_KEY);
-
-        if (savedId) {
-          const exists = conversations.some(conv => conv.id === savedId);
-          if (exists) {
-            await openConversation(savedId);
-          } else {
-            await createNewChat();
-          }
+    
+        if (
+          savedId &&
+          data.some((conversation) => conversation.id === savedId)
+        ) {
+          await openConversation(savedId);
         } else {
           await createNewChat();
         }
       } catch (error) {
-        console.error("Erreur initialisation:", error);
+        console.error(error);
       } finally {
         setInitialized(true);
       }
@@ -228,8 +231,49 @@ export function KoumaChat() {
   }
 
   return (
-    <div className="flex h-[700px] bg-slate-50 rounded-3xl overflow-hidden border border-slate-200">
+    <div
+      className="
+        flex
+        h-[75vh]
+        min-h-[550px]
+        rounded-3xl
+        overflow-hidden
+        border
+        border-slate-200
+        bg-slate-50
+    "
+    >
       {/* Barre latérale des conversations */}
+      <>
+    {/* Fond noir */}
+    {showSidebar && (
+      <div
+        className="fixed inset-0 z-30 bg-black/40 md:hidden"
+        onClick={() => setShowSidebar(false)}
+      />
+    )}
+  
+    <div
+      className={`
+        fixed
+        inset-y-0
+        left-0
+        z-40
+        w-72
+        bg-white
+        transition-transform
+        duration-300
+  
+        md:relative
+        md:translate-x-0
+  
+        ${
+          showSidebar
+            ? "translate-x-0"
+            : "-translate-x-full"
+        }
+      `}
+    >
       <ConversationList
         conversations={conversations}
         activeId={conversationId}
@@ -237,11 +281,41 @@ export function KoumaChat() {
         onNewChat={createNewChat}
         onDelete={deleteConversation}
       />
+    </div>
+  </>
 
       {/* Zone de chat principale */}
-      <div className="flex flex-col flex-1 min-w-0">
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-2">
+    <div className="flex flex-col flex-1 min-w-0">
+    
+      {/* Header */}
+      <div className="border-b bg-white px-4 py-3 flex items-center justify-between">
+    
+        <button
+          className="md:hidden"
+          onClick={() => setShowSidebar(true)}
+        >
+          <Menu size={22} />
+        </button>
+    
+        <h2 className="font-semibold text-slate-700">
+          Kouma IA
+        </h2>
+    
+        {/* Pour centrer le titre */}
+        <div className="w-6 md:hidden" />
+    
+      </div>
+    
+      {/* Messages */}
+      <div
+        className="
+          flex-1
+          overflow-y-auto
+          px-4
+          py-5
+          md:px-6
+        "
+      >
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-6xl mb-4">👋</div>
