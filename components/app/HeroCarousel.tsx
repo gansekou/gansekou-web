@@ -54,28 +54,24 @@ export function HeroCarousel({
         <div
           className="
             relative
+            aspect-[16/5]
+            w-full
             overflow-hidden
             rounded-3xl
             shadow-xl
             border
             border-slate-200
-            h-[220px]
-            sm:h-[300px]
-            md:h-[380px]
-            lg:h-[450px]
           "
         >
-        
           <Image
             src={banners[index]}
             alt="Promotion Gansekou"
             fill
             priority
             sizes="100vw"
-            className="
-              object-cover
-            "
+            className="object-cover"
           />
+
 
 
           {banners.length > 1 && (
