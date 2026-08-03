@@ -32,7 +32,6 @@ export function HomePage() {
   const { user, loading } = useCurrentUser();
   const { t } = useI18n(user || undefined);
 
-  const copy = useHomeCopy(t);
 
   const isAuthenticated = Boolean(user);
 
@@ -48,7 +47,6 @@ export function HomePage() {
     <main className="min-h-screen bg-[#f8fafc] text-[#071d3a]">
 
       <PublicHomeNav
-        copy={copy}
         loading={loading}
         isAuthenticated={isAuthenticated}
         displayName={displayName}
@@ -228,17 +226,15 @@ export function HomePage() {
 }
 
 function PublicHomeNav({
-    copy,
-    isAuthenticated,
-    displayName,
-    loading,
-  }: {
-    copy: Copy;
-    isAuthenticated: boolean;
-    displayName: string;
-    loading: boolean;
-  }) {
-  
+  isAuthenticated,
+  displayName,
+  loading,
+}: {
+  isAuthenticated: boolean;
+  displayName: string;
+  loading: boolean;
+}) {
+ const { t } = useI18n();
     return (
       <header className="
         sticky
@@ -283,7 +279,7 @@ function PublicHomeNav({
                 href={href}
                 className="hover:text-[#071d3a]"
               >
-                {copy.nav[key]}
+                t(key)
               </Link>
   
             ))}
