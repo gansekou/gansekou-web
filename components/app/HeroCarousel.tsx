@@ -53,6 +53,10 @@ export function HeroCarousel({
 
         <div className="
           relative
+          aspect-[16/7]
+          sm:aspect-[16/6]
+          lg:aspect-[16/5]
+          w-full
           overflow-hidden
           rounded-3xl
           shadow-xl
@@ -63,14 +67,11 @@ export function HeroCarousel({
           <Image
             src={banners[index]}
             alt="Promotion Gansekou"
-            width={1600}
-            height={600}
+            fill
             priority
-            className="
-              h-auto
-              w-full
-              object-cover
-            "
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 80vw"
+            className="object-cover"
+            quality={90}
           />
 
 
