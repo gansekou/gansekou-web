@@ -377,8 +377,6 @@ function PublicHomeNav({
     );
   }
   
-  
-  
   function initials(name:string){
   
     if(!name) return "G";
@@ -389,8 +387,6 @@ function PublicHomeNav({
       .map(v=>v[0])
       .join("")
       .toUpperCase();
-  
-  }
 
 
 }
