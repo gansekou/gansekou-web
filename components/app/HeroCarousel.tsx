@@ -1,210 +1,156 @@
 "use client";
 
-import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
-import { ArrowRight } from "lucide-react";
-
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const banners = [
   process.env.NEXT_PUBLIC_BANNER_1,
   process.env.NEXT_PUBLIC_BANNER_2,
   process.env.NEXT_PUBLIC_BANNER_3,
-].filter(Boolean);
-
-
+].filter(Boolean) as string[];
 
 export function HeroCarousel({
   isAuthenticated,
-}:{
-  isAuthenticated:boolean;
-}){
+}: {
+  isAuthenticated: boolean;
+}) {
+  const [index, setIndex] = useState(0);
 
+  useEffect(() => {
+    if (banners.length <= 1) return;
 
-  const [active,setActive] = useState(0);
-
-
-
-  useEffect(()=>{
-
-    if(banners.length < 2) return;
-
-
-    const timer=setInterval(()=>{
-
-      setActive(
-        value =>
-        (value + 1) % banners.length
+    const timer = setInterval(() => {
+      setIndex((current) =>
+        current === banners.length - 1 ? 0 : current + 1
       );
+    }, 6000);
 
-    },5000);
+    return () => clearInterval(timer);
+  }, []);
 
+  if (!banners.length) {
+    return null;
+  }
 
-    return ()=>clearInterval(timer);
+  const previous = () => {
+    setIndex((current) =>
+      current === 0 ? banners.length - 1 : current - 1
+    );
+  };
 
-
-  },[]);
-
+  const next = () => {
+    setIndex((current) =>
+      current === banners.length - 1 ? 0 : current + 1
+    );
+  };
 
 
   return (
+    <section className="relative overflow-hidden bg-white">
 
-    <section className="
-      relative
-      overflow-hidden
-      bg-[#071d3a]
-    ">
-
-
-      <div className="
-        relative
-        mx-auto
-        max-w-7xl
-        px-5
-        py-12
-        md:py-20
-      ">
-
+      <div className="mx-auto max-w-7xl px-5 py-6">
 
         <div className="
           relative
           overflow-hidden
-          rounded-[2rem]
-          shadow-2xl
+          rounded-3xl
+          shadow-xl
+          border
+          border-slate-200
         ">
 
+          <Image
+            src={banners[index]}
+            alt="Promotion Gansekou"
+            width={1600}
+            height={600}
+            priority
+            className="
+              h-auto
+              w-full
+              object-cover
+            "
+          />
 
-          {banners.length > 0 && (
 
-            <img
-              src={banners[active]}
-              alt="Gansekou"
-              className="
-                h-[280px]
-                w-full
-                object-cover
-                md:h-[480px]
-              "
-            />
+          {banners.length > 1 && (
+            <>
+              <button
+                onClick={previous}
+                className="
+                  absolute
+                  left-4
+                  top-1/2
+                  -translate-y-1/2
+                  flex
+                  h-10
+                  w-10
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-white/80
+                  shadow
+                "
+              >
+                <ChevronLeft size={20}/>
+              </button>
 
+
+              <button
+                onClick={next}
+                className="
+                  absolute
+                  right-4
+                  top-1/2
+                  -translate-y-1/2
+                  flex
+                  h-10
+                  w-10
+                  items-center
+                  justify-center
+                  rounded-full
+                  bg-white/80
+                  shadow
+                "
+              >
+                <ChevronRight size={20}/>
+              </button>
+            </>
           )}
 
 
           <div className="
             absolute
-            inset-0
+            bottom-4
+            left-1/2
             flex
-            items-center
-            bg-gradient-to-r
-            from-[#071d3a]/90
-            via-[#071d3a]/40
-            to-transparent
+            -translate-x-1/2
+            gap-2
           ">
-
-
-            <div className="
-              max-w-xl
-              px-6
-              md:px-12
-            ">
-
-
-              <h1 className="
-                text-3xl
-                font-black
-                text-white
-                md:text-6xl
-              ">
-                Apprendre.
-                <br/>
-                Progresser.
-                <br/>
-                Réussir.
-              </h1>
-
-
-              <p className="
-                mt-5
-                text-white/80
-                md:text-lg
-              ">
-                Cours, exercices, quiz et intelligence artificielle adaptés au programme camerounais.
-              </p>
-
-
-              <Link
-                href={
-                  isAuthenticated
-                  ? "/dashboard"
-                  : "/register"
-                }
-                className="
-                  mt-7
-                  inline-flex
-                  items-center
-                  gap-2
+            {banners.map((_, dot) => (
+              <button
+                key={dot}
+                onClick={() => setIndex(dot)}
+                className={`
+                  h-2
                   rounded-full
-                  bg-[#f6c445]
-                  px-6
-                  py-3
-                  font-black
-                  text-[#071d3a]
-                "
-              >
-
-                Commencer maintenant
-
-                <ArrowRight size={18}/>
-
-              </Link>
-
-
-            </div>
-
-
+                  transition-all
+                  ${
+                    dot === index
+                    ? "w-8 bg-[#f6c445]"
+                    : "w-2 bg-white/70"
+                  }
+                `}
+              />
+            ))}
           </div>
 
 
         </div>
 
-
-
-        <div className="
-          mt-5
-          flex
-          justify-center
-          gap-2
-        ">
-
-          {banners.map((_,index)=>(
-
-            <button
-              key={index}
-              onClick={()=>setActive(index)}
-              className={`
-                h-2
-                rounded-full
-                transition-all
-                ${
-                  active===index
-                  ?
-                  "w-8 bg-[#f6c445]"
-                  :
-                  "w-2 bg-white/40"
-                }
-              `}
-            />
-
-          ))}
-
-        </div>
-
-
-
       </div>
 
-
     </section>
-
   );
-
 }
