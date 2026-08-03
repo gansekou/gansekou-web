@@ -1,25 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
 import {
   ArrowRight,
-  BarChart3,
   BookOpen,
   Brain,
   CheckCircle2,
-  ClipboardList,
   GraduationCap,
   Layers3,
-  MessageCircleQuestion,
-  School,
-  ShieldCheck,
   Sparkles,
-  Users,
 } from "lucide-react";
+
 import { GansekouLogo } from "@/components/ui/GansekouLogo";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useI18n } from "@/hooks/useI18n";
+
+import { HeroCarousel } from "@/components/app/HeroCarousel";
+import { ContentCarousel } from "@/components/app/ContentCarousel";
+import { WhyGansekou } from "@/components/app/WhyGansekou";
 
 type Copy = ReturnType<typeof useHomeCopy>;
 
@@ -28,263 +26,204 @@ const navKeys = [
   ["home.navCourses", "/courses"],
   ["home.navQuizzes", "/quizzes"],
   ["home.navPremium", "/premium"],
-  ["home.navAbout", "#about"],
 ] as const;
 
-const featureItems = [
-  ["home.featureCoursesTitle", "home.featureCoursesBody", BookOpen],
-  ["home.featureExercisesTitle", "home.featureExercisesBody", ClipboardList],
-  ["home.featureQuizzesTitle", "home.featureQuizzesBody", GraduationCap],
-  ["home.featureExamsTitle", "home.featureExamsBody", Layers3],
-  ["home.featureAiTitle", "home.featureAiBody", Brain],
-  ["home.featureProgressTitle", "home.featureProgressBody", BarChart3],
-] as const;
-
-const audienceItems = [
-  ["home.audienceStudentsTitle", "home.audienceStudentsBody", GraduationCap],
-  ["home.audienceParentsTitle", "home.audienceParentsBody", Users],
-  ["home.audienceTeachersTitle", "home.audienceTeachersBody", BookOpen],
-  ["home.audienceSchoolsTitle", "home.audienceSchoolsBody", School],
-] as const;
-
-const contentItems = [
-  ["home.contentCoursesTitle", "home.contentCoursesBody", "/courses", BookOpen],
-  ["home.contentExercisesTitle", "home.contentExercisesBody", "/exercises", ClipboardList],
-  ["home.contentQuizzesTitle", "home.contentQuizzesBody", "/quizzes", GraduationCap],
-  ["home.contentSubjectsTitle", "home.contentSubjectsBody", "/subjects", Layers3],
-] as const;
-
-const koumaPoints = [
-  "home.koumaPointSimple",
-  "home.koumaPointLevel",
-  "home.koumaPointQuestions",
-  "home.koumaPointRecommendations",
-] as const;
-
-const teacherPoints = [
-  "home.teacherPointSubjects",
-  "home.teacherPointAnswers",
-  "home.teacherPointContent",
-  "home.teacherPointDashboard",
-] as const;
-
-const trustPoints = [
-  "home.trustCurriculum",
-  "home.trustCommunity",
-  "home.trustDevices",
-  "home.trustPayment",
-  "home.trustSecurity",
-] as const;
-
-const faqItems = [
-  ["home.faqFreeQuestion", "home.faqFreeAnswer"],
-  ["home.faqAudienceQuestion", "home.faqAudienceAnswer"],
-  ["home.faqWithoutPremiumQuestion", "home.faqWithoutPremiumAnswer"],
-  ["home.faqPremiumQuestion", "home.faqPremiumAnswer"],
-  ["home.faqPaymentQuestion", "home.faqPaymentAnswer"],
-] as const;
 
 export function HomePage() {
   const { user, loading } = useCurrentUser();
   const { t } = useI18n(user || undefined);
+
   const copy = useHomeCopy(t);
+
   const isAuthenticated = Boolean(user);
-  const displayName = [user?.prenom, user?.nom].filter(Boolean).join(" ");
+
+  const displayName = [
+    user?.prenom,
+    user?.nom,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
 
   return (
     <main className="min-h-screen bg-[#f8fafc] text-[#071d3a]">
-      <PublicHomeNav copy={copy} isAuthenticated={isAuthenticated} displayName={displayName} loading={loading} />
 
-      <section className="relative overflow-hidden border-b border-slate-200 bg-white">
-        <div className="absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-[#fff7df] to-transparent" />
-        <div className="absolute left-0 top-24 h-1 w-full bg-gradient-to-r from-[#0f5f3a]/20 via-[#f6c445]/35 to-[#c62828]/15" />
-        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 py-14 lg:grid-cols-[1.02fr_0.98fr] lg:items-center lg:py-20">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.22em] text-[#b88a00]">{copy.heroEyebrow}</p>
-            <h1 className="mt-5 max-w-4xl text-4xl font-black leading-tight tracking-tight md:text-6xl">
-              {copy.heroTitle}
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">{copy.heroBody}</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href={isAuthenticated ? "/dashboard" : "/register"} className="ds-button-primary">
-                {isAuthenticated ? copy.dashboardCta : copy.startFree}
-                <ArrowRight size={18} />
-              </Link>
-              <Link href={isAuthenticated ? "/courses" : "/premium"} className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 font-black text-[#071d3a] shadow-lg shadow-[#071d3a]/5 transition hover:border-[#f6c445]">
-                {isAuthenticated ? copy.myCoursesCta : copy.discoverPremium}
-              </Link>
-            </div>
-          </div>
+      <PublicHomeNav
+        copy={copy}
+        loading={loading}
+        isAuthenticated={isAuthenticated}
+        displayName={displayName}
+      />
 
-          <HeroMockup copy={copy} />
-        </div>
+
+      {/* HERO CAROUSEL */}
+      <HeroCarousel
+        isAuthenticated={isAuthenticated}
+      />
+
+
+      {/* CONTENUS PRINCIPAUX */}
+      <section className="mx-auto max-w-7xl px-5 py-12">
+
+        <ContentCarousel
+          title="Cours populaires"
+          icon={<BookOpen size={24}/>}
+          href="/courses"
+          items={[
+            "Mathématiques",
+            "Physique",
+            "Chimie",
+            "Français",
+          ]}
+        />
+
+
+        <ContentCarousel
+          title="Quiz à découvrir"
+          icon={<GraduationCap size={24}/>}
+          href="/quizzes"
+          items={[
+            "BEPC",
+            "Probatoire",
+            "Baccalauréat",
+          ]}
+        />
+
+
+        <ContentCarousel
+          title="Exercices pratiques"
+          icon={<Layers3 size={24}/>}
+          href="/exercises"
+          items={[
+            "Algèbre",
+            "Géométrie",
+            "Mécanique",
+            "Électricité",
+          ]}
+        />
+
       </section>
 
-      <HomeSection eyebrow={copy.featuresEyebrow} title={copy.featuresTitle}>
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-          {featureItems.map(([titleKey, bodyKey, Icon]) => (
-            <article key={titleKey} className="rounded-[1.25rem] border border-slate-200 bg-white p-6 shadow-xl shadow-[#071d3a]/5">
-              <Icon className="text-[#f6c445]" size={28} />
-              <h3 className="mt-5 text-xl font-black">{t(titleKey)}</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{t(bodyKey)}</p>
-            </article>
-          ))}
-        </div>
-      </HomeSection>
 
-      <HomeSection id="about" eyebrow={copy.audienceEyebrow} title={copy.audienceTitle}>
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {audienceItems.map(([titleKey, bodyKey, Icon]) => (
-            <article key={titleKey} className="rounded-[1.25rem] bg-[#071d3a] p-6 text-white shadow-xl shadow-[#071d3a]/10">
-              <Icon className="text-[#f6c445]" size={28} />
-              <h3 className="mt-5 text-xl font-black">{t(titleKey)}</h3>
-              <p className="mt-3 text-sm leading-6 text-white/70">{t(bodyKey)}</p>
-            </article>
-          ))}
-        </div>
-      </HomeSection>
 
-      <section className="bg-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-          <div className="rounded-[1.5rem] border border-slate-200 bg-[#f8fafc] p-6 shadow-xl shadow-[#071d3a]/5">
-            <div className="rounded-3xl bg-[#071d3a] p-5 text-white">
-              <div className="flex items-center gap-3">
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f6c445] text-[#071d3a]">
-                  <Brain size={26} />
-                </span>
-                <div>
-                  <p className="text-sm font-black text-[#f6c445]">{copy.koumaName}</p>
-                  <p className="text-xs font-bold text-white/60">{copy.koumaLabel}</p>
-                </div>
-              </div>
-              <div className="mt-5 rounded-2xl bg-white/10 p-4 text-sm leading-6 text-white/80">
-                {copy.koumaSampleQuestion}
-              </div>
-              <div className="ml-auto mt-3 max-w-[88%] rounded-2xl bg-[#fff7df] p-4 text-sm font-bold leading-6 text-[#071d3a]">
-                {copy.koumaSampleAnswer}
-              </div>
-            </div>
-          </div>
+      {/* KOUma IA */}
+      <section className="bg-[#071d3a] px-5 py-14 text-white">
+
+        <div className="
+          mx-auto
+          flex
+          max-w-7xl
+          flex-col
+          gap-8
+          md:flex-row
+          md:items-center
+          md:justify-between
+        ">
+
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-[#b88a00]">{copy.koumaEyebrow}</p>
-            <h2 className="mt-3 text-3xl font-black md:text-5xl">{copy.koumaTitle}</h2>
-            <p className="mt-5 max-w-2xl leading-8 text-slate-600">{copy.koumaBody}</p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {koumaPoints.map((key) => (
-                <div key={key} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 font-bold text-slate-700">
-                  <CheckCircle2 size={18} className="shrink-0 text-[#0f5f3a]" />
-                  {t(key)}
-                </div>
-              ))}
+
+            <div className="flex items-center gap-3">
+
+              <span className="
+                flex
+                h-12
+                w-12
+                items-center
+                justify-center
+                rounded-2xl
+                bg-[#f6c445]
+                text-[#071d3a]
+              ">
+                <Brain size={26}/>
+              </span>
+
+
+              <div>
+                <p className="font-black text-[#f6c445]">
+                  Kouma IA
+                </p>
+
+                <p className="text-sm text-white/60">
+                  Assistant intelligent Gansekou
+                </p>
+              </div>
+
             </div>
-            <Link href="/questions/new" className="ds-button-premium mt-7">
-              {copy.askQuestion}
+
+
+            <h2 className="
+              mt-5
+              text-3xl
+              font-black
+              md:text-5xl
+            ">
+              Apprends avec ton assistant IA
+            </h2>
+
+
+            <p className="
+              mt-4
+              max-w-xl
+              text-white/70
+            ">
+              Pose tes questions, comprends tes cours et progresse plus rapidement.
+            </p>
+
+
+            <Link
+              href="/questions/new"
+              className="
+                mt-6
+                inline-flex
+                items-center
+                gap-2
+                rounded-full
+                bg-[#f6c445]
+                px-6
+                py-3
+                font-black
+                text-[#071d3a]
+              "
+            >
+              Poser une question
+              <ArrowRight size={18}/>
             </Link>
+
           </div>
+
+
+          <div className="
+            rounded-3xl
+            bg-white/10
+            p-6
+            backdrop-blur
+          ">
+
+            <Sparkles className="text-[#f6c445]"/>
+
+            <p className="mt-4 text-lg font-bold">
+              "Explique-moi ce théorème simplement"
+            </p>
+
+            <p className="mt-3 text-white/70">
+              Kouma aide les élèves selon leur niveau.
+            </p>
+
+          </div>
+
+
         </div>
+
       </section>
 
-      <HomeSection eyebrow={copy.contentEyebrow} title={copy.contentTitle}>
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {contentItems.map(([titleKey, bodyKey, href, Icon]) => (
-            <article key={titleKey} className="rounded-[1.25rem] border border-slate-200 bg-white p-6 shadow-xl shadow-[#071d3a]/5">
-              <Icon className="text-[#f6c445]" size={28} />
-              <h3 className="mt-5 text-xl font-black">{t(titleKey)}</h3>
-              <p className="mt-3 min-h-20 text-sm leading-6 text-slate-600">{t(bodyKey)}</p>
-              <Link href={href} className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#0f5f3a]">
-                {copy.discover}
-                <ArrowRight size={16} />
-              </Link>
-            </article>
-          ))}
-        </div>
-      </HomeSection>
 
-      <section className="bg-[#071d3a] text-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 lg:grid-cols-[1fr_0.9fr] lg:items-center">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-[#f6c445]">{copy.teacherEyebrow}</p>
-            <h2 className="mt-3 text-3xl font-black md:text-5xl">{copy.teacherTitle}</h2>
-            <p className="mt-5 max-w-2xl leading-8 text-white/70">{copy.teacherBody}</p>
-            <Link href="/register" className="ds-button-premium mt-7">
-              {copy.joinTeacher}
-            </Link>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {teacherPoints.map((key) => (
-              <div key={key} className="rounded-2xl bg-white/10 p-5 font-bold text-white/85">
-                <CheckCircle2 className="mb-4 text-[#f6c445]" size={20} />
-                {t(key)}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <HomeSection eyebrow={copy.premiumEyebrow} title={copy.premiumTitle} body={copy.premiumBody}>
-        <div className="grid gap-5 md:grid-cols-3">
-          {[
-            [copy.discoveryPlan, copy.discoveryPrice],
-            [copy.excellencePlan, copy.excellencePrice],
-            [copy.excellencePlusPlan, copy.excellencePlusPrice],
-          ].map(([name, price], index) => (
-            <div key={name} className={`rounded-[1.25rem] border bg-white p-6 shadow-xl shadow-[#071d3a]/5 ${index === 1 ? "border-[#f6c445] ring-2 ring-[#f6c445]/35" : "border-slate-200"}`}>
-              {index === 1 ? <span className="rounded-full bg-[#f6c445] px-3 py-1 text-xs font-black">{copy.popular}</span> : null}
-              <h3 className="mt-5 text-xl font-black">{name}</h3>
-              <p className="mt-3 text-3xl font-black">{price}</p>
-            </div>
-          ))}
-        </div>
-        <Link href="/premium" className="ds-button-primary mt-7">
-          {copy.viewPremium}
-        </Link>
-      </HomeSection>
+      <WhyGansekou />
 
-      <section className="bg-white">
-        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-14 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.2em] text-[#b88a00]">{copy.trustEyebrow}</p>
-            <h2 className="mt-3 text-3xl font-black md:text-5xl">{copy.trustTitle}</h2>
-            <p className="mt-5 leading-8 text-slate-600">{copy.trustBody}</p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {trustPoints.map((key) => (
-              <div key={key} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-[#f8fafc] p-4 font-bold text-slate-700">
-                <ShieldCheck size={19} className="shrink-0 text-[#0f5f3a]" />
-                {t(key)}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <HomeSection eyebrow={copy.faqEyebrow} title={copy.faqTitle}>
-        <div className="grid gap-4 md:grid-cols-2">
-          {faqItems.map(([questionKey, answerKey]) => (
-            <details key={questionKey} className="rounded-[1.25rem] border border-slate-200 bg-white p-5 shadow-lg shadow-[#071d3a]/4">
-              <summary className="cursor-pointer text-base font-black">{t(questionKey)}</summary>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{t(answerKey)}</p>
-            </details>
-          ))}
-        </div>
-      </HomeSection>
 
-      <footer className="border-t border-slate-200 bg-white px-5 py-10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <GansekouLogo href="/" variant="full" size="medium" />
-            <p className="mt-4 text-sm font-black text-slate-500">{copy.footerSlogan}</p>
-          </div>
-          <nav className="flex flex-wrap gap-4 text-sm font-black text-slate-600">
-            <Link href="/">{copy.navHome}</Link>
-            <Link href="/courses">{copy.navCourses}</Link>
-            <Link href="/quizzes">{copy.navQuizzes}</Link>
-            <Link href="/premium">{copy.navPremium}</Link>
-            <Link href="/login">{copy.login}</Link>
-            <Link href="/register">{copy.register}</Link>
-          </nav>
-        </div>
-      </footer>
+      <Footer />
+
     </main>
   );
 }
