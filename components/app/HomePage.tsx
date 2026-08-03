@@ -239,43 +239,159 @@ function PublicHomeNav({
   displayName: string;
   loading: boolean;
 }) {
+
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/88 px-5 py-4 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-        <GansekouLogo href="/" variant="full" size="medium" />
-        <nav className="hidden items-center gap-6 text-sm font-black text-slate-600 lg:flex">
+    <header className="
+      sticky
+      top-0
+      z-40
+      border-b
+      border-slate-200
+      bg-white/90
+      px-5
+      py-4
+      backdrop-blur-xl
+    ">
+
+      <div className="
+        mx-auto
+        flex
+        max-w-7xl
+        items-center
+        justify-between
+      ">
+
+        <GansekouLogo
+          href="/"
+          variant="full"
+          size="medium"
+        />
+
+
+        <nav className="
+          hidden
+          gap-6
+          text-sm
+          font-black
+          text-slate-600
+          lg:flex
+        ">
+
           {navKeys.map(([key, href]) => (
-            <Link key={key} href={href} className="transition hover:text-[#071d3a]">
+
+            <Link
+              key={key}
+              href={href}
+              className="hover:text-[#071d3a]"
+            >
               {copy.nav[key]}
             </Link>
+
           ))}
+
         </nav>
+
+
+
         <div className="flex items-center gap-3">
+
+
           {!loading && isAuthenticated ? (
+
             <>
-              <Link href="/dashboard" className="hidden rounded-full bg-[#071d3a] px-4 py-2 text-sm font-black text-white sm:inline-flex">
-                {copy.dashboard}
+
+              <Link
+                href="/dashboard"
+                className="
+                  rounded-full
+                  bg-[#071d3a]
+                  px-5
+                  py-2
+                  text-sm
+                  font-black
+                  text-white
+                "
+              >
+                Dashboard
               </Link>
-              <Link href="/profile" className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fff7df] text-sm font-black text-[#071d3a] ring-1 ring-[#f6c445]/50" aria-label={copy.profile}>
+
+
+              <div className="
+                flex
+                h-10
+                w-10
+                items-center
+                justify-center
+                rounded-full
+                bg-[#fff7df]
+                font-black
+              ">
                 {initials(displayName)}
-              </Link>
+              </div>
+
             </>
+
+
           ) : (
+
             <>
-              <Link href="/login" className="hidden text-sm font-black text-slate-600 sm:inline-flex">
-                {copy.login}
+
+              <Link
+                href="/login"
+                className="
+                  hidden
+                  text-sm
+                  font-black
+                  text-slate-600
+                  sm:block
+                "
+              >
+                Connexion
               </Link>
-              <Link href="/register" className="rounded-full bg-[#f6c445] px-4 py-2 text-sm font-black text-[#071d3a] shadow-lg shadow-[#f6c445]/25">
-                {copy.startFree}
+
+
+              <Link
+                href="/register"
+                className="
+                  rounded-full
+                  bg-[#f6c445]
+                  px-5
+                  py-2
+                  text-sm
+                  font-black
+                  text-[#071d3a]
+                "
+              >
+                Commencer
               </Link>
+
             </>
+
           )}
+
         </div>
+
+
       </div>
+
     </header>
   );
 }
 
+
+
+function initials(name:string){
+
+  if(!name) return "G";
+
+  return name
+    .split(" ")
+    .slice(0,2)
+    .map(v=>v[0])
+    .join("")
+    .toUpperCase();
+
+}
 function HeroMockup({ copy }: { copy: Copy }) {
   return (
     <div className="relative">
@@ -344,16 +460,6 @@ function HomeSection({
       {children}
     </section>
   );
-}
-
-function initials(name: string) {
-  const value = name.trim();
-  if (!value) return "G";
-  return value
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
 }
 
 function useHomeCopy(t: (key: string) => string) {
