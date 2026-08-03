@@ -51,24 +51,28 @@ export function HeroCarousel({
 
       <div className="mx-auto max-w-7xl px-5 py-6">
 
-        <div className="
-          relative
-          overflow-hidden
-          rounded-3xl
-          shadow-xl
-          border
-          border-slate-200
-        ">
-
+        <div
+          className="
+            relative
+            overflow-hidden
+            rounded-3xl
+            shadow-xl
+            border
+            border-slate-200
+            h-[220px]
+            sm:h-[300px]
+            md:h-[380px]
+            lg:h-[450px]
+          "
+        >
+        
           <Image
             src={banners[index]}
             alt="Promotion Gansekou"
-            width={1600}
-            height={600}
+            fill
             priority
+            sizes="100vw"
             className="
-              h-auto
-              w-full
               object-cover
             "
           />
