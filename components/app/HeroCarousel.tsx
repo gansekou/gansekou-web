@@ -52,26 +52,25 @@ export function HeroCarousel({
       <div className="mx-auto max-w-7xl px-5 py-6">
 
         <div
-          className="
-            relative
-            w-full
-            overflow-hidden
-            rounded-3xl
-            shadow-xl
-            border
-            border-slate-200
-          "
-        >
-
-          <Image
-            src={banners[index]}
-            alt="Promotion Gansekou"
-            width={1920}
-            height={600}
-            priority
-            className="w-full h-auto"
-            quality={90}
-          />
+            className="
+                relative
+                aspect-[16/5]
+                w-full
+                overflow-hidden
+                rounded-3xl
+                shadow-xl
+                border
+                border-slate-200
+            "
+          >
+              <Image
+                  src={banners[index]}
+                  alt="Promotion Gansekou"
+                  fill
+                  priority
+                  className="object-contain bg-white"
+              />
+          
 
 
           {banners.length > 1 && (
