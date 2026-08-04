@@ -47,9 +47,10 @@ export function HomePage() {
     <main className="min-h-screen bg-[#f8fafc] text-[#071d3a]">
 
       <PublicHomeNav
-        loading={loading}
-        isAuthenticated={isAuthenticated}
-        displayName={displayName}
+          loading={loading}
+          isAuthenticated={isAuthenticated}
+          displayName={displayName}
+          t={t}
       />
 
 
@@ -226,15 +227,17 @@ export function HomePage() {
 }
 
 function PublicHomeNav({
-  isAuthenticated,
-  displayName,
-  loading,
+    isAuthenticated,
+    displayName,
+    loading,
+    t,
 }: {
-  isAuthenticated: boolean;
-  displayName: string;
-  loading: boolean;
+    isAuthenticated: boolean;
+    displayName: string;
+    loading: boolean;
+    t: (key: string) => string;
 }) {
- const { t } = useI18n();
+ 
     return (
       <header className="
         sticky
@@ -279,7 +282,7 @@ function PublicHomeNav({
                 href={href}
                 className="hover:text-[#071d3a]"
               >
-                t(key)
+                {t(key)}
               </Link>
   
             ))}
