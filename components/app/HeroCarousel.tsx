@@ -57,13 +57,9 @@ export function HeroCarousel({
             w-full
             overflow-hidden
             rounded-3xl
+            shadow-xl
             border
             border-slate-200
-            shadow-xl
-        
-            max-h-[280px]
-            sm:max-h-[360px]
-            lg:max-h-[500px]
           "
         >
           <Image
@@ -72,8 +68,8 @@ export function HeroCarousel({
             width={1920}
             height={600}
             priority
-            quality={90}
             className="w-full h-auto"
+            quality={90}
           />
         
           
