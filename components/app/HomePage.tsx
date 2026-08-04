@@ -9,6 +9,8 @@ import {
   Layers3,
   Sparkles,
 } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { useState } from "react";
 
 import { GansekouLogo } from "@/components/ui/GansekouLogo";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -34,6 +36,8 @@ export function HomePage() {
 
 
   const isAuthenticated = Boolean(user);
+
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const displayName = [
     user?.prenom,
@@ -292,82 +296,52 @@ function PublicHomeNav({
   
   
           <div className="flex items-center gap-3">
-  
-  
-            {!loading && isAuthenticated ? (
-  
-              <>
-  
+
+    {/* Desktop */}
+    <div className="hidden lg:flex items-center gap-3">
+
+        {!loading && isAuthenticated ? (
+            <>
                 <Link
-                  href="/dashboard"
-                  className="
-                    rounded-full
-                    bg-[#071d3a]
-                    px-5
-                    py-2
-                    text-sm
-                    font-black
-                    text-white
-                  "
+                    href="/dashboard"
+                    className="rounded-full bg-[#071d3a] px-5 py-2 text-sm font-black text-white"
                 >
-                  Dashboard
+                    Dashboard
                 </Link>
-  
-  
-                <div className="
-                  flex
-                  h-10
-                  w-10
-                  items-center
-                  justify-center
-                  rounded-full
-                  bg-[#fff7df]
-                  font-black
-                ">
-                  {initials(displayName)}
+
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fff7df] font-black">
+                    {initials(displayName)}
                 </div>
-  
-              </>
-  
-  
-            ) : (
-  
-              <>
-  
+            </>
+        ) : (
+            <>
                 <Link
-                  href="/login"
-                  className="
-                    hidden
-                    text-sm
-                    font-black
-                    text-slate-600
-                    sm:block
-                  "
+                    href="/login"
+                    className="text-sm font-black text-slate-600"
                 >
-                  Connexion
+                    Connexion
                 </Link>
-  
-  
+
                 <Link
-                  href="/register"
-                  className="
-                    rounded-full
-                    bg-[#f6c445]
-                    px-5
-                    py-2
-                    text-sm
-                    font-black
-                    text-[#071d3a]
-                  "
+                    href="/register"
+                    className="rounded-full bg-[#f6c445] px-5 py-2 text-sm font-black text-[#071d3a]"
                 >
-                  Commencer
+                    Commencer
                 </Link>
-  
-              </>
-  
-            )}
-  
-          </div>
+            </>
+        )}
+
+    </div>
+
+    {/* Mobile */}
+    <button
+        onClick={() => setMobileMenuOpen(true)}
+        className="rounded-xl border border-slate-200 p-2 lg:hidden"
+    >
+        <Menu size={24} />
+    </button>
+
+</div>
   
   
         </div>
