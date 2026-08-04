@@ -22,18 +22,27 @@ function authLog(message: string) {
 
 function loadProfileOnce(uid: string) {
   const active = profileRequests.get(uid);
-  if (active) return active;
+
+  if (active) {
+    return active;
+  }
 
   const request = authService.me().finally(() => {
     profileRequests.delete(uid);
   });
 
   profileRequests.set(uid, request);
+
   return request;
 }
 
 export function useCurrentUser() {
-  const { user, hydrateToken, setSession, clearSession } = useAuthStore();
+  const {
+    user,
+    hydrateToken,
+    setSession,
+    clearSession,
+  } = useAuthStore();
 
   const [authStatus, setAuthStatus] = useState<
     "loading" | "authenticated" | "unauthenticated"
@@ -41,122 +50,190 @@ export function useCurrentUser() {
 
   const [error, setError] = useState<string | null>(null);
 
+
   useEffect(() => {
     let cancelled = false;
-    let unsubscribe: (() => void) | undefined;
+
 
     const init = async () => {
       hydrateToken();
 
-      const restoredUser = await restoreSession();
+      try {
+        const restoredUser = await restoreSession();
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      if (restoredUser) {
-        setSession({
-          user: restoredUser,
-          token: "",
-        });
+        if (restoredUser) {
+          setSession({
+            user: restoredUser,
+            token: "",
+          });
 
-        setAuthStatus("authenticated");
+          setAuthStatus("authenticated");
+
+          authLog("[auth] session restored");
+        }
+      } catch (error) {
+        console.error("[auth] restore session failed", error);
       }
+    };
 
-      unsubscribe = subscribeAuthState(
-        async ({ firebaseUser, token, status, error: authError }) => {
-          try {
-            if (status === "loading") {
-              if (!cancelled) setAuthStatus("loading");
-              return;
+
+    init();
+
+
+    const unsubscribe = subscribeAuthState(
+      async ({
+        firebaseUser,
+        token,
+        status,
+        error: authError,
+      }) => {
+        try {
+
+          if (status === "loading") {
+            if (!cancelled) {
+              setAuthStatus("loading");
+            }
+            return;
+          }
+
+
+          if (authError) {
+            if (!cancelled) {
+              setError(
+                "Connexion instable. La session locale est conservee."
+              );
+            }
+            return;
+          }
+
+
+          if (status === "unauthenticated" || !firebaseUser) {
+
+            if (!cancelled) {
+              clearSession();
+              setAuthStatus("unauthenticated");
             }
 
-            if (authError) {
-              if (!cancelled) {
-                setError(
-                  "Connexion instable. La session locale est conservee."
-                );
-              }
-              return;
-            }
+            return;
+          }
 
-            if (status === "unauthenticated" || !firebaseUser) {
-              if (!cancelled) {
-                clearSession();
-                setAuthStatus("unauthenticated");
-              }
-              return;
-            }
 
-            if (!token) {
-              if (!cancelled) setAuthStatus("loading");
-              return;
-            }
+          if (!token) {
 
             if (!cancelled) {
               setAuthStatus("loading");
             }
 
-            const state = useAuthStore.getState();
+            return;
+          }
 
-            const hasFreshProfile =
-              state.user?.firebase_uid === firebaseUser.uid &&
-              Date.now() - state.profileLoadedAt < PROFILE_TTL_MS;
 
-            if (hasFreshProfile) {
-              if (!cancelled) {
-                setError(null);
-                setAuthStatus("authenticated");
-              }
-              return;
-            }
+          if (!cancelled) {
+            setAuthStatus("loading");
+          }
 
-            setError(null);
 
-            const currentUser = await loadProfileOnce(firebaseUser.uid);
+          const state = useAuthStore.getState();
 
-            authLog("[auth] backend profile loaded");
+
+          const hasFreshProfile =
+            state.user?.firebase_uid === firebaseUser.uid &&
+            Date.now() - state.profileLoadedAt < PROFILE_TTL_MS;
+
+
+          if (hasFreshProfile) {
 
             if (!cancelled) {
-              setSession({
-                user: currentUser,
-                token,
-              });
-
+              setError(null);
               setAuthStatus("authenticated");
             }
-          } catch (error) {
-            console.error("[auth-hook] profile refresh failed", error);
 
-            if (!cancelled) {
-              if (error instanceof ApiError) {
-                setError(error.message);
+            return;
+          }
 
-                if (error.status === 401 || error.status === 403) {
-                  clearSession();
-                  setAuthStatus("unauthenticated");
-                }
-              } else {
-                setError("Impossible de charger le profil utilisateur.");
+
+          setError(null);
+
+
+          const currentUser = await loadProfileOnce(
+            firebaseUser.uid
+          );
+
+
+          authLog("[auth] backend profile loaded");
+
+
+          if (!cancelled) {
+
+            setSession({
+              user: currentUser,
+              token,
+            });
+
+
+            setAuthStatus("authenticated");
+          }
+
+
+        } catch (error) {
+
+          console.error(
+            "[auth-hook] profile refresh failed",
+            error
+          );
+
+
+          if (!cancelled) {
+
+            if (error instanceof ApiError) {
+
+              setError(error.message);
+
+
+              if (
+                error.status === 401 ||
+                error.status === 403
+              ) {
+                clearSession();
+                setAuthStatus("unauthenticated");
               }
+
+
+            } else {
+
+              setError(
+                "Impossible de charger le profil utilisateur."
+              );
+
             }
           }
         }
-      );
-    };
+      }
+    );
 
-    init();
 
     return () => {
       cancelled = true;
-      unsubscribe?.();
+      unsubscribe();
     };
-  }, [hydrateToken, setSession, clearSession]);
+
+
+  }, [
+    hydrateToken,
+    setSession,
+    clearSession,
+  ]);
+
 
   return {
     user,
     loading: authStatus === "loading",
     authStatus,
     isAuthenticated:
-      authStatus === "authenticated" && Boolean(user),
+      authStatus === "authenticated" &&
+      Boolean(user),
     error,
   };
 }
