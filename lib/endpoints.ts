@@ -5,6 +5,8 @@ export const ENDPOINTS = {
   auth: {
     firebaseLogin: `${API_BASE_URL}/auth/firebase-login`,
     registerEmail: `${API_BASE_URL}/auth/register-email`,
+    refresh: `${API_BASE_URL}/auth/refresh`,
+    logout: `${API_BASE_URL}/auth/logout`,
   },
 
   users: {
