@@ -8,8 +8,9 @@ import {
   GraduationCap,
   Layers3,
   Sparkles,
+  Menu,
+  X,
 } from "lucide-react";
-import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
 import { GansekouLogo } from "@/components/ui/GansekouLogo";
@@ -36,8 +37,6 @@ export function HomePage() {
 
 
   const isAuthenticated = Boolean(user);
-
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const displayName = [
     user?.prenom,
@@ -241,7 +240,7 @@ function PublicHomeNav({
     loading: boolean;
     t: (key: string) => string;
 }) {
- 
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     return (
       <header className="
         sticky
@@ -345,6 +344,140 @@ function PublicHomeNav({
   
   
         </div>
+
+        {mobileMenuOpen && (
+    <>
+        {/* Overlay */}
+        <div
+            className="fixed inset-0 z-40 bg-black/40"
+            onClick={() => setMobileMenuOpen(false)}
+        />
+
+        {/* Drawer */}
+        <div className="
+            fixed
+            right-0
+            top-0
+            z-50
+            flex
+            h-screen
+            w-[320px]
+            flex-col
+            bg-white
+            shadow-2xl
+        ">
+
+            <div className="
+                flex
+                items-center
+                justify-between
+                border-b
+                p-5
+            ">
+
+                <GansekouLogo
+                    href="/"
+                    variant="full"
+                    size="small"
+                />
+
+                <button
+                    onClick={() => setMobileMenuOpen(false)}
+                >
+                    <X size={26}/>
+                </button>
+
+            </div>
+
+            <nav className="flex flex-col p-6">
+
+                {navKeys.map(([key, href]) => (
+
+                    <Link
+                        key={key}
+                        href={href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="
+                            rounded-xl
+                            px-4
+                            py-4
+                            text-lg
+                            font-bold
+                            hover:bg-slate-100
+                        "
+                    >
+                        {t(key)}
+                    </Link>
+
+                ))}
+
+            </nav>
+
+            <div className="mt-auto border-t p-6">
+
+                {!loading && isAuthenticated ? (
+
+                    <Link
+                        href="/dashboard"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="
+                            block
+                            rounded-xl
+                            bg-[#071d3a]
+                            py-4
+                            text-center
+                            font-black
+                            text-white
+                        "
+                    >
+                        Dashboard
+                    </Link>
+
+                ) : (
+
+                    <div className="space-y-3">
+
+                        <Link
+                            href="/login"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="
+                                block
+                                rounded-xl
+                                border
+                                border-slate-300
+                                py-4
+                                text-center
+                                font-bold
+                            "
+                        >
+                            Connexion
+                        </Link>
+
+                        <Link
+                            href="/register"
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="
+                                block
+                                rounded-xl
+                                bg-[#f6c445]
+                                py-4
+                                text-center
+                                font-black
+                                text-[#071d3a]
+                            "
+                        >
+                            Commencer
+                        </Link>
+
+                    </div>
+
+                )}
+
+            </div>
+
+        </div>
+    </>
+)}
   
       </header>
     );
