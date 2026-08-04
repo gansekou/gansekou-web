@@ -137,13 +137,17 @@ export function DashboardShell({ children, user }: DashboardShellProps) {
 
   async function handleLogout() {
     if (loggingOut) return;
+  
     setLoggingOut(true);
+  
     try {
-      clearSession();
       await authService.logout();
+      clearSession();
+  
     } catch (error) {
       console.error("[dashboard] logout error", error);
       clearSession();
+  
     } finally {
       router.replace("/login");
     }
