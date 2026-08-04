@@ -26,6 +26,8 @@ import {
 
 import {
   saveRefreshToken,
+  getRefreshToken,
+  clearRefreshToken,
 } from "@/lib/refresh-token";
 
 const AUTH_TIMEOUT_MS = 15000;
@@ -294,7 +296,31 @@ export const authService = {
   },
 
   async logout() {
-    await signOut(firebaseAuth);
-    clearAuthToken();
+    try {
+      const refreshToken = getRefreshToken();
+  
+      if (refreshToken) {
+        await apiFetch(
+          ENDPOINTS.auth.logout,
+          {
+            method: "POST",
+            body: {
+              refresh_token: refreshToken,
+            },
+          }
+        );
+      }
+  
+    } catch (error) {
+      console.error("[auth] backend logout failed", error);
+    } finally {
+  
+      clearRefreshToken();
+  
+      clearAuthToken();
+  
+      await signOut(firebaseAuth);
+  
+    }
   },
 };
