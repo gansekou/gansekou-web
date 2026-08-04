@@ -72,9 +72,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearSession: () => {
     clearAuthToken();
     clearRefreshToken();
-
+  
     realtimeSocketManager.close();
-
+  
     set({
       user: null,
       token: null,
