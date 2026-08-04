@@ -26,4 +26,6 @@ export type AuthResponse = {
   access_type: "firebase" | string;
   is_new_user: boolean;
   user: User;
+  refresh_token?: string;
+  access_token?: string;
 };
