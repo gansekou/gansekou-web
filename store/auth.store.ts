@@ -2,7 +2,14 @@
 
 import { create } from "zustand";
 import type { User } from "@/types/user";
-import { clearAuthToken, getAuthToken, setAuthToken } from "@/lib/api";
+import {
+  clearAuthToken,
+  getAuthToken,
+  setAuthToken,
+} from "@/lib/api";
+import {
+  clearRefreshToken,
+} from "@/lib/refresh-token";
 import { realtimeSocketManager } from "@/lib/websocket-manager";
 
 type AuthState = {
@@ -10,6 +17,7 @@ type AuthState = {
   token: string | null;
   isAuthenticated: boolean;
   profileLoadedAt: number;
+
   hydrateToken: () => void;
 
   setSession: (payload: {
@@ -30,42 +38,41 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   hydrateToken: () => {
     const token = getAuthToken();
-    set((state) => {
-      const isAuthenticated = Boolean(token || state.user);
-      if (state.token === token && state.isAuthenticated === isAuthenticated) {
-        return state;
-      }
-      return { token, isAuthenticated };
-    });
+
+    set((state) => ({
+      ...state,
+      token,
+      isAuthenticated: Boolean(token || state.user),
+    }));
   },
 
   setSession: ({ user, token }) => {
-    setAuthToken(token);
+    // On ne remplace le token Firebase
+    // que s'il existe réellement.
+    if (token) {
+      setAuthToken(token);
+    }
 
-    set((state) => {
-      if (
-        state.user?.id === user.id &&
-        state.token === token &&
-        state.profileLoadedAt > 0
-      ) {
-        return state;
-      }
-
-      return {
-        user,
-        token,
-        isAuthenticated: true,
-        profileLoadedAt: Date.now(),
-      };
+    set({
+      user,
+      token: token || getAuthToken(),
+      isAuthenticated: true,
+      profileLoadedAt: Date.now(),
     });
   },
 
   updateUser: (user) => {
-    set({ user, profileLoadedAt: Date.now(), isAuthenticated: true });
+    set({
+      user,
+      profileLoadedAt: Date.now(),
+      isAuthenticated: true,
+    });
   },
 
   clearSession: () => {
     clearAuthToken();
+    clearRefreshToken();
+
     realtimeSocketManager.close();
 
     set({
