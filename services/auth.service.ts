@@ -18,6 +18,16 @@ import type {
 } from "@/types/auth";
 import type { User } from "@/types/user";
 
+import {
+  getDeviceId,
+  getDeviceName,
+  getPlatform,
+} from "@/lib/device";
+
+import {
+  saveRefreshToken,
+} from "@/lib/refresh-token";
+
 const AUTH_TIMEOUT_MS = 15000;
 
 function authLog(message: string) {
@@ -131,8 +141,15 @@ async function completeFirebaseLogin(
       id_token: firebaseToken,
       preferred_language: options?.preferred_language || "FR",
       role: options?.role || "ELEVE",
+    
+      device_id: getDeviceId(),
+      device_name: getDeviceName(),
+      platform: getPlatform(),
     },
   });
+  if (data.refresh_token) {
+    saveRefreshToken(data.refresh_token);
+  }
   authLog(`[${scope}] firebase-login backend success`);
 
   return {
@@ -225,8 +242,14 @@ export const authService = {
             age: payload.age,
             preferred_language: payload.preferred_language,
             role: "ELEVE",
+            device_id: getDeviceId(),
+            device_name: getDeviceName(),
+            platform: getPlatform(),
           },
         });
+        if (data.refresh_token) {
+          saveRefreshToken(data.refresh_token);
+        }
       } catch (error) {
         console.error("[auth] register backend failed, deleting Firebase user", {
           uid: credential.user.uid,
