@@ -11,34 +11,12 @@ import { useI18n } from "@/hooks/useI18n";
 import { useNotifications } from "@/hooks/useNotifications";
 
 import type { User } from "@/types/user";
+import { getNavigationTitle } from "./NavigationTitles";
+
 
 type DashboardHeaderProps = {
   user?: User | null;
   onOpenDrawer: () => void;
-};
-
-const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/courses": "Cours",
-  "/exercises": "Exercices",
-  "/quizzes": "Quiz",
-  "/subjects": "Matières",
-  "/questions": "Mes Questions",
-  "/ai": "Kouma IA",
-  "/premium": "Abonnement",
-  "/settings": "Paramètres",
-
-  "/teacher/dashboard": "Dashboard",
-  "/teacher/subjects": "Mes matières",
-  "/teacher/contents": "Mes contenus",
-  "/teacher/questions/pending": "Questions",
-  "/teacher/questions/assigned": "Réponses",
-
-  "/admin/dashboard": "Administration",
-  "/admin/users": "Utilisateurs",
-  "/admin/payments": "Paiements",
-  "/admin/education": "Éducation",
-  "/admin/contents": "Contenus",
 };
 
 export function DashboardHeader({
@@ -56,12 +34,13 @@ export function DashboardHeader({
       .filter(Boolean)
       .join(" ") || "Gansekou";
 
-  const title = pageTitles[pathname] ?? "GANSEKOU";
+  const { title, mobileTitle } =
+    getNavigationTitle(pathname);
 
   return (
     <header className="sticky top-0 z-30 border-b border-[#0f5f3a]/10 bg-[#f8faf5]/90 backdrop-blur-xl">
 
-      <div className="flex h-16 items-center justify-between px-4 lg:px-6">
+      <div className="flex h-16 items-center justify-between px-4 lg:h-20 lg:px-8">
 
         {/* MOBILE */}
 
@@ -69,13 +48,13 @@ export function DashboardHeader({
 
           <button
             onClick={onOpenDrawer}
-            className="rounded-xl p-2 hover:bg-slate-100"
+            className="rounded-xl p-2 transition hover:bg-slate-100 active:scale-95"
           >
             <Menu size={24} />
           </button>
 
-          <h1 className="text-lg font-black">
-            {title}
+          <h1 className="max-w-[180px] truncate text-lg font-black">
+              {mobileTitle ?? title}
           </h1>
 
         </div>
@@ -98,7 +77,7 @@ export function DashboardHeader({
 
         <div className="flex items-center gap-3">
 
-          <div className="hidden lg:block w-80">
+          <div className="hidden xl:block w-96">
 
             <GlobalSearch
               placeholder={t("search.placeholder")}
@@ -108,7 +87,7 @@ export function DashboardHeader({
 
           <Link
             href="/notifications"
-            className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm hover:bg-slate-50"
+            className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm transition hover:bg-slate-50 active:scale-95"
           >
             <Bell size={20} />
 
@@ -131,13 +110,14 @@ export function DashboardHeader({
             <Settings size={20} />
           </Link>
 
-          <Link href="/profile">
-
-            <UserAvatar
-              name={displayName}
-              src={user?.profile_url}
-            />
-
+          <Link
+              href="/profile"
+              className="rounded-full transition hover:scale-105"
+          >
+              <UserAvatar
+                  name={displayName}
+                  src={user?.profile_url}
+              />
           </Link>
 
         </div>
