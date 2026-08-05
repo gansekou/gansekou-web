@@ -77,6 +77,7 @@ const dictionaries: Record<Language, TranslationDictionary> = {
     "course.lessonCompletedQuizPrompt": "Bravo, lecon terminee. Voulez-vous tester vos connaissances maintenant ?",
     "course.progressSavedNoQuiz": "Progression enregistree. Aucun quiz n'est encore disponible pour cette lecon.",
     "course.recommendedAfterLesson": "Recommande apres cette lecon.",
+    "search.placeholder": "Rechercher...",
   },
   EN: {
     "nav.home": "Home",
@@ -150,6 +151,7 @@ const dictionaries: Record<Language, TranslationDictionary> = {
     "course.lessonCompletedQuizPrompt": "Lesson completed. Would you like to test your knowledge now?",
     "course.progressSavedNoQuiz": "Progress saved. No quiz is available for this lesson yet.",
     "course.recommendedAfterLesson": "Recommended after this lesson.",
+    "search.placeholder": "Search...",
   },
 };
 
