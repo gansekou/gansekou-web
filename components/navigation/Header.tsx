@@ -16,12 +16,14 @@ import { getNavigationTitle } from "./NavigationTitles";
 
 type DashboardHeaderProps = {
   user?: User | null;
+  drawerOpen: boolean;
   onOpenDrawer: () => void;
 };
 
 export function DashboardHeader({
-  user,
-  onOpenDrawer,
+    user,
+    drawerOpen,
+    onOpenDrawer,
 }: DashboardHeaderProps) {
   const pathname = usePathname();
 
