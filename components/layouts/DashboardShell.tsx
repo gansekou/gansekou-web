@@ -107,6 +107,7 @@ export function DashboardShell({
 
                     <DashboardHeader
                         user={user}
+                        drawerOpen={drawerOpen}
                         onOpenDrawer={() => setDrawerOpen(true)}
                     />
 
