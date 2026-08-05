@@ -1153,6 +1153,6 @@ const extendedTranslations: Record<Language, Record<string, string>> = {
     "teacher.questionsForMySubjects": "Questions for my subjects",
     "teacher.publishAnswer": "Publish answer",
     "teacher.answerQuestion": "Answer question",
-    "search.placeholder": "Search...",
+    "search.placeholder": "Search...", 
   },
 };
