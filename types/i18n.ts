@@ -71,7 +71,7 @@ export type TranslationKey =
   | "course.noQuizForCourse"
   | "course.lessonCompletedQuizPrompt"
   | "course.progressSavedNoQuiz"
-  | "course.recommendedAfterLesson";
+  | "course.recommendedAfterLesson"
   | "search.placeholder";
 
 export type TranslationDictionary = Record<TranslationKey, string>;
