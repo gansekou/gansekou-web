@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -14,6 +14,8 @@ import {
   Star,
   Trophy,
   Users,
+  Smartphone,
+  Monitor,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { GansekouLogo } from "@/components/ui/GansekouLogo";
@@ -298,14 +300,23 @@ export function PublicCoursesPage() {
 }
 
 export function PublicPremiumPage() {
+  const WHATSAPP_NUMBER = "237640718108";
   const { user, loading: userLoading } = useCurrentUser();
   const { language } = useI18n(user || undefined);
   const copy = premiumPageCopy(language);
   const [paymentPlan, setPaymentPlan] = useState<PremiumPlanCard | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"MTN" | "ORANGE">("MTN");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [paymentMessage, setPaymentMessage] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+      if (typeof window === "undefined") return;
+  
+      const ua = navigator.userAgent.toLowerCase();
+  
+      setIsMobile(
+          /android|iphone|ipad|ipod/.test(ua)
+      );
+  }, []);
   const premiumLoader = useMemo(
     () => async () => {
       const plans = await platformService.payments.plans().catch(() => []);
@@ -315,6 +326,39 @@ export function PublicPremiumPage() {
     },
     [user]
   );
+  const whatsappLink = useMemo(() => {
+    if (!paymentPlan) return "#";
+  
+    const text = `
+      Bonjour Gansekou,
+      
+      Je souhaite souscrire à :
+      
+      📚 ${paymentPlan.name}
+      
+      💳 Moyen de paiement :
+      ${paymentMethod === "MTN"
+          ? "MTN Mobile Money"
+          : "Orange Money"}
+      
+      💰 ${formatPrice(paymentPlan, copy)}
+      
+      Merci.
+      `;
+  
+    const encoded = encodeURIComponent(text);
+  
+    if (isMobile) {
+      return `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
+    }
+  
+    return `https://web.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encoded}`;
+  }, [
+  paymentPlan,
+  paymentMethod,
+  copy,
+  isMobile
+  ]);
   const { data } = useAsyncData(premiumLoader);
   const currentPlan = getCurrentPremiumPlan(data?.subscription || null);
   const cards = buildPremiumPlanCards({
@@ -339,25 +383,6 @@ export function PublicPremiumPage() {
     copy.paymentSimpleRenewal,
   ];
 
-  async function submitPayment() {
-    if (!paymentPlan?.sourcePlan) return;
-    setPaymentStatus("loading");
-    setPaymentMessage("");
-
-    try {
-      await platformService.payments.init({
-        plan_id: paymentPlan.sourcePlan.id,
-        phone_number: phoneNumber,
-        payment_method: paymentMethod,
-      });
-      setPaymentStatus("success");
-      setPaymentMessage(copy.paymentInitiated);
-    } catch (error) {
-      console.error("[premium] payment init failed", error);
-      setPaymentStatus("error");
-      setPaymentMessage(copy.paymentFailed);
-    }
-  }
 
   return (
     <main className="premium-page min-h-screen bg-[#f8fafc] text-[#071d3a]">
@@ -544,28 +569,53 @@ export function PublicPremiumPage() {
                 </button>
               ))}
             </div>
-            <label className="mt-5 block text-sm font-black text-slate-700">
-              {copy.phoneNumber}
-              <input
-                value={phoneNumber}
-                onChange={(event) => setPhoneNumber(event.target.value)}
-                placeholder={copy.phonePlaceholder}
-                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-3 text-base font-bold outline-none focus:border-[#f6c445]"
-              />
-            </label>
-            {paymentMessage ? (
-              <p className={`mt-4 rounded-2xl p-3 text-sm font-bold ${paymentStatus === "error" ? "bg-red-50 text-red-700" : "bg-[#eef8f1] text-[#0f5f3a]"}`}>
-                {paymentMessage}
-              </p>
-            ) : null}
-            <button
-              type="button"
-              disabled={!phoneNumber || paymentStatus === "loading"}
-              onClick={() => void submitPayment()}
-              className="ds-button-premium mt-5 w-full disabled:opacity-60"
+            
+            
+            {!isMobile && (
+              <div className="mt-6 rounded-2xl border border-[#f6c445] bg-[#fff8db] p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <Monitor className="text-[#071d3a]" size={20} />
+                  <p className="font-black text-[#071d3a]">
+                    Paiement sur ordinateur
+                  </p>
+                </div>
+            
+                <ol className="space-y-2 text-sm text-slate-700">
+                  <li>1. Cliquez sur le bouton WhatsApp ci-dessous.</li>
+            
+                  <li>
+                    2. WhatsApp Desktop ou WhatsApp Web s'ouvrira automatiquement.
+                  </li>
+            
+                  <li>
+                    3. Envoyez le message déjà préparé.
+                  </li>
+            
+                  <li>
+                    4. Vous recevrez immédiatement les instructions de paiement MTN ou Orange Money.
+                  </li>
+            
+                  <li>
+                    5. Une fois le paiement effectué, votre abonnement sera activé.
+                  </li>
+                </ol>
+              </div>
+            )}
+            {isMobile && (
+              <div className="mt-5 rounded-xl bg-green-50 p-4 text-sm text-green-700">
+                Les instructions apparaîtront directement dans WhatsApp.
+              </div>
+            )}
+            <a
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 flex w-full items-center justify-center rounded-full bg-[#25D366] px-5 py-3 font-black text-white hover:opacity-90"
             >
-              {paymentStatus === "loading" ? copy.paymentLoading : copy.confirmPayment}
-            </button>
+              {isMobile
+                ? "Ouvrir WhatsApp"
+                : "Ouvrir WhatsApp Desktop / Web"}
+            </a>
           </div>
         </div>
       ) : null}
