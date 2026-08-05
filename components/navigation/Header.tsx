@@ -50,7 +50,12 @@ export function DashboardHeader({
             onClick={onOpenDrawer}
             className="rounded-xl p-2 transition hover:bg-slate-100 active:scale-95"
           >
-            <Menu size={24} />
+            <Menu
+                size={24}
+                className={`transition-transform duration-300 ${
+                    drawerOpen ? "rotate-90" : ""
+                }`}
+            />
           </button>
 
           <h1 className="max-w-[180px] truncate text-lg font-black">
