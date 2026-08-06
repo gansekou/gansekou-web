@@ -13,6 +13,9 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { PublicHeader } from "@/components/navigation/PublicHeader";
+import { PublicMobileDrawer } from "@/components/navigation/PublicMobileDrawer";
+
 import { GansekouLogo } from "@/components/ui/GansekouLogo";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useI18n } from "@/hooks/useI18n";
@@ -34,7 +37,7 @@ const navKeys = [
 export function HomePage() {
   const { user, loading } = useCurrentUser();
   const { t } = useI18n(user || undefined);
-
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const isAuthenticated = Boolean(user);
 
@@ -49,11 +52,15 @@ export function HomePage() {
   return (
     <main className="min-h-screen bg-[#f8fafc] text-[#071d3a]">
 
-      <PublicHomeNav
-          loading={loading}
-          isAuthenticated={isAuthenticated}
-          displayName={displayName}
-          t={t}
+      <PublicHeader
+          userName={user ? `${user.prenom} ${user.nom}` : undefined}
+          drawerOpen={drawerOpen}
+          onOpenDrawer={() => setDrawerOpen(true)}
+      />
+      
+      <PublicMobileDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
       />
 
 
@@ -229,259 +236,7 @@ export function HomePage() {
   );
 }
 
-function PublicHomeNav({
-    isAuthenticated,
-    displayName,
-    loading,
-    t,
-}: {
-    isAuthenticated: boolean;
-    displayName: string;
-    loading: boolean;
-    t: (key: string) => string;
-}) {
-   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    return (
-      <header className="
-        sticky
-        top-0
-        z-40
-        border-b
-        border-slate-200
-        bg-white/90
-        px-5
-        py-4
-        backdrop-blur-xl
-      ">
-  
-        <div className="
-          mx-auto
-          flex
-          max-w-7xl
-          items-center
-          justify-between
-        ">
-  
-          <GansekouLogo
-            href="/"
-            variant="full"
-            size="medium"
-          />
-  
-  
-          <nav className="
-            hidden
-            gap-6
-            text-sm
-            font-black
-            text-slate-600
-            lg:flex
-          ">
-  
-            {navKeys.map(([key, href]) => (
-  
-              <Link
-                key={key}
-                href={href}
-                className="hover:text-[#071d3a]"
-              >
-                {t(key)}
-              </Link>
-  
-            ))}
-  
-          </nav>
-  
-  
-  
-          <div className="flex items-center gap-3">
 
-    {/* Desktop */}
-    <div className="hidden lg:flex items-center gap-3">
-
-        {!loading && isAuthenticated ? (
-            <>
-                <Link
-                    href="/dashboard"
-                    className="rounded-full bg-[#071d3a] px-5 py-2 text-sm font-black text-white"
-                >
-                    Dashboard
-                </Link>
-
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fff7df] font-black">
-                    {initials(displayName)}
-                </div>
-            </>
-        ) : (
-            <>
-                <Link
-                    href="/login"
-                    className="text-sm font-black text-slate-600"
-                >
-                    Connexion
-                </Link>
-
-                <Link
-                    href="/register"
-                    className="rounded-full bg-[#f6c445] px-5 py-2 text-sm font-black text-[#071d3a]"
-                >
-                    Commencer
-                </Link>
-            </>
-        )}
-
-    </div>
-
-    {/* Mobile */}
-    <button
-        onClick={() => setMobileMenuOpen(true)}
-        className="rounded-xl border border-slate-200 p-2 lg:hidden"
-    >
-        <Menu size={24} />
-    </button>
-
-</div>
-  
-  
-        </div>
-
-        {mobileMenuOpen && (
-    <>
-        {/* Overlay */}
-        <div
-            className="fixed inset-0 z-40 bg-black/40"
-            onClick={() => setMobileMenuOpen(false)}
-        />
-
-        {/* Drawer */}
-        <div className="
-            fixed
-            right-0
-            top-0
-            z-50
-            flex
-            h-screen
-            w-[320px]
-            flex-col
-            bg-white
-            shadow-2xl
-        ">
-
-            <div className="
-                flex
-                items-center
-                justify-between
-                border-b
-                p-5
-            ">
-
-                <GansekouLogo
-                    href="/"
-                    variant="full"
-                    size="small"
-                />
-
-                <button
-                    onClick={() => setMobileMenuOpen(false)}
-                >
-                    <X size={26}/>
-                </button>
-
-            </div>
-
-            <nav className="flex flex-col p-6">
-
-                {navKeys.map(([key, href]) => (
-
-                    <Link
-                        key={key}
-                        href={href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="
-                            rounded-xl
-                            px-4
-                            py-4
-                            text-lg
-                            font-bold
-                            hover:bg-slate-100
-                        "
-                    >
-                        {t(key)}
-                    </Link>
-
-                ))}
-
-            </nav>
-
-            <div className="mt-auto border-t p-6">
-
-                {!loading && isAuthenticated ? (
-
-                    <Link
-                        href="/dashboard"
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="
-                            block
-                            rounded-xl
-                            bg-[#071d3a]
-                            py-4
-                            text-center
-                            font-black
-                            text-white
-                        "
-                    >
-                        Dashboard
-                    </Link>
-
-                ) : (
-
-                    <div className="space-y-3">
-
-                        <Link
-                            href="/login"
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="
-                                block
-                                rounded-xl
-                                border
-                                border-slate-300
-                                py-4
-                                text-center
-                                font-bold
-                            "
-                        >
-                            Connexion
-                        </Link>
-
-                        <Link
-                            href="/register"
-                            onClick={() => setMobileMenuOpen(false)}
-                            className="
-                                block
-                                rounded-xl
-                                bg-[#f6c445]
-                                py-4
-                                text-center
-                                font-black
-                                text-[#071d3a]
-                            "
-                        >
-                            Commencer
-                        </Link>
-
-                    </div>
-
-                )}
-
-            </div>
-
-        </div>
-    </>
-)}
-  
-      </header>
-    );
-  }
   
   function initials(name:string){
   
