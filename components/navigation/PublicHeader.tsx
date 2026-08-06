@@ -146,7 +146,7 @@ rounded-full
 bg-[#071d3a]
 px-5 py-2
 font-bold
-text-white
+text-white 
 "
 >
 Mon espace
