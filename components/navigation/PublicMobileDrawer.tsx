@@ -11,6 +11,8 @@ import {
   CreditCard,
   LogIn,
   UserPlus,
+  FileText,
+  MessageCircleQuestion,
 } from "lucide-react";
 
 import { GansekouLogo } from "@/components/ui/GansekouLogo";
@@ -33,9 +35,19 @@ const items = [
     icon: BookOpen,
   },
   {
-    label: "Kouma IA",
-    href: "/kouma",
-    icon: Brain,
+    label: "Mes questions",
+    href: "/questions",
+    icon: MessageCircleQuestion,
+  },
+  {
+    label: "Exercices",
+    href: "/exercises",
+    icon: BookOpen,
+  },
+  {
+    label: "Sujets",
+    href: "/subjects",
+    icon: FileText,
   },
   {
     label: "Quiz",
