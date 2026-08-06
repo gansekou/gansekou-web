@@ -27,7 +27,11 @@ import { useI18n } from "@/hooks/useI18n";
 import { platformService } from "@/services/platform.service";
 import type { Content } from "@/types/content";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/types/platform";
-import { Header } from "@/components/navigation/Header";
+import { useState } from "react";
+
+import { PublicHeader } from "@/components/navigation/PublicHeader";
+
+import { PublicMobileDrawer } from "@/components/navigation/PublicMobileDrawer";
 
 const benefits = [
   { title: "IA pedagogique", icon: Brain },
@@ -308,6 +312,7 @@ export function PublicPremiumPage() {
   const [paymentPlan, setPaymentPlan] = useState<PremiumPlanCard | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"MTN" | "ORANGE">("MTN");
   const [isMobile, setIsMobile] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   
   useEffect(() => {
       if (typeof window === "undefined") return;
@@ -387,7 +392,16 @@ export function PublicPremiumPage() {
 
   return (
     <main className="premium-page min-h-screen bg-[#f8fafc] text-[#071d3a]">
-      <Header />
+      <PublicHeader
+          userName={user ? `${user.prenom} ${user.nom}` : undefined}
+          drawerOpen={drawerOpen}
+          onOpenDrawer={() => setDrawerOpen(true)}
+      />
+      
+      <PublicMobileDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+      />
       <section className="relative overflow-hidden bg-[#071d3a]">
         <div className="absolute inset-x-0 top-0 h-32 bg-[#f6c445]/10" />
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 text-white lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-20">
