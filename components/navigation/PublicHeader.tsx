@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, UserCircle } from "lucide-react";
+import { Menu, UserCircle, LogIn } from "lucide-react";
 
 import { GansekouLogo } from "@/components/ui/GansekouLogo";
 import { UserAvatar } from "@/components/ui/UserAvatar";
@@ -176,15 +176,27 @@ src={profileUrl}
 <Link
 href="/login"
 className="
-hidden sm:flex
+flex items-center justify-center
 rounded-full
 bg-slate-100
-px-5 py-2
+p-2
+sm:px-5
+sm:py-2
 font-bold
+transition
+hover:bg-slate-200
+active:scale-95
 "
 >
 
+<LogIn
+size={20}
+className="sm:hidden"
+/>
+
+<span className="hidden sm:inline">
 Connexion
+</span>
 
 </Link>
 
