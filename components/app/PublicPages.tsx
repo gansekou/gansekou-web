@@ -165,9 +165,7 @@ export function SmartHomePage() {
 
   return (
     <main className="premium-page min-h-screen overflow-hidden">
-      <PublicHeader
-        userName={`${user.prenom} ${user.nom}`}
-        drawerOpen={drawerOpen}
+      <PublicHeader drawerOpen={drawerOpen}
         onOpenDrawer={() => setDrawerOpen(true)}
       />
       
