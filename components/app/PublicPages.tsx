@@ -512,35 +512,132 @@ export function PublicPremiumPage() {
           onClose={() => setDrawerOpen(false)}
       />
       <section className="relative overflow-hidden bg-[#071d3a]">
-        <div className="absolute inset-x-0 top-0 h-32 bg-[#f6c445]/10" />
-        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 text-white lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-20">
-          <div className="relative">
-            <GansekouLogo variant="light" size="large" />
-            <p className="mt-8 text-sm font-black uppercase tracking-[0.22em] text-[#f6c445]">{copy.heroEyebrow}</p>
-            <h1 className="mt-4 max-w-4xl text-4xl font-black leading-tight md:text-6xl">{copy.heroTitle}</h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/78">{copy.heroSubtitle}</p>
-            <p className="mt-4 max-w-2xl leading-7 text-white/62">{copy.heroBody}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#plans" className="ds-button-premium">{copy.heroPrimaryCta}</a>
-              <a href="#comparison" className="inline-flex items-center justify-center rounded-full border border-white/20 px-5 py-3 font-black text-white transition hover:bg-white/10">
+
+        <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-[#0f5f3a]/30 blur-3xl" />
+        <div className="absolute -right-32 top-0 h-96 w-96 rounded-full bg-[#f6c445]/15 blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#f6c445]/10 to-transparent" />
+      
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 text-white lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-24">
+      
+          <div>
+      
+            <span className="inline-flex items-center rounded-full bg-[#f6c445]/20 px-4 py-2 text-sm font-black uppercase tracking-[0.18em] text-[#f6c445]">
+              {copy.heroEyebrow}
+            </span>
+      
+            <h1 className="mt-8 max-w-4xl text-5xl font-black leading-tight md:text-7xl">
+              {copy.heroTitle}
+            </h1>
+      
+            <p className="mt-8 max-w-2xl text-xl leading-9 text-white/80">
+              {copy.heroSubtitle}
+            </p>
+      
+            <p className="mt-5 max-w-2xl text-base leading-8 text-white/60">
+              {copy.heroBody}
+            </p>
+      
+            <div className="mt-10 flex flex-wrap gap-4">
+      
+              <a
+                href="#plans"
+                className="ds-button-premium"
+              >
+                {copy.heroPrimaryCta}
+              </a>
+      
+              <a
+                href="#comparison"
+                className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-3 font-black text-white transition hover:bg-white/10"
+              >
                 {copy.heroSecondaryCta}
               </a>
+      
             </div>
+      
           </div>
-          <div className="relative rounded-[2rem] border border-white/12 bg-white/8 p-6 shadow-2xl shadow-black/20 backdrop-blur">
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#f6c445]">{copy.heroCardEyebrow}</p>
-            <div className="mt-5 grid gap-3">
-              {[copy.heroWinCourses, copy.heroWinOffline, copy.heroWinPremium, copy.heroWinProgress].map((item) => (
-                <div key={item} className="flex items-center gap-3 rounded-2xl bg-white/10 p-4">
-                  <CheckCircle2 size={20} className="shrink-0 text-[#f6c445]" />
-                  <span className="font-bold text-white/88">{item}</span>
+      
+          <div className="relative">
+      
+            <div className="absolute -inset-3 rounded-[2rem] bg-[#f6c445]/10 blur-2xl" />
+      
+            <div className="relative rounded-[2rem] border border-white/10 bg-white/10 p-8 backdrop-blur-xl shadow-2xl">
+      
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-[#f6c445]">
+                {copy.heroCardEyebrow}
+              </p>
+      
+              <div className="mt-8 space-y-4">
+      
+                {[
+                  copy.heroWinCourses,
+                  copy.heroWinOffline,
+                  copy.heroWinPremium,
+                  copy.heroWinProgress,
+                ].map((item) => (
+      
+                  <div
+                    key={item}
+                    className="flex items-start gap-4 rounded-2xl bg-white/10 p-4 transition hover:bg-white/15"
+                  >
+      
+                    <div className="mt-1 flex h-10 w-10 items-center justify-center rounded-full bg-[#f6c445]">
+      
+                      <CheckCircle2
+                        size={20}
+                        className="text-[#071d3a]"
+                      />
+      
+                    </div>
+      
+                    <span className="font-bold leading-6 text-white">
+                      {item}
+                    </span>
+      
+                  </div>
+      
+                ))}
+      
+              </div>
+      
+              <div className="mt-8 grid grid-cols-3 gap-4 border-t border-white/10 pt-6">
+      
+                <div className="text-center">
+                  <p className="text-3xl font-black text-[#f6c445]">
+                    1000+
+                  </p>
+                  <p className="mt-1 text-xs uppercase tracking-wider text-white/60">
+                    Cours
+                  </p>
                 </div>
-              ))}
+      
+                <div className="text-center">
+                  <p className="text-3xl font-black text-[#f6c445]">
+                    500+
+                  </p>
+                  <p className="mt-1 text-xs uppercase tracking-wider text-white/60">
+                    Quiz
+                  </p>
+                </div>
+      
+                <div className="text-center">
+                  <p className="text-3xl font-black text-[#f6c445]">
+                    IA
+                  </p>
+                  <p className="mt-1 text-xs uppercase tracking-wider text-white/60">
+                    Kouma
+                  </p>
+                </div>
+      
+              </div>
+      
             </div>
+      
           </div>
+      
         </div>
+      
       </section>
-
       <section className="mx-auto max-w-7xl px-5 py-10">
         {!userLoading && user ? (
           <div className="rounded-[1.5rem] border border-[#f6c445]/50 bg-white p-5 shadow-xl shadow-[#071d3a]/5 md:flex md:items-center md:justify-between">
