@@ -16,6 +16,9 @@ import {
   Users,
   Smartphone,
   Monitor,
+  Menu,
+  LayoutDashboard,
+  LogIn,
 } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { GansekouLogo } from "@/components/ui/GansekouLogo";
@@ -104,60 +107,141 @@ export function SmartHomePage() {
         />
         <section className="mx-auto grid max-w-7xl gap-8 px-5 py-8 lg:grid-cols-[1.08fr_0.92fr] lg:py-12">
           <div className="relative overflow-hidden rounded-[2rem] bg-[#071d3a] p-7 text-white shadow-2xl shadow-[#071d3a]/20 md:p-10">
-            <div className="absolute right-8 top-8 hidden h-32 w-32 rounded-full border border-[#f6c445]/25 md:block" />
-            <GansekouLogo variant="light" size="large" />
-            <p className="mt-8 text-sm font-black uppercase tracking-[0.22em] text-[#f6c445]">{copy.resumeEyebrow}</p>
-            <h1 className="mt-4 max-w-3xl text-4xl font-black tracking-tight md:text-6xl">
+        
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[#f6c445]/10 blur-3xl" />
+            <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-[#0f5f3a]/40 blur-3xl" />
+        
+            <span className="inline-flex items-center rounded-full bg-[#f6c445]/20 px-4 py-2 text-sm font-black uppercase tracking-[0.2em] text-[#f6c445]">
+              {copy.resumeEyebrow}
+            </span>
+        
+            <h1 className="mt-8 max-w-3xl text-4xl font-black leading-tight tracking-tight md:text-6xl">
               {copy.connectedTitle.replace("{name}", user.prenom)}
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-white/72 md:text-lg">
+        
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-white/75">
               {copy.connectedBody}
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/dashboard" className="ds-button-premium">
+        
+            <div className="mt-10 flex flex-wrap gap-4">
+              <Link
+                href="/dashboard"
+                className="ds-button-premium"
+              >
                 {copy.openSpace}
                 <ArrowRight size={18} />
               </Link>
-              <Link href="/courses" className="inline-flex items-center justify-center rounded-full bg-white/10 px-5 py-3 font-black text-white transition hover:bg-white/15">
+        
+              <Link
+                href="/courses"
+                className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-3 font-black text-white transition hover:bg-white/10"
+              >
                 {copy.resumeCourse}
               </Link>
             </div>
-            <div className="mt-10 grid gap-3 sm:grid-cols-3">
-              {[["Streak", "7 jours"], ["Progression", "68%"], ["Quiz", "12"]].map(([label, value], index) => (
-                <div key={`connected-stat-${label}-${index}`} className="rounded-2xl bg-white/10 p-4">
-                  <p className="text-2xl font-black text-[#f6c445]">{value}</p>
-                  <p className="mt-1 text-xs font-bold uppercase tracking-widest text-white/55">{label}</p>
-                </div>
-              ))}
+        
+            <div className="mt-12 grid gap-4 sm:grid-cols-3">
+        
+              <div className="rounded-2xl bg-white/10 p-5 backdrop-blur">
+                <p className="text-3xl font-black text-[#f6c445]">
+                  7
+                </p>
+                <p className="mt-2 text-xs font-bold uppercase tracking-widest text-white/60">
+                  Jours de série
+                </p>
+              </div>
+        
+              <div className="rounded-2xl bg-white/10 p-5 backdrop-blur">
+                <p className="text-3xl font-black text-[#f6c445]">
+                  68%
+                </p>
+                <p className="mt-2 text-xs font-bold uppercase tracking-widest text-white/60">
+                  Progression
+                </p>
+              </div>
+        
+              <div className="rounded-2xl bg-white/10 p-5 backdrop-blur">
+                <p className="text-3xl font-black text-[#f6c445]">
+                  12
+                </p>
+                <p className="mt-2 text-xs font-bold uppercase tracking-widest text-white/60">
+                  Quiz réussis
+                </p>
+              </div>
+        
             </div>
+        
           </div>
+        
           <div className="grid gap-5">
+        
             <div className="ds-card rounded-[2rem] p-6">
-              <h2 className="text-2xl font-black text-[#071d3a]">{copy.quickRecommendations}</h2>
+        
+              <h2 className="text-2xl font-black text-[#071d3a]">
+                {copy.quickRecommendations}
+              </h2>
+        
               <div className="mt-5 space-y-3">
+        
                 {contents.slice(0, 4).map((item) => (
-                  <Link key={`home-course-${item.id}`} href={`/courses/${item.id}`} className="ds-card-hover block rounded-2xl bg-slate-50 p-4 font-bold text-[#071d3a]">
-                    {item.title || `Ressource ${item.id.slice(0, 8)}`}
+                  <Link
+                    key={item.id}
+                    href={`/courses/${item.id}`}
+                    className="block rounded-2xl border border-slate-100 bg-slate-50 p-4 transition hover:border-[#0f5f3a] hover:bg-white hover:shadow-lg"
+                  >
+                    <p className="font-black text-[#071d3a]">
+                      {item.title || `Ressource ${item.id.slice(0, 8)}`}
+                    </p>
                   </Link>
                 ))}
+        
                 {!contents.length && (
-                  <EmptyState title={copy.noRecommendations} message={copy.noRecommendationsBody} />
+                  <EmptyState
+                    title={copy.noRecommendations}
+                    message={copy.noRecommendationsBody}
+                  />
                 )}
+        
               </div>
+        
             </div>
+        
             <div className="ds-card rounded-[2rem] p-6">
-              <h2 className="text-xl font-black text-[#071d3a]">{copy.latestNotifications}</h2>
+        
+              <h2 className="text-xl font-black text-[#071d3a]">
+                {copy.latestNotifications}
+              </h2>
+        
               <div className="mt-4 space-y-3">
+        
                 {notifications.slice(0, 3).map((item) => (
-                  <Link href="/notifications" key={`home-notification-${item.id}`} className="block rounded-2xl border border-slate-100 p-4">
-                    <p className="font-black text-[#071d3a]">{item.title}</p>
-                    <p className="mt-1 line-clamp-2 text-sm text-slate-500">{item.message}</p>
+                  <Link
+                    key={item.id}
+                    href="/notifications"
+                    className="block rounded-2xl border border-slate-100 p-4 transition hover:border-[#0f5f3a] hover:shadow-md"
+                  >
+                    <p className="font-black text-[#071d3a]">
+                      {item.title}
+                    </p>
+        
+                    <p className="mt-2 line-clamp-2 text-sm text-slate-500">
+                      {item.message}
+                    </p>
                   </Link>
                 ))}
-                {!notifications.length && <p className="text-sm font-bold text-slate-500">{copy.noUrgentAlert}</p>}
+        
+                {!notifications.length && (
+                  <p className="text-sm font-bold text-slate-500">
+                    {copy.noUrgentAlert}
+                  </p>
+                )}
+        
               </div>
+        
             </div>
+        
           </div>
+        
         </section>
       </main>
     );
