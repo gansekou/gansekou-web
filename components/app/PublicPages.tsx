@@ -165,7 +165,16 @@ export function SmartHomePage() {
 
   return (
     <main className="premium-page min-h-screen overflow-hidden">
-      <PublicNav />
+      <PublicHeader
+        userName={`${user.prenom} ${user.nom}`}
+        drawerOpen={drawerOpen}
+        onOpenDrawer={() => setDrawerOpen(true)}
+      />
+      
+      <PublicMobileDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
       <section className="mx-auto grid max-w-7xl gap-10 px-5 py-10 lg:grid-cols-[1.04fr_0.96fr] lg:items-center lg:py-14">
         <div>
           <GansekouLogo variant="full" size="hero" />
