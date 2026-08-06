@@ -65,11 +65,10 @@ ${drawerOpen ? "rotate-90" : ""}
 `}
 />
 
-<GansekouWordmark />
 
 </button>
 
-
+<GansekouWordmark />
 
 </div>
 
