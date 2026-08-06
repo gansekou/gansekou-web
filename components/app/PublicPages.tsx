@@ -27,7 +27,6 @@ import { useI18n } from "@/hooks/useI18n";
 import { platformService } from "@/services/platform.service";
 import type { Content } from "@/types/content";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/types/platform";
-import { useState } from "react";
 
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 
