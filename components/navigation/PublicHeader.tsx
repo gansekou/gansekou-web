@@ -67,12 +67,6 @@ ${drawerOpen ? "rotate-90" : ""}
 </button>
 
 
-<GansekouLogo
-href="/"
-variant="full"
-size="medium"
-/>
-
 
 </div>
 
