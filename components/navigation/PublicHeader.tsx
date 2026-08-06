@@ -141,12 +141,14 @@ Excellence+
 <Link
 href="/dashboard"
 className="
-hidden sm:flex
+flex
 rounded-full
 bg-[#071d3a]
-px-5 py-2
-font-bold
-text-white 
+px-4 py-2
+text-sm
+font-black
+text-white
+whitespace-nowrap
 "
 >
 Mon espace
