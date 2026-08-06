@@ -72,6 +72,7 @@ export function SmartHomePage() {
   const { user, loading } = useCurrentUser();
   const { language } = useI18n(user || undefined);
   const copy = publicCopy(language);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const enabledLoader = useMemo(
     () => async () => {
       if (!user) return { contents: [], plans: await platformService.payments.plans().catch(() => []) };
@@ -91,7 +92,16 @@ export function SmartHomePage() {
     const notifications = (data?.notifications as { id: string; title: string; message: string }[]) || [];
     return (
       <main className="premium-page min-h-screen">
-        <PublicNav userName={`${user.prenom} ${user.nom}`} />
+        <PublicHeader
+          userName={`${user.prenom} ${user.nom}`}
+          drawerOpen={drawerOpen}
+          onOpenDrawer={() => setDrawerOpen(true)}
+        />
+        
+        <PublicMobileDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+        />
         <section className="mx-auto grid max-w-7xl gap-8 px-5 py-8 lg:grid-cols-[1.08fr_0.92fr] lg:py-12">
           <div className="relative overflow-hidden rounded-[2rem] bg-[#071d3a] p-7 text-white shadow-2xl shadow-[#071d3a]/20 md:p-10">
             <div className="absolute right-8 top-8 hidden h-32 w-32 rounded-full border border-[#f6c445]/25 md:block" />
@@ -270,10 +280,20 @@ export function PublicCoursesPage() {
     return platformService.contents.approved();
   }, [user]);
   const { data, loading } = useAsyncData(coursesLoader);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <main className="premium-page min-h-screen">
-      <PublicNav userName={user ? `${user.prenom} ${user.nom}` : undefined} />
+      <PublicHeader
+        userName={`${user.prenom} ${user.nom}`}
+        drawerOpen={drawerOpen}
+        onOpenDrawer={() => setDrawerOpen(true)}
+      />
+      
+      <PublicMobileDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
       <section className="mx-auto max-w-7xl px-5 py-10">
         <h1 className="text-5xl font-black text-[#071d3a]">Parcours de cours Gansekou</h1>
         <p className="mt-4 max-w-2xl leading-7 text-slate-600">
