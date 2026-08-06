@@ -27,6 +27,7 @@ import { useI18n } from "@/hooks/useI18n";
 import { platformService } from "@/services/platform.service";
 import type { Content } from "@/types/content";
 import type { SubscriptionPlan, SubscriptionStatus } from "@/types/platform";
+import { Header } from "@/components/navigation/Header";
 
 const benefits = [
   { title: "IA pedagogique", icon: Brain },
@@ -386,7 +387,7 @@ export function PublicPremiumPage() {
 
   return (
     <main className="premium-page min-h-screen bg-[#f8fafc] text-[#071d3a]">
-      <PublicNav userName={user ? `${user.prenom} ${user.nom}` : undefined} />
+      <Header />
       <section className="relative overflow-hidden bg-[#071d3a]">
         <div className="absolute inset-x-0 top-0 h-32 bg-[#f6c445]/10" />
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 text-white lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-20">
@@ -1065,25 +1066,6 @@ function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
   );
 }
 
-function PublicNav({ userName }: { userName?: string }) {
-  return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/82 px-5 py-4 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between">
-        <GansekouLogo href="/" variant="full" size="medium" />
-        <nav className="hidden items-center gap-6 text-sm font-bold text-slate-600 md:flex">
-          <Link href="/courses">Cours</Link>
-          <Link href="/subjects">Sujets</Link>
-          <Link href="/quizzes">Quiz</Link>
-          <Link href="/premium">Premium</Link>
-          {userName ? <Link href="/dashboard">Dashboard</Link> : <Link href="/login">Connexion</Link>}
-        </nav>
-        <Link href={userName ? "/dashboard" : "/register"} className="ds-button-primary hidden sm:inline-flex">
-          {userName ? "Mon espace" : "Inscription"}
-        </Link>
-      </div>
-    </header>
-  );
-}
 
 function Footer() {
   return (
