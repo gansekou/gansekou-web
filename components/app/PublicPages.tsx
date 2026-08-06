@@ -292,7 +292,6 @@ export function PublicCoursesPage() {
   return (
     <main className="premium-page min-h-screen">
       <PublicHeader
-        userName={`${user.prenom} ${user.nom}`}
         drawerOpen={drawerOpen}
         onOpenDrawer={() => setDrawerOpen(true)}
       />
