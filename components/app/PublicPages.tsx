@@ -125,11 +125,14 @@ export function SmartHomePage() {
         
             <div className="mt-10 flex flex-wrap gap-4">
               <Link
-                href="/dashboard"
-                className="ds-button-premium"
+                href={user ? "/dashboard" : "/login"}
+                className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0f5f3a] text-white transition hover:scale-105"
               >
-                {copy.openSpace}
-                <ArrowRight size={18} />
+                {user ? (
+                  <LayoutDashboard size={22} />
+                ) : (
+                  <LogIn size={22} />
+                )}
               </Link>
         
               <Link
@@ -271,6 +274,7 @@ export function SmartHomePage() {
             {copy.publicBody}
           </p>
           <div className="mt-9 flex flex-col gap-4 sm:flex-row">
+            
             <Link href="/register" className="ds-button-primary">
               {copy.startFree}
               <ArrowRight size={20} />
