@@ -5,6 +5,7 @@ import { Menu, UserCircle } from "lucide-react";
 
 import { GansekouLogo } from "@/components/ui/GansekouLogo";
 import { UserAvatar } from "@/components/ui/UserAvatar";
+import { GansekouWordmark } from "@/components/ui/GansekouWordmark";
 
 
 type Props = {
@@ -63,6 +64,8 @@ transition-transform duration-300
 ${drawerOpen ? "rotate-90" : ""}
 `}
 />
+
+<GansekouWordmark />
 
 </button>
 
@@ -190,14 +193,17 @@ href="/register"
 className="
 rounded-full
 bg-[#0f5f3a]
-px-5 py-2
-font-bold
+px-4
+py-2
+text-sm
+font-black
 text-white
+shadow-lg
+shadow-green-900/20
+whitespace-nowrap
 "
 >
-
 Créer un compte
-
 </Link>
 
 
