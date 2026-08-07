@@ -24,7 +24,7 @@ export const navigationTitles: Record<string, NavigationTitle> = {
   },
 
   "/subjects": {
-    title: "Matières",
+    title: "Sujets",
   },
 
   "/quizzes": {
