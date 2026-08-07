@@ -21,6 +21,9 @@ import {
   CheckCircle2,
   MessageCircleQuestion,
   PenSquare,
+  LayoutDashboard,
+  FileText,
+  HelpCircle,
 } from "lucide-react";
 
 import {
@@ -49,8 +52,13 @@ export type NavigationSection = {
 const studentMain: NavigationItem[] = [
   {
     key: "nav.home",
-    href: "/dashboard",
+    href: "/",
     icon: Home,
+  },
+  {
+    key: "nav.dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
   },
   {
     key: "nav.courses",
@@ -63,14 +71,19 @@ const studentMain: NavigationItem[] = [
     icon: ClipboardList,
   },
   {
+    key: "nav.epreuve",
+    href: "/subjects",
+    icon: FileText,
+  }
+  {
     key: "nav.quizzes",
     href: "/quizzes",
     icon: Trophy,
   },
   {
-    key: "nav.aiQuestions",
-    href: "/ai",
-    icon: Brain,
+    key: "nav.questions",
+    href: "/questions",
+    icon: HelpCircle,
   },
   {
     key: "nav.premium",
@@ -128,9 +141,9 @@ const teacherMain: NavigationItem[] = [
     icon: Trophy,
   },
   {
-    key: "nav.aiQuestions",
-    href: "/ai",
-    icon: Brain,
+    key: "nav.questions",
+    href: "/questions",
+    icon: HelpCircle,
   },
 ];
 
@@ -215,9 +228,9 @@ const adminMain: NavigationItem[] = [
     icon: Trophy,
   },
   {
-    key: "nav.aiQuestions",
-    href: "/ai",
-    icon: Brain,
+    key: "nav.questions",
+    href: "/questions",
+    icon: HelpCircle,
   },
   {
     key: "nav.reviewContents",
