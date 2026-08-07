@@ -71,7 +71,7 @@ const studentMain: NavigationItem[] = [
     icon: ClipboardList,
   },
   {
-    key: "nav.epreuve",
+    key: "nav.epreuves",
     href: "/subjects",
     icon: FileText,
   }
@@ -81,7 +81,7 @@ const studentMain: NavigationItem[] = [
     icon: Trophy,
   },
   {
-    key: "nav.questions",
+    key: "nav.myQuestions",
     href: "/questions",
     icon: HelpCircle,
   },
@@ -139,11 +139,6 @@ const teacherMain: NavigationItem[] = [
     key: "nav.quizzes",
     href: "/quizzes",
     icon: Trophy,
-  },
-  {
-    key: "nav.questions",
-    href: "/questions",
-    icon: HelpCircle,
   },
 ];
 
@@ -226,11 +221,6 @@ const adminMain: NavigationItem[] = [
     key: "nav.quizzes",
     href: "/quizzes",
     icon: Trophy,
-  },
-  {
-    key: "nav.questions",
-    href: "/questions",
-    icon: HelpCircle,
   },
   {
     key: "nav.reviewContents",
