@@ -10,7 +10,7 @@ export type TranslationKey =
   | "nav.quizzes"
   | "nav.questions"
   | "nav.myQuestions"
-  | "nav.myQuestions"
+  | "nav.aiQuestions"
   | "nav.progress"
   | "nav.notifications"
   | "nav.premium"
