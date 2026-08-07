@@ -74,7 +74,7 @@ const studentMain: NavigationItem[] = [
     key: "nav.epreuves",
     href: "/subjects",
     icon: FileText,
-  }
+  },
   {
     key: "nav.quizzes",
     href: "/quizzes",
