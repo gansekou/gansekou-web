@@ -379,12 +379,24 @@ export const platformService = {
   },
 
   payments: {
-    plans: () => apiFetch<SubscriptionPlan[]>(ENDPOINTS.payments.plans),
+    /**
+     * Plans Premium disponibles
+     */
+    plans: () =>
+      apiFetch<SubscriptionPlan[]>(
+        ENDPOINTS.payments.plans
+      ),
+  
+    /**
+     * Création d'un plan
+     * Réservé à l'administration.
+     */
     createPlan: (payload: {
       code: string;
       name: string;
       price_xaf: number;
       duration_days: number;
+      period?: string;
       description?: string;
     }) => {
       const params = new URLSearchParams({
@@ -393,23 +405,67 @@ export const platformService = {
         price_xaf: String(payload.price_xaf),
         duration_days: String(payload.duration_days),
       });
-      if (payload.description) params.set("description", payload.description);
-      return apiFetch<SubscriptionPlan>(`${ENDPOINTS.payments.plans}?${params.toString()}`, {
-        method: "POST",
-      });
+  
+      if (payload.period) {
+        params.set("period", payload.period);
+      }
+  
+      if (payload.description) {
+        params.set("description", payload.description);
+      }
+  
+      return apiFetch<SubscriptionPlan>(
+        `${ENDPOINTS.payments.plans}?${params.toString()}`,
+        {
+          method: "POST",
+        }
+      );
     },
+  
+    /**
+     * Abonnement Premium actuel de l'utilisateur.
+     */
     subscription: () =>
-      apiFetch<SubscriptionStatus>(ENDPOINTS.payments.subscriptionMe),
-    transactions: () => apiFetch(ENDPOINTS.payments.transactionsMe),
+      apiFetch<SubscriptionStatus>(
+        ENDPOINTS.payments.subscriptionMe
+      ),
+  
+    /**
+     * Historique des paiements de l'utilisateur.
+     */
+    transactions: () =>
+      apiFetch(
+        ENDPOINTS.payments.transactionsMe
+      ),
+  
+    /**
+     * Initialisation d'un paiement Monetbil.
+     *
+     * Le backend crée la transaction locale,
+     * appelle Monetbil puis retourne le payment_id.
+     */
     init: (payload: {
       plan_id: UUID;
       phone_number: string;
-      payment_method: "MTN" | "ORANGE";
     }) =>
-      apiFetch(ENDPOINTS.payments.init, {
-        method: "POST",
-        body: payload,
-      }),
+      apiFetch(
+        ENDPOINTS.payments.init,
+        {
+          method: "POST",
+          body: payload,
+        }
+      ),
+  
+    /**
+     * Vérifie l'état d'une transaction Monetbil
+     * côté backend.
+     */
+    transaction: (transactionId: UUID) =>
+      apiFetch(
+        ENDPOINTS.payments.verifyTransaction(
+          transactionId
+        )
+      ),
   },
 
   progress: {
