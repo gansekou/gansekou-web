@@ -906,7 +906,7 @@ function getCurrentPremiumPlan(
     return "DECOUVERTE";
   }
 
-  // Déterminer le plan grâce au plan_id retourné par le backend
+  // On identifie d'abord le plan grâce au plan_id
   const currentBackendPlan = plans.find(
     (plan) => plan.id === subscription.plan_id
   );
@@ -923,7 +923,8 @@ function getCurrentPremiumPlan(
     }
   }
 
-  // Fallback si le backend fournit directement les informations du plan
+  // Fallback : si le backend fournit directement
+  // les informations concernant la période
   const period = normalizeSubscriptionPeriod(subscription);
 
   if (period === "year") {
