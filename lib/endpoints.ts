@@ -307,21 +307,11 @@ export const ENDPOINTS = {
 
   payments: {
     plans: `${API_BASE_URL}/payments/plans`,
-  
-    // Initialisation du paiement Monetbil
     init: `${API_BASE_URL}/payments/init`,
-  
-    // Historique des transactions de l'utilisateur
     transactionsMe: `${API_BASE_URL}/payments/transactions/me`,
-  
-    // Abonnement actif
     subscriptionMe: `${API_BASE_URL}/payments/subscription/me`,
-  
-    // Vérification d'une transaction
     verifyTransaction: (transactionId: string) =>
       `${API_BASE_URL}/payments/transactions/${transactionId}`,
-  
-    // Webhook Monetbil
     webhookMonetbil: `${API_BASE_URL}/payments/webhook/monetbil`,
   },
 
