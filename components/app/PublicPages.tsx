@@ -479,7 +479,10 @@ export function PublicPremiumPage() {
   isMobile
   ]);
   const { data } = useAsyncData(premiumLoader);
-  const currentPlan = getCurrentPremiumPlan(data?.subscription || null);
+  const currentPlan = getCurrentPremiumPlan(
+    data?.subscription || null,
+    data?.plans || []
+  );
   const cards = buildPremiumPlanCards({
     plans: data?.plans || [],
     currentPlan,
@@ -884,16 +887,53 @@ function PlanCta({
   );
 }
 
-function getCurrentPremiumPlan(subscriptionStatus: SubscriptionStatus | null): PremiumPlanId {
+function getCurrentPremiumPlan(
+  subscriptionStatus: SubscriptionStatus | null,
+  plans: SubscriptionPlan[]
+): PremiumPlanId {
   const subscription = subscriptionStatus?.subscription;
-  if (!subscriptionStatus?.is_premium || !subscription) return "DECOUVERTE";
 
-  const status = typeof subscription.status === "string" ? subscription.status.toUpperCase() : null;
-  if (status && status !== "ACTIVE") return "DECOUVERTE";
+  if (!subscriptionStatus?.is_premium || !subscription) {
+    return "DECOUVERTE";
+  }
 
+  const status =
+    typeof subscription.status === "string"
+      ? subscription.status.toUpperCase()
+      : null;
+
+  if (status !== "ACTIVE") {
+    return "DECOUVERTE";
+  }
+
+  // Déterminer le plan grâce au plan_id retourné par le backend
+  const currentBackendPlan = plans.find(
+    (plan) => plan.id === subscription.plan_id
+  );
+
+  if (currentBackendPlan) {
+    const period = inferPlanPeriod(currentBackendPlan);
+
+    if (period === "year") {
+      return "EXCELLENCE_PLUS";
+    }
+
+    if (period === "month") {
+      return "EXCELLENCE";
+    }
+  }
+
+  // Fallback si le backend fournit directement les informations du plan
   const period = normalizeSubscriptionPeriod(subscription);
-  if (period === "year") return "EXCELLENCE_PLUS";
-  if (period === "month") return "EXCELLENCE";
+
+  if (period === "year") {
+    return "EXCELLENCE_PLUS";
+  }
+
+  if (period === "month") {
+    return "EXCELLENCE";
+  }
+
   return "DECOUVERTE";
 }
 
