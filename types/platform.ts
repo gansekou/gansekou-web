@@ -159,20 +159,27 @@ export type SubscriptionStatus = {
   is_premium: boolean;
   subscription: {
     id?: UUID;
+    user_id?: UUID;
+    plan_id?: UUID;
     status?: string | null;
     period?: string | null;
     starts_at?: string | null;
     expires_at?: string | null;
     auto_renew?: boolean | null;
+    created_at?: string | null;
+
     plan?: {
+      id?: UUID;
       duration_days?: number | null;
       code?: string | null;
       name?: string | null;
       period?: string | null;
     } | null;
+
     plan_code?: string | null;
     plan_name?: string | null;
     duration_days?: number | null;
+
     [key: string]: unknown;
   } | null;
 };
