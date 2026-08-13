@@ -10,6 +10,7 @@ import type {
   EducationCycle,
   Level,
   Notification,
+  PaymentInitResponse,
   Quiz,
   School,
   Specialty,
@@ -447,8 +448,9 @@ export const platformService = {
     init: (payload: {
       plan_id: UUID;
       phone_number: string;
+      payment_method: "MTN" | "ORANGE";
     }) =>
-      apiFetch(
+      apiFetch<PaymentInitResponse>(
         ENDPOINTS.payments.init,
         {
           method: "POST",
