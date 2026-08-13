@@ -48,10 +48,12 @@ import type {
   Level,
   Notification,
   PageData,
+  PaymentInitResponse,
   Quiz,
   Specialty,
   StudyPlanItem,
   Subject,
+  SubscriptionPlan,
 } from "@/types/platform";
 
 const AdminEducationManager = dynamic(() => import("@/components/admin/AdminEducationManager").then((mod) => mod.AdminEducationManager), { loading: () => <LoadingState /> });
