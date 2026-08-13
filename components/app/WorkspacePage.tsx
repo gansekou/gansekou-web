@@ -1565,28 +1565,286 @@ function NotificationsPanel({ notifications, reload }: { notifications: Notifica
 }
 
 function SubscriptionPanel({ data }: { data: PageData }) {
-  const { t } = useI18n();
-  const plans = (data.plans as { id: string; name: string; price_xaf: number; duration_days: number; description?: string }[]) || [];
+  const { t, language } = useI18n();
+
+  const plans = (data.plans as SubscriptionPlan[]) || [];
+
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"MTN" | "ORANGE">("MTN");
+  const [loading, setLoading] = useState(false);
+  const [paymentResult, setPaymentResult] =
+    useState<PaymentInitResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function openPayment(plan: SubscriptionPlan) {
+    setSelectedPlan(plan);
+    setPhoneNumber("");
+    setPaymentMethod("MTN");
+    setPaymentResult(null);
+    setError(null);
+  }
+
+  function closePayment() {
+    if (loading) return;
+
+    setSelectedPlan(null);
+    setPaymentResult(null);
+    setError(null);
+  }
+
+  async function startPayment() {
+    if (!selectedPlan) return;
+
+    const phone = phoneNumber.trim();
+
+    if (!phone) {
+      setError(
+        language === "EN"
+          ? "Please enter your phone number."
+          : "Veuillez entrer votre numéro de téléphone."
+      );
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setPaymentResult(null);
+
+    try {
+      const result = await platformService.payments.init({
+        plan_id: selectedPlan.id,
+        phone_number: phone,
+        payment_method: paymentMethod,
+      });
+
+      setPaymentResult(result);
+
+      /*
+       * Si le backend retourne directement une URL de paiement,
+       * on pourra rediriger l'utilisateur vers Monetbil.
+       */
+      const redirectUrl =
+        result.payment_url || result.redirect_url;
+
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+      }
+    } catch (err) {
+      const message =
+        err instanceof ApiError
+          ? err.message
+          : language === "EN"
+            ? "Unable to initialize the payment."
+            : "Impossible d'initialiser le paiement.";
+
+      setError(message);
+
+      notifyGansekou({
+        kind: "error",
+        title:
+          language === "EN"
+            ? "Payment error"
+            : "Erreur de paiement",
+        message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <>
-      <Hero eyebrow={t("premium.brand")} title={t("premium.title")} body={t("premium.body")} />
+      <Hero
+        eyebrow={t("premium.brand")}
+        title={t("premium.title")}
+        body={t("premium.body")}
+      />
+
       <section className="grid gap-4 md:grid-cols-3">
         {plans.map((plan, index) => (
-          <div key={`subscription-plan-${plan.id}-${index}`} className="ds-card ds-card-hover rounded-[2rem] p-6">
-            <p className="text-xl font-black text-[#082f1f]">{plan.name}</p>
-            <p className="mt-3 text-3xl font-black text-[#0f5f3a]">{plan.price_xaf} XAF</p>
-            <p className="mt-2 text-sm font-bold text-slate-500">{t("premium.duration").replace("{days}", String(plan.duration_days))}</p>
-            <div className="mt-5 grid gap-2 text-sm font-bold text-slate-600">
-              <span className="rounded-2xl bg-[#fff7df] px-4 py-3">{t("premium.aiCorrections")}</span>
-              <span className="rounded-2xl bg-slate-50 px-4 py-3">{t("premium.offline")}</span>
+          <div
+            key={`subscription-plan-${plan.id}-${index}`}
+            className="ds-card ds-card-hover flex flex-col rounded-[2rem] p-6"
+          >
+            <div className="flex-1">
+              <p className="text-xl font-black text-[#082f1f]">
+                {plan.name}
+              </p>
+
+              <p className="mt-3 text-3xl font-black text-[#0f5f3a]">
+                {plan.price_xaf.toLocaleString("fr-FR")} XAF
+              </p>
+
+              <p className="mt-2 text-sm font-bold text-slate-500">
+                {t("premium.duration").replace(
+                  "{days}",
+                  String(plan.duration_days)
+                )}
+              </p>
+
+              {plan.description && (
+                <p className="mt-4 text-sm font-medium leading-6 text-slate-500">
+                  {plan.description}
+                </p>
+              )}
+
+              <div className="mt-5 grid gap-2 text-sm font-bold text-slate-600">
+                <span className="rounded-2xl bg-[#fff7df] px-4 py-3">
+                  {t("premium.aiCorrections")}
+                </span>
+
+                <span className="rounded-2xl bg-slate-50 px-4 py-3">
+                  {t("premium.offline")}
+                </span>
+              </div>
             </div>
+
+            <button
+              type="button"
+              onClick={() => openPayment(plan)}
+              className="mt-6 w-full rounded-full bg-[#0f5f3a] px-5 py-3 text-sm font-black text-white transition hover:bg-[#082f1f]"
+            >
+              {language === "EN"
+                ? "Choose this plan"
+                : "Choisir cette offre"}
+            </button>
           </div>
         ))}
       </section>
+
+      {selectedPlan && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closePayment();
+            }
+          }}
+        >
+          <div className="w-full max-w-lg rounded-[2rem] bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.2em] text-[#b88a00]">
+                  {t("premium.brand")}
+                </p>
+
+                <h3 className="mt-2 text-2xl font-black text-[#082f1f]">
+                  {language === "EN"
+                    ? "Complete your payment"
+                    : "Finaliser votre paiement"}
+                </h3>
+
+                <p className="mt-2 text-sm font-bold text-slate-500">
+                  {selectedPlan.name} ·{" "}
+                  {selectedPlan.price_xaf.toLocaleString("fr-FR")} XAF
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closePayment}
+                disabled={loading}
+                className="rounded-full bg-slate-100 px-3 py-2 text-sm font-black text-slate-600 hover:bg-slate-200 disabled:opacity-50"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-6">
+              <p className="mb-3 text-sm font-black text-[#082f1f]">
+                {language === "EN"
+                  ? "Payment method"
+                  : "Mode de paiement"}
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("MTN")}
+                  className={`rounded-2xl border-2 px-4 py-4 text-sm font-black transition ${
+                    paymentMethod === "MTN"
+                      ? "border-[#f6c445] bg-[#fff7df] text-[#082f1f]"
+                      : "border-slate-200 bg-white text-slate-500"
+                  }`}
+                >
+                  MTN Mobile Money
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod("ORANGE")}
+                  className={`rounded-2xl border-2 px-4 py-4 text-sm font-black transition ${
+                    paymentMethod === "ORANGE"
+                      ? "border-[#f6c445] bg-[#fff7df] text-[#082f1f]"
+                      : "border-slate-200 bg-white text-slate-500"
+                  }`}
+                >
+                  Orange Money
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <label className="text-sm font-black text-[#082f1f]">
+                {language === "EN"
+                  ? "Phone number"
+                  : "Numéro de téléphone"}
+              </label>
+
+              <input
+                type="tel"
+                value={phoneNumber}
+                onChange={(event) =>
+                  setPhoneNumber(event.target.value)
+                }
+                placeholder="6XXXXXXXX"
+                inputMode="tel"
+                className="mt-2 w-full rounded-2xl border border-slate-200 px-4 py-4 font-bold outline-none transition focus:border-[#0f5f3a]"
+              />
+            </div>
+
+            {error && (
+              <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+                {error}
+              </div>
+            )}
+
+            {paymentResult && !paymentResult.payment_url && !paymentResult.redirect_url && (
+              <div className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">
+                {paymentResult.message ||
+                  (language === "EN"
+                    ? "Payment initialized successfully."
+                    : "Paiement initialisé avec succès.")}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={startPayment}
+              disabled={loading}
+              className="mt-6 w-full rounded-full bg-[#0f5f3a] px-5 py-4 text-sm font-black text-white transition hover:bg-[#082f1f] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {loading
+                ? language === "EN"
+                  ? "Initializing payment..."
+                  : "Initialisation du paiement..."
+                : language === "EN"
+                  ? "Continue to payment"
+                  : "Continuer vers le paiement"}
+            </button>
+
+            <p className="mt-4 text-center text-xs font-bold text-slate-400">
+              {language === "EN"
+                ? "Your payment will be processed securely through Monetbil."
+                : "Votre paiement sera traité de manière sécurisée via Monetbil."}
+            </p>
+          </div>
+        </div>
+      )}
     </>
   );
 }
-
 function UserTable({ users }: { users: User[] }) {
   const { t, formatRole } = useI18n();
   const [query, setQuery] = useState("");
