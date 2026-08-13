@@ -187,6 +187,23 @@ export type SubscriptionStatus = {
   } | null;
 };
 
+export type PaymentInitResponse = {
+  success?: boolean;
+  message?: string;
+
+  transaction_id?: UUID;
+
+  payment_url?: string;
+  redirect_url?: string;
+
+  status?: string;
+
+  amount?: number;
+  currency?: string;
+
+  [key: string]: unknown;
+};
+
 export type AdminGlobalStats = {
   users?: {
     total: number;
