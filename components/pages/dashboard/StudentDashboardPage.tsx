@@ -24,10 +24,10 @@ export function StudentDashboardPage({
 
   const recommendedContent =
     contents.find(
-      (content) => content.level_id === user.level_id
-    )
-    ||
-    contents[0];
+      (content) =>
+        user.level_id &&
+        content.level_ids?.includes(user.level_id)
+    ) || contents[0];
 
 
   const recommendedQuiz =
