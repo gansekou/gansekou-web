@@ -51,6 +51,10 @@ export const ENDPOINTS = {
     offline: `${API_BASE_URL}/contents/offline`,
     byLevel: (levelId: string) =>
       `${API_BASE_URL}/contents/by-level/${levelId}`,
+    bySpecialty: (specialtyId: string) =>
+    `${API_BASE_URL}/contents/by-specialty/${specialtyId}`,
+
+    byLevelAndSpecialty: `${API_BASE_URL}/contents/by-level-and-specialty`,
     bySubject: (subjectId: string) =>
       `${API_BASE_URL}/contents/by-subject/${subjectId}`,
     search: `${API_BASE_URL}/contents/search/`,
