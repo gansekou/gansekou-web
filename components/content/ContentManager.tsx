@@ -72,7 +72,7 @@ export function ContentManager({
       (!statusFilter || item.status === statusFilter) &&
       (!typeFilter || item.content_type === typeFilter) &&
       (!subjectId || item.subject_id === subjectId) &&
-      (!levelId || item.level_id === levelId) &&
+      (!levelId || item.level_ids?.includes(levelId)) &&
       (!premiumOnly || item.is_premium)
     );
   });
@@ -181,7 +181,10 @@ export function ContentManager({
                     <span className="mx-2">•</span>
                     {subjectById.get(content.subject_id)?.name_fr}
                     <span className="mx-2">•</span>
-                    {levelById.get(content.level_id)?.name_fr}
+                    {content.level_ids
+                      ?.map((id) => levelById.get(id)?.name_fr)
+                      .filter(Boolean)
+                      .join(", ") || "-"}
                   </p>
             
                   <p className="mt-1 text-xs text-slate-400">
