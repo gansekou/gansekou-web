@@ -1201,7 +1201,7 @@ function ContentGrid({
     return (
       (!query || label.includes(query.toLowerCase())) &&
       (!subjectId || item.subject_id === subjectId) &&
-      (!levelId || item.level_id === levelId) &&
+      (!levelId || item.level_ids?.includes(levelId)) &&
       (!type || item.content_type === type) &&
       (!premiumOnly || item.is_premium)
     );
