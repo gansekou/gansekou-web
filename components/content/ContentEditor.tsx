@@ -45,8 +45,16 @@ export function ContentEditor({
     title: content?.title || "",
     description: content?.description || "",
     subject_id: content?.subject_id || searchParams.get("subject_id") || "",
-    level_id: content?.level_id || searchParams.get("level_id") || "",
-    specialty_id: content?.specialty_id || "",
+  
+    level_ids:
+      content?.levels?.map((level) => level.id) ||
+      (searchParams.get("level_id")
+        ? [searchParams.get("level_id")!]
+        : []),
+  
+    specialty_ids:
+      content?.specialties?.map((specialty) => specialty.id) || [],
+  
     content_type: lockedType || content?.content_type || defaultType,
     file_url: content?.file_url || "",
     thumbnail_url: content?.thumbnail_url || "",
@@ -54,7 +62,9 @@ export function ContentEditor({
     is_premium: Boolean(content?.is_premium),
     is_available_offline: Boolean(content?.is_available_offline),
     difficulty_level: content?.difficulty_level || "",
-    estimated_duration_minutes: content?.estimated_duration_minutes ? String(content.estimated_duration_minutes) : "",
+    estimated_duration_minutes: content?.estimated_duration_minutes
+      ? String(content.estimated_duration_minutes)
+      : "",
     tags: content?.tags || "",
   });
   const [file, setFile] = useState<File | null>(null);
@@ -67,23 +77,22 @@ export function ContentEditor({
   useEffect(() => {
     async function loadRelatedContents() {
       try {
-        if (!form.subject_id || !form.level_id) {
+        if (
+          !form.subject_id ||
+          form.level_ids.length === 0
+        ) {
           setAvailableContents([]);
           return;
         }
   
-        const currentType = lockedType || form.content_type;
-  
-        const contents = await platformService.contents.relatedOptions({
-          level_id: form.level_id,
-          subject_id: form.subject_id,
-          target_type: currentType,
-          exclude_id: content?.id,
-        });
+        const contents =
+          await platformService.contents.relatedOptions({
+            level_id: form.level_ids[0],
+            subject_id: form.subject_id,
+            exclude_id: content?.id,
+          });
   
         setAvailableContents(contents);
-        console.log(contents);
-  
       } catch (error) {
         console.error(
           "Erreur chargement contenus liés",
@@ -95,13 +104,10 @@ export function ContentEditor({
     }
   
     loadRelatedContents();
-  
   }, [
     form.subject_id,
-    form.level_id,
-    form.content_type,
-    lockedType,
-    content?.id
+    form.level_ids,
+    content?.id,
   ]);
 
   
@@ -114,7 +120,11 @@ export function ContentEditor({
     if (!canSubmit) return;
     setStatus(null);
     setError(null);
-    if (!form.subject_id || !form.level_id || !form.content_type) {
+    if (
+      !form.subject_id ||
+      form.level_ids.length === 0 ||
+      !form.content_type
+    ) {
       setError(t("content.validation"));
       return;
     }
@@ -136,21 +146,40 @@ export function ContentEditor({
 
       const payload = {
         author_id: content?.author_id || user.id,
+      
         subject_id: form.subject_id,
-        level_id: form.level_id,
+      
+        level_ids: form.level_ids,
+      
+        specialty_ids: form.specialty_ids,
+      
         related_content_ids: relatedContentIds,
-        specialty_id: form.specialty_id || null,
+      
         content_type: lockedType || form.content_type,
+      
         file_url: fileUrl,
+      
         thumbnail_url: thumbnailUrl,
+      
         status: isAdminRole(user) ? form.status : "PENDING",
+      
         is_premium: form.is_premium,
+      
         is_available_offline: form.is_available_offline,
+      
         version: content?.version || 1,
+      
         title: form.title || null,
+      
         description: form.description || null,
+      
         difficulty_level: form.difficulty_level || null,
-        estimated_duration_minutes: form.estimated_duration_minutes ? Number(form.estimated_duration_minutes) : null,
+      
+        estimated_duration_minutes:
+          form.estimated_duration_minutes
+            ? Number(form.estimated_duration_minutes)
+            : null,
+      
         tags: form.tags || null,
       };
 
@@ -195,9 +224,109 @@ export function ContentEditor({
             <select value={form.content_type} onChange={(event) => setForm((current) => ({ ...current, content_type: event.target.value }))} className={inputClass}>{["COURS", "EXERCICE", "SUJET"].map((type, index) => <option key={`content-type-${type}-${index}`}>{type}</option>)}</select>
           )}
         </Field>
-        <Field label={t("common.level")}><select value={form.level_id} onChange={(event) => setForm((current) => ({ ...current, level_id: event.target.value }))} className={inputClass}><option value="">{t("common.level")}</option>{levels.map((level) => <option key={level.id} value={level.id}>{level.name_fr}</option>)}</select></Field>
+        <Field label={t("common.level")}>
+          <div className="max-h-52 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="space-y-2">
+              {levels.map((level) => {
+                const checked = form.level_ids.includes(level.id);
+        
+                return (
+                  <label
+                    key={level.id}
+                    className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-slate-50"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => {
+                        setForm((current) => ({
+                          ...current,
+                          level_ids: event.target.checked
+                            ? [...current.level_ids, level.id]
+                            : current.level_ids.filter(
+                                (id) => id !== level.id
+                              ),
+                        }));
+                      }}
+                      className="h-4 w-4 rounded border-slate-300"
+                    />
+        
+                    <span className="text-sm font-bold text-slate-700">
+                      {level.name_fr}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        
+          {form.level_ids.length > 0 && (
+            <p className="text-xs font-bold text-slate-500">
+              {form.level_ids.length} niveau
+              {form.level_ids.length > 1 ? "x" : ""} sélectionné
+              {form.level_ids.length > 1 ? "s" : ""}
+            </p>
+          )}
+        </Field>
+        
         <Field label={t("common.subject")}><select value={form.subject_id} onChange={(event) => setForm((current) => ({ ...current, subject_id: event.target.value }))} className={inputClass}><option value="">{t("common.subject")}</option>{subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_fr}</option>)}</select></Field>
-        <Field label={t("subject.specialty")}><select value={form.specialty_id} onChange={(event) => setForm((current) => ({ ...current, specialty_id: event.target.value }))} className={inputClass}><option value="">{t("subject.noSpecialty")}</option>{specialties.map((specialty) => <option key={specialty.id} value={specialty.id}>{specialty.name_fr}</option>)}</select></Field>
+        
+        <Field label={t("subject.specialty")}>
+          <div className="max-h-52 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3">
+            <div className="space-y-2">
+              {specialties.length === 0 ? (
+                <p className="text-sm text-slate-500">
+                  {t("subject.noSpecialty")}
+                </p>
+              ) : (
+                specialties.map((specialty) => {
+                  const checked = form.specialty_ids.includes(
+                    specialty.id
+                  );
+        
+                  return (
+                    <label
+                      key={specialty.id}
+                      className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-slate-50"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(event) => {
+                          setForm((current) => ({
+                            ...current,
+                            specialty_ids: event.target.checked
+                              ? [
+                                  ...current.specialty_ids,
+                                  specialty.id,
+                                ]
+                              : current.specialty_ids.filter(
+                                  (id) => id !== specialty.id
+                                ),
+                          }));
+                        }}
+                        className="h-4 w-4 rounded border-slate-300"
+                      />
+        
+                      <span className="text-sm font-bold text-slate-700">
+                        {specialty.name_fr}
+                      </span>
+                    </label>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        
+          {form.specialty_ids.length > 0 && (
+            <p className="text-xs font-bold text-slate-500">
+              {form.specialty_ids.length} spécialité
+              {form.specialty_ids.length > 1 ? "s" : ""} sélectionnée
+              {form.specialty_ids.length > 1 ? "s" : ""}
+            </p>
+          )}
+        </Field>
+        
         <Field label={t("content.difficulty")}><input value={form.difficulty_level} onChange={(event) => setForm((current) => ({ ...current, difficulty_level: event.target.value }))} className={inputClass} /></Field>
         <Field label={t("content.duration")}><input type="number" value={form.estimated_duration_minutes} onChange={(event) => setForm((current) => ({ ...current, estimated_duration_minutes: event.target.value }))} className={inputClass} /></Field>
         <Field label={t("content.tags")}><input value={form.tags} onChange={(event) => setForm((current) => ({ ...current, tags: event.target.value }))} className={inputClass} /></Field>
@@ -290,4 +419,66 @@ function UploadField({ label, file, accept, onChange }: { label: string; file: F
 
 function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
   return <label className="inline-flex items-center gap-2 text-sm font-bold text-slate-600"><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />{label}</label>;
+}
+
+function MultiSelect({
+  options,
+  selected,
+  onChange,
+  placeholder,
+}: {
+  options: { id: string; label: string }[];
+  selected: string[];
+  onChange: (values: string[]) => void;
+  placeholder: string;
+}) {
+  const toggle = (id: string) => {
+    if (selected.includes(id)) {
+      onChange(selected.filter((value) => value !== id));
+    } else {
+      onChange([...selected, id]);
+    }
+  };
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-3">
+      {options.length === 0 ? (
+        <p className="px-2 py-2 text-sm text-slate-400">
+          Aucun élément disponible
+        </p>
+      ) : (
+        <div className="max-h-52 space-y-1 overflow-y-auto">
+          {options.map((option) => {
+            const checked = selected.includes(option.id);
+
+            return (
+              <label
+                key={option.id}
+                className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-50"
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => toggle(option.id)}
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+
+                <span className="text-sm font-bold text-slate-700">
+                  {option.label}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+
+      {selected.length > 0 && (
+        <div className="mt-3 border-t border-slate-100 pt-2">
+          <span className="text-xs font-bold text-slate-500">
+            {selected.length} sélectionné(s)
+          </span>
+        </div>
+      )}
+    </div>
+  );
 }
