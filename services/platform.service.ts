@@ -1,6 +1,9 @@
 import { apiFetch } from "@/lib/api";
 import { ENDPOINTS } from "@/lib/endpoints";
-import type { Content } from "@/types/content";
+import type {
+  Content,
+  ContentCreatePayload,
+} from "@/types/content";
 import type { CreateQuestionPayload, Question, TeacherAnswer } from "@/types/question";
 import type { User } from "@/types/user";
 import type { GansekouRole } from "@/types/user";
@@ -119,16 +122,23 @@ export const platformService = {
     byId: (id: UUID) => apiFetch<Content>(ENDPOINTS.contents.byId(id)),
     byType: (type: string) => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.byType(type))),
     bySubject: (subjectId: UUID) => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.bySubject(subjectId))),
-    create: (payload: Partial<Content>) =>
+    create: (payload: ContentCreatePayload) =>
       apiFetch<Content>(ENDPOINTS.contents.all, {
         method: "POST",
         body: payload,
       }),
-    update: (id: UUID, payload: Partial<Content>) =>
-      apiFetch<Content>(ENDPOINTS.contents.byId(id), {
-        method: "PUT",
-        body: payload,
-      }),
+    
+    update: (
+      id: UUID,
+      payload: ContentCreatePayload
+    ) =>
+      apiFetch<Content>(
+        ENDPOINTS.contents.byId(id),
+        {
+          method: "PUT",
+          body: payload,
+        }
+      ),
     remove: (id: UUID) =>
       apiFetch<Content>(ENDPOINTS.contents.byId(id), { method: "DELETE" }),
     publish: (id: UUID) =>
