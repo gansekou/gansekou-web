@@ -62,7 +62,7 @@ export function QuizEditor({ user, quiz, subjects, levels, courses }: Props) {
       ...current,
       course_id: courseId || null,
       subject_id: course?.subject_id || current.subject_id,
-      level_id: course?.level_id || current.level_id,
+      level_id: course?.level_ids?.[0] || current.level_id,
       title: course && !isEditing
         ? `Quiz - ${
             course.translations?.[0]?.title ??
