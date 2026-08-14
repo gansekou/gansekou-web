@@ -44,27 +44,47 @@ export function ContentEditor({
   const [form, setForm] = useState({
     title: content?.title || "",
     description: content?.description || "",
-    subject_id: content?.subject_id || searchParams.get("subject_id") || "",
+  
+    subject_id:
+      content?.subject_id ||
+      searchParams.get("subject_id") ||
+      "",
   
     level_ids:
+      content?.level_ids ||
       content?.levels?.map((level) => level.id) ||
       (searchParams.get("level_id")
         ? [searchParams.get("level_id")!]
         : []),
   
     specialty_ids:
-      content?.specialties?.map((specialty) => specialty.id) || [],
+      content?.specialty_ids ||
+      content?.specialties?.map((specialty) => specialty.id) ||
+      [],
   
-    content_type: lockedType || content?.content_type || defaultType,
+    content_type:
+      lockedType ||
+      content?.content_type ||
+      defaultType,
+  
     file_url: content?.file_url || "",
     thumbnail_url: content?.thumbnail_url || "",
+  
     status: content?.status || "PENDING",
+  
     is_premium: Boolean(content?.is_premium),
-    is_available_offline: Boolean(content?.is_available_offline),
-    difficulty_level: content?.difficulty_level || "",
-    estimated_duration_minutes: content?.estimated_duration_minutes
-      ? String(content.estimated_duration_minutes)
-      : "",
+  
+    is_available_offline:
+      Boolean(content?.is_available_offline),
+  
+    difficulty_level:
+      content?.difficulty_level || "",
+  
+    estimated_duration_minutes:
+      content?.estimated_duration_minutes
+        ? String(content.estimated_duration_minutes)
+        : "",
+  
     tags: content?.tags || "",
   });
   const [file, setFile] = useState<File | null>(null);
@@ -85,14 +105,19 @@ export function ContentEditor({
           return;
         }
   
+        const currentType =
+          lockedType || form.content_type;
+  
         const contents =
           await platformService.contents.relatedOptions({
             level_id: form.level_ids[0],
             subject_id: form.subject_id,
+            target_type: currentType,
             exclude_id: content?.id,
           });
   
         setAvailableContents(contents);
+  
       } catch (error) {
         console.error(
           "Erreur chargement contenus liés",
@@ -104,12 +129,14 @@ export function ContentEditor({
     }
   
     loadRelatedContents();
+  
   }, [
     form.subject_id,
     form.level_ids,
+    form.content_type,
+    lockedType,
     content?.id,
   ]);
-
   
   const [saving, setSaving] = useState(false);
   
@@ -155,17 +182,21 @@ export function ContentEditor({
       
         related_content_ids: relatedContentIds,
       
-        content_type: lockedType || form.content_type,
+        content_type:
+          lockedType || form.content_type,
       
         file_url: fileUrl,
       
         thumbnail_url: thumbnailUrl,
       
-        status: isAdminRole(user) ? form.status : "PENDING",
+        status: isAdminRole(user)
+          ? form.status
+          : "PENDING",
       
         is_premium: form.is_premium,
       
-        is_available_offline: form.is_available_offline,
+        is_available_offline:
+          form.is_available_offline,
       
         version: content?.version || 1,
       
@@ -173,7 +204,8 @@ export function ContentEditor({
       
         description: form.description || null,
       
-        difficulty_level: form.difficulty_level || null,
+        difficulty_level:
+          form.difficulty_level || null,
       
         estimated_duration_minutes:
           form.estimated_duration_minutes
@@ -225,14 +257,62 @@ export function ContentEditor({
           )}
         </Field>
         <Field label={t("common.level")}>
-          <div className="max-h-52 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="space-y-2">
-              {levels.map((level) => {
-                const checked = form.level_ids.includes(level.id);
+          <div className="max-h-48 space-y-2 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4">
+            {levels.map((level) => {
+              const checked = form.level_ids.includes(level.id);
+        
+              return (
+                <label
+                  key={level.id}
+                  className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-slate-50"
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(event) => {
+                      setForm((current) => ({
+                        ...current,
+                        level_ids: event.target.checked
+                          ? [...current.level_ids, level.id]
+                          : current.level_ids.filter(
+                              (id) => id !== level.id
+                            ),
+                      }));
+                    }}
+                    className="h-4 w-4 rounded border-slate-300"
+                  />
+        
+                  <span className="text-sm font-bold text-slate-700">
+                    {level.name_fr}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        
+          {form.level_ids.length > 0 && (
+            <p className="text-xs font-bold text-slate-500">
+              {form.level_ids.length} niveau(x) sélectionné(s)
+            </p>
+          )}
+        </Field>
+        
+        <Field label={t("common.subject")}><select value={form.subject_id} onChange={(event) => setForm((current) => ({ ...current, subject_id: event.target.value }))} className={inputClass}><option value="">{t("common.subject")}</option>{subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_fr}</option>)}</select></Field>
+        
+        <Field label={t("subject.specialty")}>
+          <div className="max-h-48 space-y-2 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4">
+            {specialties.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                {t("subject.noSpecialty")}
+              </p>
+            ) : (
+              specialties.map((specialty) => {
+                const checked =
+                  form.specialty_ids.includes(specialty.id);
         
                 return (
                   <label
-                    key={level.id}
+                    key={specialty.id}
                     className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-slate-50"
                   >
                     <input
@@ -241,10 +321,13 @@ export function ContentEditor({
                       onChange={(event) => {
                         setForm((current) => ({
                           ...current,
-                          level_ids: event.target.checked
-                            ? [...current.level_ids, level.id]
-                            : current.level_ids.filter(
-                                (id) => id !== level.id
+                          specialty_ids: event.target.checked
+                            ? [
+                                ...current.specialty_ids,
+                                specialty.id,
+                              ]
+                            : current.specialty_ids.filter(
+                                (id) => id !== specialty.id
                               ),
                         }));
                       }}
@@ -252,77 +335,17 @@ export function ContentEditor({
                     />
         
                     <span className="text-sm font-bold text-slate-700">
-                      {level.name_fr}
+                      {specialty.name_fr}
                     </span>
                   </label>
                 );
-              })}
-            </div>
-          </div>
-        
-          {form.level_ids.length > 0 && (
-            <p className="text-xs font-bold text-slate-500">
-              {form.level_ids.length} niveau
-              {form.level_ids.length > 1 ? "x" : ""} sélectionné
-              {form.level_ids.length > 1 ? "s" : ""}
-            </p>
-          )}
-        </Field>
-        
-        <Field label={t("common.subject")}><select value={form.subject_id} onChange={(event) => setForm((current) => ({ ...current, subject_id: event.target.value }))} className={inputClass}><option value="">{t("common.subject")}</option>{subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_fr}</option>)}</select></Field>
-        
-        <Field label={t("subject.specialty")}>
-          <div className="max-h-52 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="space-y-2">
-              {specialties.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  {t("subject.noSpecialty")}
-                </p>
-              ) : (
-                specialties.map((specialty) => {
-                  const checked = form.specialty_ids.includes(
-                    specialty.id
-                  );
-        
-                  return (
-                    <label
-                      key={specialty.id}
-                      className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-slate-50"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(event) => {
-                          setForm((current) => ({
-                            ...current,
-                            specialty_ids: event.target.checked
-                              ? [
-                                  ...current.specialty_ids,
-                                  specialty.id,
-                                ]
-                              : current.specialty_ids.filter(
-                                  (id) => id !== specialty.id
-                                ),
-                          }));
-                        }}
-                        className="h-4 w-4 rounded border-slate-300"
-                      />
-        
-                      <span className="text-sm font-bold text-slate-700">
-                        {specialty.name_fr}
-                      </span>
-                    </label>
-                  );
-                })
-              )}
-            </div>
+              })
+            )}
           </div>
         
           {form.specialty_ids.length > 0 && (
             <p className="text-xs font-bold text-slate-500">
-              {form.specialty_ids.length} spécialité
-              {form.specialty_ids.length > 1 ? "s" : ""} sélectionnée
-              {form.specialty_ids.length > 1 ? "s" : ""}
+              {form.specialty_ids.length} spécialité(s) sélectionnée(s)
             </p>
           )}
         </Field>
@@ -333,7 +356,7 @@ export function ContentEditor({
         {isAdminRole(user) && <Field label={t("common.status")}><select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))} className={inputClass}><option value="PENDING">{t("content.pendingReview")}</option><option value="APPROVED">{t("content.published")}</option><option value="ARCHIVED">{t("content.archived")}</option></select></Field>}
       </div>
       <Field label={t("content.description")}><textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className={`${inputClass} min-h-32`} /></Field>
-      {form.subject_id && form.level_id && (
+      {form.subject_id && form.level_ids.length > 0 && (
       <Field label="Contenus liés (optionnel)">
           <div className="max-h-60 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4">
             {availableContents.length === 0 ? (
