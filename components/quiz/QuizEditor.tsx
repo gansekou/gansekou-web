@@ -58,19 +58,33 @@ export function QuizEditor({ user, quiz, subjects, levels, courses }: Props) {
 
   function selectCourse(courseId: string) {
     const course = courses.find((item) => item.id === courseId);
-    setForm((current) => ({
-      ...current,
-      course_id: courseId || null,
-      subject_id: course?.subject_id || current.subject_id,
-      level_id: course?.level_ids?.[0] || current.level_id,
-      title: course && !isEditing
-        ? `Quiz - ${
-            course.translations?.[0]?.title ??
-            course.title ??
-            course.id.slice(0, 8)
-          }`
-        : current.title,
-    }));
+  
+    setForm((current) => {
+      const availableLevelIds = course?.level_ids || [];
+  
+      const currentLevelIsValid =
+        Boolean(current.level_id) &&
+        availableLevelIds.includes(current.level_id);
+  
+      return {
+        ...current,
+        course_id: courseId || null,
+        subject_id: course?.subject_id || current.subject_id,
+        level_id: currentLevelIsValid
+          ? current.level_id
+          : availableLevelIds.length === 1
+            ? availableLevelIds[0]
+            : "",
+        title:
+          course && !isEditing
+            ? `Quiz - ${
+                course.translations?.[0]?.title ??
+                course.title ??
+                course.id.slice(0, 8)
+              }`
+            : current.title,
+      };
+    });
   }
 
   async function save() {
@@ -191,11 +205,28 @@ export function QuizEditor({ user, quiz, subjects, levels, courses }: Props) {
             </select>
           </Field>
           <Field label={text.level}>
-            <select value={form.level_id} onChange={(event) => setField("level_id", event.target.value)} className="quiz-input" disabled={Boolean(form.course_id)}>
+            <select
+              value={form.level_id}
+              onChange={(event) => setField("level_id", event.target.value)}
+              className="quiz-input"
+            >
               <option value="">{text.level}</option>
-              {levels.map((level) => (
-                <option key={level.id} value={level.id}>{language === "EN" ? level.name_en : level.name_fr}</option>
-              ))}
+          
+              {levels
+                .filter((level) => {
+                  if (!form.course_id) return true;
+          
+                  const course = courses.find(
+                    (item) => item.id === form.course_id
+                  );
+          
+                  return course?.level_ids?.includes(level.id);
+                })
+                .map((level) => (
+                  <option key={level.id} value={level.id}>
+                    {language === "EN" ? level.name_en : level.name_fr}
+                  </option>
+                ))}
             </select>
           </Field>
           <Field label={text.difficulty}>
