@@ -705,7 +705,9 @@ function StudentDashboard({ user, data }: { user: User; data: PageData }) {
   const quizzes = (data.quizzes as Quiz[]) || [];
   const studyItems = (data.studyItems as StudyPlanItem[]) || [];
   const recommendedQuiz = quizzes.find((quiz) => quiz.level_id === user.level_id) || quizzes[0];
-  const recommendedContent = contents.find((content) => content.level_id === user.level_id) || contents[0];
+  const recommendedContent = contents.find((content) =>
+      content.level_ids?.includes(user.level_id || "")
+    ) || contents[0];
   const weakLabel = labels.weaknessFallback;
   const strongLabel = labels.strengthFallback;
 
