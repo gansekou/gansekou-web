@@ -38,7 +38,7 @@ export function QuizEditorRouteLoader({ user, quizId }: { user: User; quizId?: s
             course_id: selectedCourse.id,
             content_id: selectedCourse.id,
             subject_id: selectedCourse.subject_id,
-            level_id: selectedCourse.level_id,
+            level_id: "",
             language: user.preferred_language || "FR",
             quiz_type: "QCM",
             is_premium: false,
