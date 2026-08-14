@@ -237,8 +237,8 @@ function LearningContentCatalog({
     return (
       (!query || label.includes(query.toLowerCase())) &&
       (!subjectId || item.subject_id === subjectId) &&
-      (!levelId || item.level_id === levelId) &&
-      (!specialtyId || item.specialty_id === specialtyId) &&
+      (!levelId || item.level_ids?.includes(levelId)) &&
+      (!specialtyId || item.specialty_ids?.includes(specialtyId)) &&
       (!year || readYear(item) === year) &&
       (!examType || readExamType(item) === examType)
     );
@@ -319,7 +319,12 @@ function LearningContentCatalog({
           
                   <Meta
                     label={t("common.level")}
-                    value={levelById.get(item.level_id)?.name_fr || "-"}
+                    value={
+                      item.level_ids
+                        ?.map((id) => levelById.get(id)?.name_fr)
+                        .filter(Boolean)
+                        .join(", ") || "-"
+                    }
                   />
           
                   {kind === "subjects" ? (
@@ -390,8 +395,18 @@ function LearningContentDetail({
   const translation = translations[0];
   const title = translation?.title || content.title || `${content.content_type} ${content.id.slice(0, 8)}`;
   const description = translation?.description || content.description || "";
-  const similar = related.filter((item) => item.content_type === settings.type && item.subject_id === content.subject_id && item.level_id === content.level_id);
-  const recommendedCourse = courses.find((item) => item.subject_id === content.subject_id && item.level_id === content.level_id);
+  const similar = related.filter(
+    (item) =>
+      item.content_type === settings.type &&
+      item.subject_id === content.subject_id &&
+      item.level_ids?.some((id) => content.level_ids?.includes(id))
+  );
+  
+ const recommendedCourse = courses.find(
+    (item) =>
+      item.subject_id === content.subject_id &&
+      item.level_ids?.some((id) => content.level_ids?.includes(id))
+  );
 
   return (
     <section className="grid gap-5">
@@ -407,7 +422,15 @@ function LearningContentDetail({
 
       <section className="grid gap-4 md:grid-cols-4">
         <Info label={t("common.subject")} value={subjectById.get(content.subject_id)?.name_fr || "-"} />
-        <Info label={t("common.level")} value={levelById.get(content.level_id)?.name_fr || "-"} />
+        <Info
+          label={t("common.level")}
+          value={
+            content.level_ids
+              ?.map((id) => levelById.get(id)?.name_fr)
+              .filter(Boolean)
+              .join(", ") || "-"
+          }
+        />
         <Info label={t("subject.specialty")} value={content.specialty_id ? specialtyById.get(content.specialty_id)?.name_fr || "-" : "-"} />
         {kind === "subjects" ? <Info label={t("content.year")} value={readYear(content) || "-"} /> : null}
         {kind === "subjects" ? <Info label={t("content.examType")} value={readExamType(content) || "-"} /> : null}
