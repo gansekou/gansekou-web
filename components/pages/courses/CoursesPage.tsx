@@ -57,7 +57,7 @@ function CourseCatalog({ user, contents, levels, subjects }: { user: User; conte
         const label = `${item.title || ""} ${item.description || ""}`.toLowerCase();
         return (
           (!query || label.includes(query.toLowerCase())) &&
-          (!levelId || item.level_id === levelId) &&
+          (!levelId || item.level_ids?.includes(levelId)) &&
           (!subjectId || item.subject_id === subjectId) &&
           (!premiumOnly || item.is_premium)
         );
@@ -134,7 +134,11 @@ function CourseCatalog({ user, contents, levels, subjects }: { user: User; conte
             </span>
   
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
-              🎓 {levelById.get(item.level_id)?.name_fr || "-"}
+              🎓{" "}
+              {item.level_ids
+                ?.map((id) => levelById.get(id)?.name_fr)
+                .filter(Boolean)
+                .join(", ") || "-"}
             </span>
           </div>
   
