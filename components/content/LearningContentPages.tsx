@@ -431,7 +431,15 @@ function LearningContentDetail({
               .join(", ") || "-"
           }
         />
-        <Info label={t("subject.specialty")} value={content.specialty_id ? specialtyById.get(content.specialty_id)?.name_fr || "-" : "-"} />
+        <Info
+          label={t("subject.specialty")}
+          value={
+            content.specialty_ids
+              ?.map((id) => specialtyById.get(id)?.name_fr)
+              .filter(Boolean)
+              .join(", ") || "-"
+          }
+        />
         {kind === "subjects" ? <Info label={t("content.year")} value={readYear(content) || "-"} /> : null}
         {kind === "subjects" ? <Info label={t("content.examType")} value={readExamType(content) || "-"} /> : null}
         <Info label={t("content.offline")} value={content.is_available_offline ? t("common.yes") : t("common.no")} />
