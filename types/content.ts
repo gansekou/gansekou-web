@@ -1,3 +1,5 @@
+import type { Level, Specialty } from "@/types/platform";
+
 export type ContentType = "COURS" | "EXERCICE" | "SUJET";
 
 export type ContentStatus = "PENDING" | "APPROVED" | "ARCHIVED" | "DRAFT" | "PUBLISHED" | string;
@@ -6,8 +8,8 @@ export type Content = {
   id: string;
   author_id: string;
   subject_id: string;
-  level_id: string;
-  specialty_id?: string | null;
+  levels?: Level[];
+  specialties?: Specialty[];
   title?: string | null;
   description?: string | null;
   translations?: ContentTranslation[];
@@ -43,8 +45,9 @@ export type Content = {
 export type ContentCreatePayload = {
   author_id: string;
   subject_id: string;
-  level_id: string;
-  specialty_id?: string | null;
+  level_ids: string[];
+  specialty_ids: string[];
+  related_content_ids?: string[];
   content_type: string;
   file_url?: string | null;
   thumbnail_url?: string | null;
