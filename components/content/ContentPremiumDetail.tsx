@@ -57,8 +57,23 @@ export function ContentPremiumDetail({
   const levelById = useMemo(() => new Map(levels.map((item) => [item.id, item])), [levels]);
   const specialtyById = useMemo(() => new Map(specialties.map((item) => [item.id, item])), [specialties]);
   const basePath = scope === "admin" ? "/admin/contents" : scope === "teacher" ? "/teacher/contents" : "/courses";
-  const associatedExercises = related.filter((item) => item.content_type === "EXERCICE" && item.subject_id === current?.subject_id && item.level_id === current?.level_id);
-  const associatedSubjects = related.filter((item) => item.content_type === "SUJET" && item.subject_id === current?.subject_id && item.level_id === current?.level_id);
+  const associatedExercises = related.filter(
+    (item) =>
+      item.content_type === "EXERCICE" &&
+      item.subject_id === current?.subject_id &&
+      item.level_ids?.some((levelId) =>
+        current?.level_ids?.includes(levelId)
+      )
+  );
+  
+  const associatedSubjects = related.filter(
+    (item) =>
+      item.content_type === "SUJET" &&
+      item.subject_id === current?.subject_id &&
+      item.level_ids?.some((levelId) =>
+        current?.level_ids?.includes(levelId)
+      )
+  );
 
   if (!current) return <EmptyState title={t("content.notFound")} message={t("content.notFound")} />;
 
@@ -134,8 +149,25 @@ export function ContentPremiumDetail({
 
       <section className="grid gap-4 md:grid-cols-4">
         <Info label={t("common.subject")} value={subjectById.get(activeContent.subject_id)?.name_fr || "-"} />
-        <Info label={t("common.level")} value={levelById.get(activeContent.level_id)?.name_fr || "-"} />
-        <Info label={t("subject.specialty")} value={activeContent.specialty_id ? specialtyById.get(activeContent.specialty_id)?.name_fr || "-" : "-"} />
+        <Info
+          label={t("common.level")}
+          value={
+            activeContent.level_ids
+              ?.map((id) => levelById.get(id)?.name_fr)
+              .filter(Boolean)
+              .join(", ") || "-"
+          }
+        />
+        <Info
+          label={t("subject.specialty")}
+          value={
+            activeContent.specialty_ids
+              ?.map((id) => specialtyById.get(id)?.name_fr)
+              .filter(Boolean)
+              .join(", ") || "-"
+          }
+        />
+        
         <Info label={t("content.type")} value={activeContent.content_type} />
         <Info label={t("content.offline")} value={activeContent.is_available_offline ? "Oui" : "Non"} />
       </section>
