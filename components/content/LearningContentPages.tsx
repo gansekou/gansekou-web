@@ -52,7 +52,7 @@ export function LearningContentListPage({ kind }: { kind: LearningKind }) {
   const settings = config[kind];
   const load = useCallback(async (): Promise<PageData> => {
     const [contents, levels, subjects, specialties] = await Promise.all([
-      platformService.contents.byType(settings.type).catch(() => [] as Content[]),
+      platformService.contents.byTypeAll(settings.type).catch(() => [] as Content[]),
       platformService.education.levels().catch(() => [] as Level[]),
       platformService.education.subjects().catch(() => [] as Subject[]),
       platformService.education.specialties().catch(() => [] as Specialty[]),
@@ -86,7 +86,7 @@ export function LearningContentDetailPage({ kind, id }: { kind: LearningKind; id
       platformService.education.levels().catch(() => [] as Level[]),
       platformService.education.subjects().catch(() => [] as Subject[]),
       platformService.education.specialties().catch(() => [] as Specialty[]),
-      platformService.contents.byType("COURS").catch(() => [] as Content[]),
+      platformService.contents.byTypeAll("COURS").catch(() => [] as Content[]),
     ]);
     return { content, related, translations, levels, subjects, specialties, courses };
   }, [id]);
@@ -115,7 +115,7 @@ export function AdminLearningContentListPage({ kind }: { kind: LearningKind }) {
   const settings = config[kind];
   const load = useCallback(async (): Promise<PageData> => {
     const [contents, levels, subjects, specialties] = await Promise.all([
-      platformService.contents.all().catch(() => [] as Content[]),
+      platformService.contents.allPages().catch(() => [] as Content[]),
       platformService.education.levels().catch(() => [] as Level[]),
       platformService.education.subjects().catch(() => [] as Subject[]),
       platformService.education.specialties().catch(() => [] as Specialty[]),
