@@ -110,15 +110,49 @@ export const platformService = {
   },
 
   contents: {
-    approved: () => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.approved)),
-    all: () => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.all)),
-    recent: () => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.recent)),
-    popular: () => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.popular)),
-    featured: () => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.featured)),
-    offline: () => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.offline)),
-    premium: () => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.premium)),
-    my: () => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.myContents)),
-    pendingReview: () => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.pendingReview)),
+    approved: (skip = 0, limit = 50) =>
+      apiFetch<Content[]>(
+        pagedUrl(ENDPOINTS.contents.approved, limit, skip)
+      ),
+  
+    all: (skip = 0, limit = 50) =>
+      apiFetch<Content[]>(
+        pagedUrl(ENDPOINTS.contents.all, limit, skip)
+      ),
+  
+    recent: (skip = 0, limit = 50) =>
+      apiFetch<Content[]>(
+        pagedUrl(ENDPOINTS.contents.recent, limit, skip)
+      ),
+  
+    popular: (skip = 0, limit = 50) =>
+      apiFetch<Content[]>(
+        pagedUrl(ENDPOINTS.contents.popular, limit, skip)
+      ),
+  
+    featured: (skip = 0, limit = 50) =>
+      apiFetch<Content[]>(
+        pagedUrl(ENDPOINTS.contents.featured, limit, skip)
+      ),
+  
+    offline: (skip = 0, limit = 50) =>
+      apiFetch<Content[]>(
+        pagedUrl(ENDPOINTS.contents.offline, limit, skip)
+      ),
+  
+    premium: (skip = 0, limit = 50) =>
+      apiFetch<Content[]>(
+        pagedUrl(ENDPOINTS.contents.premium, limit, skip)
+      ),
+  
+    my: (skip = 0, limit = 50) =>
+      apiFetch<Content[]>(
+        pagedUrl(ENDPOINTS.contents.myContents, limit, skip)
+      ),
+    pendingReview: (skip = 0, limit = 50) =>
+      apiFetch<Content[]>(
+        pagedUrl(ENDPOINTS.contents.pendingReview, limit, skip)
+      ),
     byId: (id: UUID) => apiFetch<Content>(ENDPOINTS.contents.byId(id)),
     byType: (type: string) => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.byType(type))),
     bySubject: (subjectId: UUID) => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.bySubject(subjectId))),
