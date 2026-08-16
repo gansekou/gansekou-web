@@ -153,9 +153,31 @@ export const platformService = {
       apiFetch<Content[]>(
         pagedUrl(ENDPOINTS.contents.pendingReview, limit, skip)
       ),
-    byId: (id: UUID) => apiFetch<Content>(ENDPOINTS.contents.byId(id)),
-    byType: (type: string) => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.byType(type))),
-    bySubject: (subjectId: UUID) => apiFetch<Content[]>(pagedUrl(ENDPOINTS.contents.bySubject(subjectId))),
+    byId: (id: UUID) =>
+      apiFetch<Content>(
+        ENDPOINTS.contents.byId(id)
+      ),
+      byType: (type: string, skip = 0, limit = 50) =>
+        apiFetch<Content[]>(
+          pagedUrl(
+            ENDPOINTS.contents.byType(type),
+            limit,
+            skip
+          )
+        ),
+    
+      bySubject: (
+        subjectId: UUID,
+        skip = 0,
+        limit = 50
+      ) =>
+        apiFetch<Content[]>(
+          pagedUrl(
+            ENDPOINTS.contents.bySubject(subjectId),
+            limit,
+            skip
+          )
+        ),
     create: (payload: ContentCreatePayload) =>
       apiFetch<Content>(ENDPOINTS.contents.all, {
         method: "POST",
