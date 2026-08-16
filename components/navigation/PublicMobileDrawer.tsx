@@ -55,13 +55,8 @@ const items = [
     icon: Trophy,
   },
   {
-    label: "Gansekou Excellence+",
-    href: "/premium",
-    icon: Sparkles,
-  },
-  {
     label: "Abonnement",
-    href: "/subscription",
+    href: "/premium",
     icon: CreditCard,
   },
 ];
