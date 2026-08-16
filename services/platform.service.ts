@@ -250,6 +250,36 @@ export const platformService = {
         `${ENDPOINTS.contents.relatedOptions}?${query.toString()}`
       );
     },
+    allPages: () =>
+      fetchAllContentPages(
+        (skip, limit) =>
+          apiFetch<Content[]>(
+            pagedUrl(ENDPOINTS.contents.all, limit, skip)
+          )
+      ),
+  
+    byTypeAll: (type: string) =>
+      fetchAllContentPages(
+        (skip, limit) =>
+          apiFetch<Content[]>(
+            pagedUrl(
+              ENDPOINTS.contents.byType(type),
+              limit,
+              skip
+            )
+          )
+      ),
+      approvedAll: () =>
+        fetchAllContentPages(
+          (skip, limit) =>
+            apiFetch<Content[]>(
+              pagedUrl(
+                ENDPOINTS.contents.approved,
+                limit,
+                skip
+              )
+            )
+        ),
     
   },
  
@@ -609,6 +639,28 @@ export const platformService = {
     educationStats: () => apiFetch(ENDPOINTS.admin.educationStats),
   },
 };
+
+async function fetchAllContentPages(
+  fetchPage: (skip: number, limit: number) => Promise<Content[]>,
+  pageSize = 100
+): Promise<Content[]> {
+  const all: Content[] = [];
+  let skip = 0;
+
+  while (true) {
+    const page = await fetchPage(skip, pageSize);
+
+    all.push(...page);
+
+    if (page.length < pageSize) {
+      break;
+    }
+
+    skip += pageSize;
+  }
+
+  return all;
+}
 
 function pagedUrl(url: string, limit = 50, skip = 0) {
   const separator = url.includes("?") ? "&" : "?";
