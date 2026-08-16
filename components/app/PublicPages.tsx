@@ -665,9 +665,13 @@ export function PublicPremiumPage() {
                 <p className="mt-3 text-sm font-black text-[#071d3a]">{copy.nextDue}: {formatPremiumDate(subscription?.expires_at, language)}</p>
               ) : null}
             </div>
-            <Link href="/subscription" className="mt-5 inline-flex rounded-full bg-[#071d3a] px-5 py-3 font-black text-white md:mt-0">
+            <button
+              type="button"
+              disabled
+              className="mt-5 inline-flex cursor-not-allowed rounded-full bg-slate-200 px-5 py-3 font-black text-slate-400 opacity-70 md:mt-0"
+            >
               {copy.manageSubscription}
-            </Link>
+            </button>
           </div>
         ) : null}
 
