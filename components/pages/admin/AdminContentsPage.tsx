@@ -7,18 +7,54 @@ import { platformService } from "@/services/platform.service";
 import type { Content } from "@/types/content";
 import type { Level, PageData, Subject } from "@/types/platform";
 
-export function AdminContentsPage({ reviewOnly = false }: { reviewOnly?: boolean }) {
+async function fetchAllContents(): Promise<Content[]> {
+  const all: Content[] = [];
+  let skip = 0;
+  const pageSize = 100;
+
+  while (true) {
+    const page = await platformService.contents.all(skip, pageSize);
+
+    all.push(...page);
+
+    if (page.length < pageSize) {
+      break;
+    }
+
+    skip += pageSize;
+  }
+
+  return all;
+}
+
+export function AdminContentsPage({
+  reviewOnly = false,
+}: {
+  reviewOnly?: boolean;
+}) {
   const load = useCallback(async (): Promise<PageData> => {
     const [contents, levels, subjects] = await Promise.all([
-      (reviewOnly ? platformService.contents.pendingReview() : platformService.contents.all()).catch(() => [] as Content[]),
+      reviewOnly
+        ? platformService.contents.pendingReview().catch(() => [] as Content[])
+        : fetchAllContents().catch(() => [] as Content[]),
+
       platformService.education.levels().catch(() => [] as Level[]),
+
       platformService.education.subjects().catch(() => [] as Subject[]),
     ]);
-    return { contents, levels, subjects };
+
+    return {
+      contents,
+      levels,
+      subjects,
+    };
   }, [reviewOnly]);
 
   return (
-    <AuthenticatedPage loadingLabel="Chargement des contenus..." load={load}>
+    <AuthenticatedPage
+      loadingLabel="Chargement des contenus..."
+      load={load}
+    >
       {({ user, data, reload }) => (
         <ContentManager
           user={user}
@@ -33,4 +69,3 @@ export function AdminContentsPage({ reviewOnly = false }: { reviewOnly?: boolean
     </AuthenticatedPage>
   );
 }
-
