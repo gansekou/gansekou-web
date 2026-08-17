@@ -664,7 +664,7 @@ export const platformService = {
 
 async function fetchAllContentPages(
   fetchPage: (skip: number, limit: number) => Promise<Content[]>,
-  pageSize = 100
+  pageSize = 50
 ): Promise<Content[]> {
   const all: Content[] = [];
   let skip = 0;
@@ -678,7 +678,7 @@ async function fetchAllContentPages(
       break;
     }
 
-    skip += pageSize;
+    skip += page.length;
   }
 
   return all;
