@@ -288,7 +288,7 @@ export function SmartHomePage() {
         <div className="rounded-[2rem] bg-[#071d3a] p-6 text-white shadow-2xl shadow-[#071d3a]/20">
           <div className="mb-5 flex items-center justify-between">
             <GansekouLogo variant="light" size="medium" />
-            <PremiumBadge />
+            <PremiumBadge label={copy.premiumBadge} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {benefits.map((item, index) => {
