@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { ChevronRight, Crown, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { GansekouLogo } from "@/components/ui/GansekouLogo";
@@ -204,6 +204,94 @@ export function MobileDrawer({
 
             ))}
 
+          </div>
+
+          {/* EXCELLENCE+ — CTA COMPACT */}
+
+          <div className="border-t border-slate-100 px-4 py-3">
+          
+            <Link
+              href="/premium"
+              onClick={onClose}
+              className={`
+                group
+                flex
+                w-full
+                items-center
+                gap-3
+                rounded-xl
+                border
+                px-3
+                py-2.5
+                transition-all
+                duration-200
+          
+                ${
+                  user?.is_premium
+                    ? "border-[#f6c445]/30 bg-[#f6c445]/10 text-[#082f1f]"
+                    : "border-[#0f5f3a]/10 bg-[#f8faf5] text-[#082f1f] hover:border-[#f6c445]/50 hover:bg-[#f6c445]/10"
+                }
+              `}
+            >
+          
+              {/* ICÔNE */}
+          
+              <span
+                className={`
+                  flex
+                  h-8
+                  w-8
+                  shrink-0
+                  items-center
+                  justify-center
+                  rounded-lg
+                  transition
+          
+                  ${
+                    user?.is_premium
+                      ? "bg-[#f6c445] text-[#082f1f]"
+                      : "bg-[#082f1f] text-[#f6c445] group-hover:scale-105"
+                  }
+                `}
+              >
+                <Crown
+                  size={15}
+                  strokeWidth={2.5}
+                />
+              </span>
+          
+              {/* TEXTE */}
+          
+              <span className="min-w-0 flex-1">
+          
+                <span className="block truncate text-xs font-black">
+                  {user?.is_premium
+                    ? "Excellence+"
+                    : "Passer à Excellence+"}
+                </span>
+          
+                <span className="block truncate text-[10px] font-semibold text-slate-400">
+                  {user?.is_premium
+                    ? "Abonnement actif"
+                    : "Débloquer toutes les fonctionnalités"}
+                </span>
+          
+              </span>
+          
+              {/* FLÈCHE */}
+          
+              <ChevronRight
+                size={15}
+                className="
+                  shrink-0
+                  text-slate-400
+                  transition-transform
+                  group-hover:translate-x-0.5
+                "
+              />
+          
+            </Link>
+          
           </div>
 
         </div>
