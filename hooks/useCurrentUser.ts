@@ -75,18 +75,50 @@ export function useCurrentUser() {
       try {
         const restoredUser = await restoreSession();
 
-        if (cancelled) return;
-
-        if (restoredUser) {
+      if (cancelled) return;
+      
+      if (restoredUser) {
+        try {
+          const subscription =
+            await platformService.payments.subscription();
+      
+          const enrichedUser = {
+            ...restoredUser,
+            is_premium: subscription.is_premium,
+          };
+      
           setSession({
-            user: restoredUser,
+            user: enrichedUser,
             token: "",
           });
-
+      
           setAuthStatus("authenticated");
-
-          authLog("[auth] session restored");
+      
+          authLog(
+            `[auth] session restored - premium: ${enrichedUser.is_premium}`
+          );
+        } catch (subscriptionError) {
+          console.error(
+            "[auth] subscription restore failed",
+            subscriptionError
+          );
+      
+          // La session utilisateur reste valide même
+          // si la récupération Premium échoue.
+          setSession({
+            user: {
+              ...restoredUser,
+              is_premium: false,
+            },
+            token: "",
+          });
+      
+          setAuthStatus("authenticated");
         }
+      }
+
+
+        
       } catch (error) {
         console.error("[auth] restore session failed", error);
       }
