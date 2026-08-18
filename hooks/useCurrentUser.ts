@@ -7,6 +7,8 @@ import { authService } from "@/services/auth.service";
 import { useAuthStore } from "@/store/auth.store";
 import { restoreSession } from "@/lib/session";
 
+import { platformService } from "@/services/platform.service";
+
 const PROFILE_TTL_MS = 5 * 60 * 1000;
 
 const profileRequests = new Map<
@@ -34,6 +36,18 @@ function loadProfileOnce(uid: string) {
   profileRequests.set(uid, request);
 
   return request;
+}
+
+async function loadUserWithSubscription(uid: string) {
+  const [currentUser, subscription] = await Promise.all([
+    loadProfileOnce(uid),
+    platformService.payments.subscription(),
+  ]);
+
+  return {
+    ...currentUser,
+    is_premium: subscription.is_premium,
+  };
 }
 
 export function useCurrentUser() {
@@ -157,22 +171,21 @@ export function useCurrentUser() {
           setError(null);
 
 
-          const currentUser = await loadProfileOnce(
+          const currentUser = await loadUserWithSubscription(
             firebaseUser.uid
           );
-
-
+          
           authLog("[auth] backend profile loaded");
-
-
+          authLog(
+            `[auth] premium status: ${currentUser.is_premium}`
+          );
+          
           if (!cancelled) {
-
             setSession({
               user: currentUser,
               token,
             });
-
-
+          
             setAuthStatus("authenticated");
           }
 
@@ -237,3 +250,4 @@ export function useCurrentUser() {
     error,
   };
 }
+
