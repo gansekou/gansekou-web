@@ -219,16 +219,10 @@ export function canReadSubjectContent(
 }
 
 export function canDownloadSubjectContent(
-  user?: (Pick<User, "role"> & { is_premium?: boolean }) | null,
-  content?: Pick<Content, "subject_id" | "is_downloadable"> | null,
-  teacherSubjectIds: string[] = []
+  user?: Pick<User, "is_premium"> | null,
+  content?: Pick<Content, "available_offline"> | null
 ) {
-  if (!user || !content?.is_downloadable) return false;
-  if (isPromoter(user) || isAdminRole(user)) return true;
-  if (teacherStudioRoles.includes(user.role) && content.subject_id && teacherSubjectIds.includes(content.subject_id)) {
-    return Boolean(user.is_premium);
-  }
-  return true;
+  return Boolean(user?.is_premium && content?.available_offline);
 }
 
 export function canEarnTeacherXp(user?: Pick<User, "role"> | null) {
