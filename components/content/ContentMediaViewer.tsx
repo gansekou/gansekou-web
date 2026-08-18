@@ -9,7 +9,6 @@ import {
   getContentKind,
   getContentStreamUrl,
   fetchAuthenticatedContentBlob,
-  downloadAuthenticatedFile,
 } from "@/lib/content-media";
 import type { Content } from "@/types/content";
 import { PdfViewer } from "@/components/content/PdfViewer";
