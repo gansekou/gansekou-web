@@ -220,9 +220,9 @@ export function canReadSubjectContent(
 
 export function canDownloadSubjectContent(
   user?: Pick<User, "is_premium"> | null,
-  content?: Pick<Content, "available_offline"> | null
+  content?: Pick<Content, "is_available_offline"> | null
 ) {
-  return Boolean(user?.is_premium && content?.available_offline);
+  return Boolean(user?.is_premium && content?.is_available_offline);
 }
 
 export function canEarnTeacherXp(user?: Pick<User, "role"> | null) {
