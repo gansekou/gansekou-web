@@ -13,7 +13,8 @@ import { AuthenticatedPage } from "@/components/pages/shared/AuthenticatedPage";
 import { useI18n } from "@/hooks/useI18n";
 import { ApiError } from "@/lib/api";
 import { downloadAuthenticatedFile, getContentMainUrl } from "@/lib/content-media";
-import { isAdminRole } from "@/lib/permissions";
+import { isAdminRole, isStudentRole } from "@/lib/permissions";
+import { useRouter } from "next/navigation";
 import { platformService } from "@/services/platform.service";
 import type { Content } from "@/types/content";
 import type { Level, PageData, Specialty, Subject } from "@/types/platform";
@@ -222,6 +223,7 @@ function LearningContentCatalog({
 }) {
   const settings = config[kind];
   const { t } = useI18n(user);
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [levelId, setLevelId] = useState("");
@@ -292,10 +294,18 @@ function LearningContentCatalog({
                 )}
           
                 <div className="mb-4 flex items-center justify-between gap-3">
-                  <span className="rounded-full bg-[#0f5f3a]/10 px-3 py-1 text-xs font-black text-[#0f5f3a]">
-                    {item.content_type}
-                  </span>
-          
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-full bg-[#0f5f3a]/10 px-3 py-1 text-xs font-black text-[#0f5f3a]">
+                      {item.content_type}
+                    </span>
+                
+                    {item.is_premium ? (
+                      <span className="rounded-full bg-[#f6c445] px-3 py-1 text-xs font-black text-[#071d3a]">
+                        PREMIUM
+                      </span>
+                    ) : null}
+                  </div>
+                
                   {item.is_available_offline ? (
                     <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600">
                       {t("content.offline")}
@@ -336,14 +346,22 @@ function LearningContentCatalog({
                 </dl>
           
                 <div className="mt-5 flex flex-wrap gap-2">
-                  <Link
-                    href={`${settings.basePath}/${item.id}`}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (item.is_premium && isStudentRole(user)) {
+                        router.push("/premium");
+                        return;
+                      }
+                  
+                      router.push(`${settings.basePath}/${item.id}`);
+                    }}
                     className="rounded-full bg-[#0f5f3a] px-4 py-2 text-sm font-black text-white"
                   >
                     {t(settings.actionKey)}
-                  </Link>
+                  </button>
           
-                  {item.is_premium && getContentMainUrl(item) ? (
+                  {item.is_available_offline && getContentMainUrl(item) ? (
                     <DownloadButton
                       content={item}
                       label={t("content.download")}
@@ -384,12 +402,19 @@ function LearningContentDetail({
 }) {
   const settings = config[kind];
   const { t } = useI18n(user);
+  const router = useRouter();
   const subjectById = useMemo(() => new Map(subjects.map((item) => [item.id, item])), [subjects]);
   const levelById = useMemo(() => new Map(levels.map((item) => [item.id, item])), [levels]);
   const specialtyById = useMemo(() => new Map(specialties.map((item) => [item.id, item])), [specialties]);
 
+
   if (!content || content.content_type !== settings.type) {
     return <EmptyState title={t("content.notFound")} message={t("content.notFound")} />;
+  }
+
+  if (content?.is_premium && isStudentRole(user)) {
+    router.replace("/premium");
+    return null;
   }
 
   const translation = translations[0];
