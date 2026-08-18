@@ -593,8 +593,15 @@ function LearningContentDetail({
           <h3 className="text-2xl font-black text-[#071d3a]">{t("content.recommendedCourse")}</h3>
           <Link href={`/courses/${recommendedCourse.id}`} className="mt-5 block rounded-2xl bg-slate-50 p-5 font-black text-[#071d3a] transition hover:bg-white hover:shadow-lg">
             <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">COURS</span>
-            <p className="mt-3">{recommendedCourse.detailData.translations[0]?.title || `COURS ${recommendedCourse.id.slice(0, 8)}`}</p>
-            <p className="mt-2 text-sm text-slate-500">{recommendedCourse.detailData.translations[0]?.description || recommendedCourse.status}</p>
+            <p className="mt-3">
+              {recommendedCourse.translations?.[0]?.title ||
+                `COURS ${recommendedCourse.id.slice(0, 8)}`}
+            </p>
+
+            <p className="mt-2 text-sm text-slate-500">
+              {recommendedCourse.translations?.[0]?.description ||
+                recommendedCourse.status}
+            </p>
           </Link>
         </section>
       ) : null}
@@ -603,9 +610,18 @@ function LearningContentDetail({
         <h3 className="text-2xl font-black text-[#071d3a]">{t(settings.similarKey)}</h3>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
           {similar.map((item) => (
-            <Link key={item.id} href={`${settings.basePath}/${item.id}`} className="rounded-2xl bg-slate-50 p-4 font-black text-[#071d3a]">
-              <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">{item.content_type}</span>
-              <p className="mt-2">{itemdetailData.translations[0]?.title || item.id.slice(0, 8)}</p>
+            <Link
+              key={item.id}
+              href={`${settings.basePath}/${item.id}`}
+              className="rounded-2xl bg-slate-50 p-4 font-black text-[#071d3a]"
+            >
+              <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">
+                {item.content_type}
+              </span>
+          
+              <p className="mt-2">
+                {item.translations?.[0]?.title || item.id.slice(0, 8)}
+              </p>
             </Link>
           ))}
         </div>
