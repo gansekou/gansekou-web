@@ -463,8 +463,14 @@ function LearningContentDetail({
           .catch(() => [] as Content[]),
     
         platformService.contents
-          .translations(contentId)
-          .catch(() => [] as { title?: string; description?: string }[]),
+          .translations(content.id)
+          .then(
+            (value) =>
+              value as { title?: string; description?: string }[]
+          )
+          .catch(
+            () => [] as { title?: string; description?: string }[]
+          ),
     
         platformService.education
           .levels()
