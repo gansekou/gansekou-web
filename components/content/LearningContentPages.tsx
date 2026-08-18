@@ -77,19 +77,23 @@ export function LearningContentListPage({ kind }: { kind: LearningKind }) {
   );
 }
 
-export function LearningContentDetailPage({ kind, id }: { kind: LearningKind; id?: string }) {
+export function LearningContentDetailPage({
+  kind,
+  id,
+}: {
+  kind: LearningKind;
+  id?: string;
+}) {
   const load = useCallback(async (): Promise<PageData> => {
     if (!id) return {};
-    const [content, related, translations, levels, subjects, specialties, courses] = await Promise.all([
-      platformService.contents.byId(id).catch(() => undefined),
-      platformService.contents.related(id).catch(() => [] as Content[]),
-      platformService.contents.translations(id).catch(() => []),
-      platformService.education.levels().catch(() => [] as Level[]),
-      platformService.education.subjects().catch(() => [] as Subject[]),
-      platformService.education.specialties().catch(() => [] as Specialty[]),
-      platformService.contents.byTypeAll("COURS").catch(() => [] as Content[]),
-    ]);
-    return { content, related, translations, levels, subjects, specialties, courses };
+
+    // On charge d'abord uniquement le contenu.
+    // Cela permet de vérifier rapidement l'accès Premium.
+    const content = await platformService.contents
+      .byId(id)
+      .catch(() => undefined);
+
+    return { content };
   }, [id]);
 
   return (
@@ -98,13 +102,13 @@ export function LearningContentDetailPage({ kind, id }: { kind: LearningKind; id
         <LearningContentDetail
           kind={kind}
           user={user}
-          content={data.content as Content | null}
-          related={(data.related as Content[]) || []}
-          translations={(data.translations as { title?: string; description?: string }[]) || []}
-          levels={(data.levels as Level[]) || []}
-          subjects={(data.subjects as Subject[]) || []}
-          specialties={(data.specialties as Specialty[]) || []}
-          courses={(data.courses as Content[]) || []}
+          content={(data.content as Content | null) || null}
+          related={[]}
+          translations={[]}
+          levels={[]}
+          subjects={[]}
+          specialties={[]}
+          courses={[]}
           reload={reload}
         />
       )}
@@ -413,7 +417,12 @@ function LearningContentDetail({
     return <EmptyState title={t("content.notFound")} message={t("content.notFound")} />;
   }
 
-  if (content?.is_premium && isStudentRole(user) && !user.is_premium) {
+  console.log("PREMIUM", {
+    contentPremium: content?.is_premium,
+    userPremium: user.is_premium,
+  });
+
+  if (content?.is_premium && !user.is_premium) {
     router.replace("/premium");
     return null;
   }
