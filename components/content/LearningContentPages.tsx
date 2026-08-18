@@ -365,6 +365,7 @@ function LearningContentCatalog({
                     <DownloadButton
                       content={item}
                       label={t("content.download")}
+                      isPremiumUser={Boolean(user.is_premium)}
                     />
                   ) : null}
                 </div>
@@ -440,7 +441,14 @@ function LearningContentDetail({
         <h2 className="mt-3 text-4xl font-black tracking-tight">{title}</h2>
         <p className="mt-3 max-w-3xl leading-7 text-white/70">{description || content.content_type}</p>
         <div className="mt-5 flex flex-wrap gap-2">
-          {getContentMainUrl(content) ? <DownloadButton content={content} label={t("content.download")} dark /> : null}
+          {getContentMainUrl(content) ? (
+            <DownloadButton
+              content={content}
+              label={t("content.download")}
+              dark
+              isPremiumUser={Boolean(user.is_premium)}
+            />
+          ) : null}
           <Link href={config[kind].basePath} className="rounded-full bg-white/10 px-5 py-3 font-black text-white">{t("content.all")}</Link>
         </div>
       </section>
@@ -499,18 +507,41 @@ function LearningContentDetail({
   );
 }
 
-function DownloadButton({ content, label, dark = false }: { content: Content; label: string; dark?: boolean }) {
+function DownloadButton({
+  content,
+  label,
+  dark = false,
+  isPremiumUser,
+}: {
+  content: Content;
+  label: string;
+  dark?: boolean;
+  isPremiumUser: boolean;
+}) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function download() {
+    // Le téléchargement est réservé aux abonnés Premium.
+    // Peu importe que le contenu soit premium ou gratuit.
+    if (!isPremiumUser) {
+      router.push("/premium");
+      return;
+    }
+
     setLoading(true);
     setError(null);
+
     try {
       await platformService.contents.download(content.id);
       await downloadAuthenticatedFile(content);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Download failed");
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Download failed"
+      );
     } finally {
       setLoading(false);
     }
@@ -518,11 +549,25 @@ function DownloadButton({ content, label, dark = false }: { content: Content; la
 
   return (
     <span className="inline-flex flex-col gap-2">
-      <button type="button" onClick={download} disabled={loading} className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black disabled:opacity-60 ${dark ? "bg-white/10 text-white" : "bg-[#f6c445] text-[#071d3a]"}`}>
+      <button
+        type="button"
+        onClick={download}
+        disabled={loading}
+        className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black disabled:opacity-60 ${
+          dark
+            ? "bg-white/10 text-white"
+            : "bg-[#f6c445] text-[#071d3a]"
+        }`}
+      >
         <Download size={16} />
         {loading ? "..." : label}
       </button>
-      {error ? <span className="text-xs font-bold text-red-600">{error}</span> : null}
+
+      {error ? (
+        <span className="text-xs font-bold text-red-600">
+          {error}
+        </span>
+      ) : null}
     </span>
   );
 }
