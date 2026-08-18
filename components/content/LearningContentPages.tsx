@@ -554,7 +554,7 @@ function LearningContentDetail({
               content={content}
               label={t("content.download")}
               dark
-              isPremiumUser={user.is_premium}
+              isPremiumUser={user.is_premium === true}
             />
           ) : null}
           <Link href={config[kind].basePath} className="rounded-full bg-white/10 px-5 py-3 font-black text-white">{t("content.all")}</Link>
