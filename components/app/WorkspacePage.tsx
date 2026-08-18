@@ -689,7 +689,7 @@ function Hero({ eyebrow, title, body }: { eyebrow: string; title: string; body: 
     <section className="relative overflow-hidden rounded-[2rem] bg-[#082f1f] p-8 text-white shadow-2xl shadow-[#082f1f]/20">
       <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
         <GansekouLogo variant="light" size="medium" />
-        <PremiumBadge label="Gansekou" />
+        <PremiumBadge />
       </div>
       <p className="text-sm font-black uppercase tracking-[0.25em] text-[#f6c445]">{eyebrow}</p>
       <h2 className="mt-3 max-w-3xl text-4xl font-black tracking-tight">{title}</h2>
