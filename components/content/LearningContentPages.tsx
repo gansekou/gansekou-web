@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, Search } from "lucide-react";
+import {
+  BookOpen,
+  Crown,
+  Download,
+  Eye,
+  GraduationCap,
+  Search,
+} from "lucide-react";
 import Image from "next/image";
 import { getThumbnailUrl } from "@/lib/files";
 import { ContentEditor } from "@/components/content/ContentEditor";
@@ -227,172 +234,357 @@ function LearningContentCatalog({
   const settings = config[kind];
   const { t } = useI18n(user);
   const router = useRouter();
+
   const [query, setQuery] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [levelId, setLevelId] = useState("");
   const [specialtyId, setSpecialtyId] = useState("");
-  const [year, setYear] = useState("");
-  const [examType, setExamType] = useState("");
-  const subjectById = useMemo(() => new Map(subjects.map((item) => [item.id, item])), [subjects]);
-  const levelById = useMemo(() => new Map(levels.map((item) => [item.id, item])), [levels]);
-  const years = Array.from(new Set(contents.map(readYear).filter(Boolean))).sort().reverse();
-  const examTypes = Array.from(new Set(contents.map(readExamType).filter(Boolean)));
-  console.log("CATALOGUE CONTENTS", {
-    total: contents.length,
-    premium: contents.filter((item) => item.is_premium).length,
-    gratuits: contents.filter((item) => !item.is_premium).length,
-    userPremium: user.is_premium,
-    contents: contents.map((item) => ({
-      id: item.id,
-      title: item.translations?.[0]?.title,
-      is_premium: item.is_premium,
-    })),
-  });
+
+  const subjectById = useMemo(
+    () => new Map(subjects.map((item) => [item.id, item])),
+    [subjects]
+  );
+
+  const levelById = useMemo(
+    () => new Map(levels.map((item) => [item.id, item])),
+    [levels]
+  );
+
   const filtered = contents.filter((item) => {
-    const label = `${item.title || ""} ${item.description || ""} ${item.tags || ""}`.toLowerCase();
+    const translationsText =
+      item.translations
+        ?.map((translation) =>
+          `${translation.title || ""} ${translation.description || ""}`
+        )
+        .join(" ") || "";
+
+    const subjectName =
+      subjectById.get(item.subject_id)?.name_fr || "";
+
+    const searchText = `
+      ${item.title || ""}
+      ${item.description || ""}
+      ${item.tags || ""}
+      ${translationsText}
+      ${subjectName}
+      ${item.content_type || ""}
+    `.toLowerCase();
+
     return (
-      (!query || label.includes(query.toLowerCase())) &&
+      (!query || searchText.includes(query.trim().toLowerCase())) &&
       (!subjectId || item.subject_id === subjectId) &&
       (!levelId || item.level_ids?.includes(levelId)) &&
-      (!specialtyId || item.specialty_ids?.includes(specialtyId)) &&
-      (!year || readYear(item) === year) &&
-      (!examType || readExamType(item) === examType)
+      (!specialtyId || item.specialty_ids?.includes(specialtyId))
     );
   });
 
   return (
-    <section className="grid gap-5">
-      <section className="rounded-[2rem] bg-[#071d3a] p-7 text-white shadow-2xl shadow-[#071d3a]/20">
-        <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
+    <section className="grid gap-4">
+      {/* EN-TÊTE */}
+      <section className="rounded-[1.5rem] bg-[#071d3a] p-5 text-white shadow-xl shadow-[#071d3a]/15 sm:p-6">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.25em] text-[#f6c445]">{t(settings.listTitleKey)}</p>
-            <h2 className="mt-3 text-4xl font-black tracking-tight">{t(settings.listTitleKey)}</h2>
-            <p className="mt-3 max-w-2xl text-sm font-bold leading-7 text-white/70">{t(settings.listHelpKey)}</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#f6c445] sm:text-xs">
+              {t(settings.listTitleKey)}
+            </p>
+
+            <h2 className="mt-1.5 text-2xl font-black tracking-tight sm:text-3xl">
+              {t(settings.listTitleKey)}
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-xs font-bold leading-5 text-white/65 sm:text-sm">
+              {t(settings.listHelpKey)}
+            </p>
           </div>
-          {isAdminRole(user) ? <Link href={settings.adminPath + "/new"} className="ds-button-premium">{t(settings.addKey)}</Link> : null}
+
+          {isAdminRole(user) ? (
+            <Link
+              href={settings.adminPath + "/new"}
+              className="ds-button-premium !rounded-xl !px-4 !py-2 !text-xs"
+            >
+              {t(settings.addKey)}
+            </Link>
+          ) : null}
         </div>
       </section>
 
-      <section className="rounded-[2rem] bg-white p-6 shadow-xl shadow-[#082f1f]/5">
-        <div className={`grid gap-3 ${kind === "subjects" ? "lg:grid-cols-6" : "lg:grid-cols-4"}`}>
-          <label className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("common.search")} className="w-full rounded-2xl border border-slate-200 py-3 pl-11 pr-4 text-sm font-bold outline-none" />
+      {/* FILTRES */}
+      <section className="rounded-[1.5rem] bg-white p-3 shadow-lg shadow-[#082f1f]/5 sm:p-4">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* RECHERCHE */}
+          <label
+            className={`relative ${
+              user?.role === "ELEVE"
+                ? "sm:col-span-2 lg:col-span-2"
+                : "sm:col-span-2 lg:col-span-1"
+            }`}
+          >
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              size={16}
+            />
+
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={t("common.search")}
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs font-bold text-[#071d3a] outline-none transition placeholder:text-slate-400 focus:border-[#0f5132] focus:bg-white focus:ring-2 focus:ring-[#0f5132]/10"
+            />
           </label>
-          <Select value={subjectId} onChange={setSubjectId} label={t("common.subject")} options={subjects.map((item) => [item.id, item.name_fr])} />
 
+          {/* MATIÈRE — TOUJOURS VISIBLE */}
+          <Select
+            value={subjectId}
+            onChange={setSubjectId}
+            label={t("common.subject")}
+            options={subjects.map((item) => [item.id, item.name_fr])}
+          />
+
+          {/* FILTRES NON ÉLÈVES */}
           {user?.role !== "ELEVE" && (
-            <Select value={levelId} onChange={setLevelId} label={t("common.level")} options={levels.map((item) => [item.id, item.name_fr])} />
-          )}
-          
-          <Select value={specialtyId} onChange={setSpecialtyId} label={t("subject.specialty")} options={specialties.map((item) => [item.id, item.name_fr])} />
-          {kind === "subjects" ? <Select value={year} onChange={setYear} label={t("content.year")} options={years.map((item) => [item, item])} /> : null}
-          {kind === "subjects" ? <Select value={examType} onChange={setExamType} label={t("content.examType")} options={examTypes.map((item) => [item, item])} /> : null}
-        </div>
+            <>
+              <Select
+                value={levelId}
+                onChange={setLevelId}
+                label={t("common.level")}
+                options={levels.map((item) => [item.id, item.name_fr])}
+              />
 
-        {!filtered.length ? (
-          <EmptyState title={t(settings.emptyKey)} message={t("state.emptyContent")} />
-        ) : (
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((item) => (
+              <Select
+                value={specialtyId}
+                onChange={setSpecialtyId}
+                label={t("subject.specialty")}
+                options={specialties.map((item) => [item.id, item.name_fr])}
+              />
+            </>
+          )}
+        </div>
+      </section>
+
+      {/* CATALOGUE */}
+      {!filtered.length ? (
+        <EmptyState
+          title={t(settings.emptyKey)}
+          message={t("state.emptyContent")}
+        />
+      ) : (
+        <div
+          className="
+            grid
+            grid-cols-3
+            gap-2
+            sm:gap-3
+            lg:grid-cols-4
+            xl:grid-cols-5
+            2xl:grid-cols-6
+          "
+        >
+          {filtered.map((item) => {
+            const title =
+              item.translations?.[0]?.title ||
+              item.title ||
+              `${item.content_type} ${item.id.slice(0, 8)}`;
+
+            const subjectName =
+              subjectById.get(item.subject_id)?.name_fr || "-";
+
+            const levelName =
+              item.level_ids
+                ?.map((id) => levelById.get(id)?.name_fr)
+                .filter(Boolean)
+                .join(", ") || "-";
+
+            return (
               <article
                 key={item.id}
-                className="rounded-2xl border border-slate-100 bg-slate-50 p-5 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
+                className="
+                  group
+                  min-w-0
+                  overflow-hidden
+                  rounded-xl
+                  border
+                  border-slate-100
+                  bg-white
+                  p-2
+                  transition
+                  duration-200
+                  hover:-translate-y-0.5
+                  hover:border-slate-200
+                  hover:shadow-md
+                  sm:rounded-2xl
+                  sm:p-2.5
+                  lg:p-3
+                "
               >
-          
-                {item.thumbnail_url && (
-                  <div className="relative mb-4 h-40 w-full overflow-hidden rounded-xl">
+                {/* IMAGE */}
+                {item.thumbnail_url ? (
+                  <div className="relative mb-2 h-20 w-full overflow-hidden rounded-lg bg-slate-100 sm:h-24 lg:h-28">
                     <Image
                       src={getThumbnailUrl(item.thumbnail_url)}
-                      alt={item.translations?.[0]?.title || "Thumbnail exercice"}
+                      alt={title}
                       fill
-                      className="object-cover"
+                      sizes="
+                        (max-width: 639px) 33vw,
+                        (max-width: 1023px) 25vw,
+                        (max-width: 1279px) 20vw,
+                        16vw
+                      "
+                      className="object-cover transition duration-300 group-hover:scale-105"
                     />
-                  </div>
-                )}
-          
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full bg-[#0f5f3a]/10 px-3 py-1 text-xs font-black text-[#0f5f3a]">
-                      {item.content_type}
-                    </span>
-                
+
+                    {/* PREMIUM */}
                     {item.is_premium ? (
-                      <span className="rounded-full bg-[#f6c445] px-3 py-1 text-xs font-black text-[#071d3a]">
-                        PREMIUM
+                      <span
+                        title="Premium"
+                        aria-label="Premium"
+                        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#f6c445] text-[#071d3a] shadow-sm"
+                      >
+                        <Crown size={12} strokeWidth={2.5} />
                       </span>
                     ) : null}
                   </div>
-                
+                ) : (
+                  <div className="relative mb-2 flex h-20 items-center justify-center rounded-lg bg-slate-100 sm:h-24 lg:h-28">
+                    <BookOpen
+                      size={22}
+                      className="text-slate-300"
+                    />
+
+                    {item.is_premium ? (
+                      <span
+                        title="Premium"
+                        aria-label="Premium"
+                        className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#f6c445] text-[#071d3a]"
+                      >
+                        <Crown size={12} strokeWidth={2.5} />
+                      </span>
+                    ) : null}
+                  </div>
+                )}
+
+                {/* TYPE + OFFLINE */}
+                <div className="mb-1.5 flex items-center justify-between gap-1">
+                  <span className="truncate rounded-md bg-[#0f5f3a]/10 px-1.5 py-0.5 text-[8px] font-black text-[#0f5f3a] sm:text-[9px]">
+                    {item.content_type}
+                  </span>
+
                   {item.is_available_offline ? (
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-slate-600">
-                      {t("content.offline")}
+                    <span
+                      title={t("content.offline")}
+                      aria-label={t("content.offline")}
+                      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500"
+                    >
+                      <Download size={10} />
                     </span>
                   ) : null}
                 </div>
-          
-                <h3 className="font-black text-[#082f1f]">
-                  {item.translations?.[0]?.title || `${item.content_type} ${item.id.slice(0, 8)}`}
+
+                {/* TITRE */}
+                <h3 className="line-clamp-2 min-h-[2rem] text-[10px] font-black leading-4 text-[#082f1f] sm:text-[11px] sm:leading-4">
+                  {title}
                 </h3>
-          
-                <p className="mt-2 line-clamp-2 text-sm font-bold text-slate-500">
-                  {item.translations?.[0]?.description || item.status}
+
+                {/* DESCRIPTION */}
+                <p className="mt-1 line-clamp-1 text-[8px] font-semibold leading-3.5 text-slate-400 sm:text-[9px]">
+                  {item.translations?.[0]?.description ||
+                    item.description ||
+                    ""}
                 </p>
-          
-                <dl className="mt-4 grid gap-2 text-xs font-bold text-slate-500">
-                  <Meta
-                    label={t("common.subject")}
-                    value={subjectById.get(item.subject_id)?.name_fr || "-"}
-                  />
-          
-                  <Meta
-                    label={t("common.level")}
-                    value={
-                      item.level_ids
-                        ?.map((id) => levelById.get(id)?.name_fr)
-                        .filter(Boolean)
-                        .join(", ") || "-"
-                    }
-                  />
-          
-                  {kind === "subjects" ? (
-                    <Meta
-                      label={t("content.year")}
-                      value={readYear(item) || "-"}
+
+                {/* MÉTADONNÉES AVEC ICÔNES */}
+                <div className="mt-2 space-y-1">
+                  {/* MATIÈRE */}
+                  <div
+                    className="flex min-w-0 items-center gap-1 text-[8px] font-bold text-slate-500 sm:text-[9px]"
+                    title={subjectName}
+                  >
+                    <BookOpen
+                      size={11}
+                      className="shrink-0 text-[#0f5f3a]"
                     />
-                  ) : null}
-                </dl>
-          
-                <div className="mt-5 flex flex-wrap gap-2">
+
+                    <span className="truncate">
+                      {subjectName}
+                    </span>
+                  </div>
+
+                  {/* NIVEAU */}
+                  <div
+                    className="flex min-w-0 items-center gap-1 text-[8px] font-bold text-slate-500 sm:text-[9px]"
+                    title={levelName}
+                  >
+                    <GraduationCap
+                      size={12}
+                      className="shrink-0 text-[#0f5f3a]"
+                    />
+
+                    <span className="truncate">
+                      {levelName}
+                    </span>
+                  </div>
+                </div>
+
+                {/* ACTIONS */}
+                <div className="mt-2 flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => {
-                      if (item.is_premium && isStudentRole(user) && !user.is_premium) {
+                      if (
+                        item.is_premium &&
+                        isStudentRole(user) &&
+                        !user.is_premium
+                      ) {
                         router.push("/premium");
                         return;
                       }
-                  
-                      router.push(`${settings.basePath}/${item.id}`);
+
+                      router.push(
+                        `${settings.basePath}/${item.id}`
+                      );
                     }}
-                    className="rounded-full bg-[#0f5f3a] px-4 py-2 text-sm font-black text-white"
+                    title={t(settings.actionKey)}
+                    aria-label={t(settings.actionKey)}
+                    className="
+                      flex
+                      h-7
+                      min-w-0
+                      flex-1
+                      items-center
+                      justify-center
+                      gap-1
+                      rounded-lg
+                      bg-[#0f5f3a]
+                      px-1.5
+                      text-[9px]
+                      font-black
+                      text-white
+                      transition
+                      hover:bg-[#0b492c]
+                      sm:h-8
+                      sm:text-[10px]
+                    "
                   >
-                    {t(settings.actionKey)}
+                    <Eye size={12} />
+                    <span className="truncate">
+                      {t(settings.actionKey)}
+                    </span>
                   </button>
-          
-                  {item.is_available_offline && getContentMainUrl(item) ? (
+
+                  {item.is_available_offline &&
+                  getContentMainUrl(item) ? (
                     <DownloadButton
                       content={item}
-                      label={t("content.download")}
+                      label=""
                       isPremiumUser={Boolean(user.is_premium)}
+                      compact
                     />
                   ) : null}
                 </div>
-          
               </article>
-            ))}
-          </div>
-        )}
-      </section>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
@@ -651,19 +843,19 @@ function DownloadButton({
   label,
   dark = false,
   isPremiumUser,
+  compact = false,
 }: {
   content: Content;
   label: string;
   dark?: boolean;
   isPremiumUser: boolean;
+  compact?: boolean;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function download() {
-    // Le téléchargement est réservé aux abonnés Premium.
-    // Peu importe que le contenu soit premium ou gratuit.
     if (!isPremiumUser) {
       router.push("/premium");
       return;
@@ -687,23 +879,27 @@ function DownloadButton({
   }
 
   return (
-    <span className="inline-flex flex-col gap-2">
+    <span className="inline-flex flex-col gap-1">
       <button
         type="button"
         onClick={download}
         disabled={loading}
-        className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-black disabled:opacity-60 ${
+        title={label || "Télécharger"}
+        aria-label={label || "Télécharger"}
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg disabled:opacity-60 sm:h-8 sm:w-8 ${
           dark
             ? "bg-white/10 text-white"
             : "bg-[#f6c445] text-[#071d3a]"
         }`}
       >
-        <Download size={16} />
-        {loading ? "..." : label}
+        <Download
+          size={13}
+          className={loading ? "animate-pulse" : ""}
+        />
       </button>
 
       {error ? (
-        <span className="text-xs font-bold text-red-600">
+        <span className="max-w-[120px] text-[8px] font-bold text-red-600">
           {error}
         </span>
       ) : null}
