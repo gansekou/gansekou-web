@@ -44,40 +44,55 @@ export function DashboardHeader({
 
       <div className="flex h-16 items-center justify-between px-4 lg:h-20 lg:px-8">
 
-        {/* MOBILE */}
+        {/* MENU + TITRE */}
 
-        <div className="flex items-center gap-3 lg:hidden">
-
+        <div className="flex min-w-0 items-center gap-3">
           <button
+            type="button"
             onClick={onOpenDrawer}
-            className="rounded-xl p-2 transition hover:bg-slate-100 active:scale-95"
+            aria-label={drawerOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            className="
+              flex
+              h-10
+              w-10
+              shrink-0
+              items-center
+              justify-center
+              rounded-xl
+              bg-white
+              shadow-sm
+              transition
+              hover:bg-slate-50
+              active:scale-95
+            "
           >
             <Menu
-                size={24}
-                className={`transition-transform duration-300 ${
-                    drawerOpen ? "rotate-90" : ""
-                }`}
+              size={21}
+              className={`
+                transition-transform
+                duration-300
+                ${drawerOpen ? "rotate-90" : ""}
+              `}
             />
           </button>
-
-          <h1 className="max-w-[180px] truncate text-lg font-black">
+        
+          {/* TITRE MOBILE */}
+          <div className="min-w-0 lg:hidden">
+            <h1 className="truncate text-lg font-black">
               {mobileTitle ?? title}
-          </h1>
-
-        </div>
-
-        {/* DESKTOP */}
-
-        <div className="hidden lg:block">
-
-          <p className="text-xs font-bold uppercase tracking-widest text-[#0f5f3a]">
-            GANSEKOU
-          </p>
-
-          <h1 className="text-2xl font-black">
-            {t("dashboard.welcome")}, {displayName}
-          </h1>
-
+            </h1>
+          </div>
+        
+          {/* TITRE DESKTOP */}
+          <div className="hidden min-w-0 lg:block">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-[#0f5f3a]">
+              GANSEKOU
+            </p>
+        
+            <h1 className="truncate text-xl font-black xl:text-2xl">
+              {t("dashboard.welcome")}, {displayName}
+            </h1>
+          </div>
         </div>
 
         {/* ACTIONS */}
