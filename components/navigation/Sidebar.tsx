@@ -11,6 +11,7 @@ import { useI18n } from "@/hooks/useI18n";
 import type { User } from "@/types/user";
 
 import { getNavigation } from "./NavigationItems";
+import { PremiumBadge } from "@/components/ui/PremiumBadge";
 
 type SidebarProps = {
   user?: User | null;
@@ -55,24 +56,22 @@ export function Sidebar({
         <div className="px-6 pb-6">
 
           <div className="flex items-center gap-3">
-
             <UserAvatar
               name={displayName}
               src={user.profile_url}
             />
-
+          
             <div>
-
-              <div className="font-bold">
-                {displayName}
+              <div className="flex items-center gap-2 font-bold">
+                <span>{displayName}</span>
+          
+                {user.is_premium ? <PremiumBadge /> : null}
               </div>
-
+          
               <div className="text-sm text-slate-500">
                 {formatRole(user.role)}
               </div>
-
             </div>
-
           </div>
 
         </div>
