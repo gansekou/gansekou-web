@@ -54,26 +54,30 @@ export function Sidebar({
 
       {user && (
         <div className="px-6 pb-6">
-
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <UserAvatar
               name={displayName}
               src={user.profile_url}
             />
-          
-            <div>
-              <div className="flex items-center gap-2 font-bold">
-                <span>{displayName}</span>
-          
-                {user.is_premium ? <PremiumBadge /> : null}
+      
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-center gap-2 font-bold">
+                <span className="min-w-0 flex-1 truncate">
+                  {displayName}
+                </span>
+      
+                {user.is_premium ? (
+                  <span className="shrink-0">
+                    <PremiumBadge />
+                  </span>
+                ) : null}
               </div>
-          
-              <div className="text-sm text-slate-500">
+      
+              <div className="truncate text-sm text-slate-500">
                 {formatRole(user.role)}
               </div>
             </div>
           </div>
-
         </div>
       )}
 
