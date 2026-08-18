@@ -349,7 +349,7 @@ function LearningContentCatalog({
                   <button
                     type="button"
                     onClick={() => {
-                      if (item.is_premium && isStudentRole(user)) {
+                      if (item.is_premium && isStudentRole(user) && !user.is_premium) {
                         router.push("/premium");
                         return;
                       }
@@ -412,7 +412,7 @@ function LearningContentDetail({
     return <EmptyState title={t("content.notFound")} message={t("content.notFound")} />;
   }
 
-  if (content?.is_premium && isStudentRole(user)) {
+  if (content?.is_premium && isStudentRole(user) && !user.is_premium) {
     router.replace("/premium");
     return null;
   }
