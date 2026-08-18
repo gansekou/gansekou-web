@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { X } from "lucide-react";
-
+import {
+  ChevronRight,
+  Crown,
+  X,
+} from "lucide-react";
 import { GansekouLogo } from "@/components/ui/GansekouLogo";
 import { UserAvatar } from "@/components/ui/UserAvatar";
 import { LoadingButton } from "@/components/ui/LoadingButton";
