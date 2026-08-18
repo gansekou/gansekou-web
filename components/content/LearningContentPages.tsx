@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, Search } from "lucide-react";
 import Image from "next/image";
 import { getThumbnailUrl } from "@/lib/files";
@@ -87,8 +87,7 @@ export function LearningContentDetailPage({
   const load = useCallback(async (): Promise<PageData> => {
     if (!id) return {};
 
-    // On charge d'abord uniquement le contenu.
-    // Cela permet de vérifier rapidement l'accès Premium.
+    // 1. Charger le contenu en premier
     const content = await platformService.contents
       .byId(id)
       .catch(() => undefined);
@@ -408,9 +407,82 @@ function LearningContentDetail({
   const settings = config[kind];
   const { t } = useI18n(user);
   const router = useRouter();
-  const subjectById = useMemo(() => new Map(subjects.map((item) => [item.id, item])), [subjects]);
-  const levelById = useMemo(() => new Map(levels.map((item) => [item.id, item])), [levels]);
-  const specialtyById = useMemo(() => new Map(specialties.map((item) => [item.id, item])), [specialties]);
+  const subjectById = useMemo(
+    () => new Map(detailData.subjects.map((item) => [item.id, item])),
+    [detailData.subjects]
+  );
+  
+  const levelById = useMemo(
+    () => new Map(detailData.levels.map((item) => [item.id, item])),
+    [detailData.levels]
+  );
+  
+  const specialtyById = useMemo(
+    () => new Map(detailData.specialties.map((item) => [item.id, item])),
+    [detailData.specialties]
+  );
+
+  const [detailData, setDetailData] = useState({
+    related: [] as Content[],
+    translations: [] as { title?: string; description?: string }[],
+    levels: [] as Level[],
+    subjects: [] as Subject[],
+    specialties: [] as Specialty[],
+    courses: [] as Content[],
+    loading: true,
+  });
+  
+  useEffect(() => {
+    if (!content) return;
+  
+    // Le contenu Premium est déjà contrôlé juste après.
+    // Si l'utilisateur n'a pas accès, on ne charge rien.
+    if (content.is_premium && !user.is_premium) {
+      return;
+    }
+  
+    let cancelled = false;
+  
+    async function loadDetails() {
+      const [
+        related,
+        translations,
+        levels,
+        subjects,
+        specialties,
+        courses,
+      ] = await Promise.all([
+        platformService.contents.related(content.id).catch(() => [] as Content[]),
+        platformService.contents.translations(content.id).catch(
+          () => [] as { title?: string; description?: string }[]
+        ),
+        platformService.education.levels().catch(() => [] as Level[]),
+        platformService.education.subjects().catch(() => [] as Subject[]),
+        platformService.education.specialties().catch(() => [] as Specialty[]),
+        platformService.contents.byTypeAll("COURS").catch(
+          () => [] as Content[]
+        ),
+      ]);
+  
+      if (!cancelled) {
+        setDetailData({
+          related,
+          translations,
+          levels,
+          subjects,
+          specialties,
+          courses,
+          loading: false,
+        });
+      }
+    }
+  
+    loadDetails();
+  
+    return () => {
+      cancelled = true;
+    };
+  }, [content, user.is_premium]);
 
 
   if (!content || content.content_type !== settings.type) {
@@ -427,17 +499,17 @@ function LearningContentDetail({
     return null;
   }
 
-  const translation = translations[0];
+  const translation = detailData.translations[0];
   const title = translation?.title || content.title || `${content.content_type} ${content.id.slice(0, 8)}`;
   const description = translation?.description || content.description || "";
-  const similar = related.filter(
+  const similar = detailData.related.filter(
     (item) =>
       item.content_type === settings.type &&
       item.subject_id === content.subject_id &&
       item.level_ids?.some((id) => content.level_ids?.includes(id))
   );
   
- const recommendedCourse = courses.find(
+ const recommendedCourse = detailData.courses.find(
     (item) =>
       item.subject_id === content.subject_id &&
       item.level_ids?.some((id) => content.level_ids?.includes(id))
