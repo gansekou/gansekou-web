@@ -67,67 +67,43 @@ export function useCurrentUser() {
 
   useEffect(() => {
     let cancelled = false;
-
-
+  
     const init = async () => {
       hydrateToken();
-
+  
       try {
         const restoredUser = await restoreSession();
-
-      if (cancelled) return;
-      
-      if (restoredUser) {
-        try {
+  
+        if (cancelled) return;
+  
+        if (restoredUser) {
           const subscription =
             await platformService.payments.subscription();
-      
+  
           const enrichedUser = {
             ...restoredUser,
             is_premium: subscription.is_premium,
           };
-      
+  
           setSession({
             user: enrichedUser,
             token: "",
           });
-      
+  
           setAuthStatus("authenticated");
-      
+  
+          authLog("[auth] session restored");
           authLog(
-            `[auth] session restored - premium: ${enrichedUser.is_premium}`
+            `[auth] premium status: ${subscription.is_premium}`
           );
-        } catch (subscriptionError) {
-          console.error(
-            "[auth] subscription restore failed",
-            subscriptionError
-          );
-      
-          // La session utilisateur reste valide même
-          // si la récupération Premium échoue.
-          setSession({
-            user: {
-              ...restoredUser,
-              is_premium: false,
-            },
-            token: "",
-          });
-      
-          setAuthStatus("authenticated");
         }
-      }
-
-
-        
       } catch (error) {
         console.error("[auth] restore session failed", error);
       }
     };
-
-
+  
     init();
-
-
+  
     const unsubscribe = subscribeAuthState(
       async ({
         firebaseUser,
@@ -136,15 +112,13 @@ export function useCurrentUser() {
         error: authError,
       }) => {
         try {
-
           if (status === "loading") {
             if (!cancelled) {
               setAuthStatus("loading");
             }
             return;
           }
-
-
+  
           if (authError) {
             if (!cancelled) {
               setError(
@@ -153,90 +127,75 @@ export function useCurrentUser() {
             }
             return;
           }
-
-
+  
           if (status === "unauthenticated" || !firebaseUser) {
-
             if (!cancelled) {
               clearSession();
               setAuthStatus("unauthenticated");
             }
-
             return;
           }
-
-
+  
           if (!token) {
-
             if (!cancelled) {
               setAuthStatus("loading");
             }
-
             return;
           }
-
-
+  
           if (!cancelled) {
             setAuthStatus("loading");
           }
-
-
+  
           const state = useAuthStore.getState();
-
-
+  
           const hasFreshProfile =
             state.user?.firebase_uid === firebaseUser.uid &&
             Date.now() - state.profileLoadedAt < PROFILE_TTL_MS;
-
-
+  
           if (hasFreshProfile) {
-
             if (!cancelled) {
               setError(null);
               setAuthStatus("authenticated");
             }
-
             return;
           }
-
-
+  
           setError(null);
-
-
-          const currentUser = await loadUserWithSubscription(
-            firebaseUser.uid
-          );
-          
+  
+          const [currentUser, subscription] = await Promise.all([
+            loadProfileOnce(firebaseUser.uid),
+            platformService.payments.subscription(),
+          ]);
+  
           authLog("[auth] backend profile loaded");
           authLog(
-            `[auth] premium status: ${currentUser.is_premium}`
+            `[auth] premium status: ${subscription.is_premium}`
           );
-          
+  
+          const enrichedUser = {
+            ...currentUser,
+            is_premium: subscription.is_premium,
+          };
+  
           if (!cancelled) {
             setSession({
-              user: currentUser,
+              user: enrichedUser,
               token,
             });
-          
+  
             setAuthStatus("authenticated");
           }
-
-
         } catch (error) {
-
           console.error(
             "[auth-hook] profile refresh failed",
             error
           );
-
-
+  
           if (!cancelled) {
-
             if (error instanceof ApiError) {
-
               setError(error.message);
-
-
+  
               if (
                 error.status === 401 ||
                 error.status === 403
@@ -244,33 +203,25 @@ export function useCurrentUser() {
                 clearSession();
                 setAuthStatus("unauthenticated");
               }
-
-
             } else {
-
               setError(
                 "Impossible de charger le profil utilisateur."
               );
-
             }
           }
         }
       }
     );
-
-
+  
     return () => {
       cancelled = true;
       unsubscribe();
     };
-
-
   }, [
     hydrateToken,
     setSession,
     clearSession,
   ]);
-
 
   return {
     user,
