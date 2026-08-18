@@ -407,6 +407,16 @@ function LearningContentDetail({
   const settings = config[kind];
   const { t } = useI18n(user);
   const router = useRouter();
+
+  const [detailData, setDetailData] = useState({
+    related: [] as Content[],
+    translations: [] as { title?: string; description?: string }[],
+    levels: [] as Level[],
+    subjects: [] as Subject[],
+    specialties: [] as Specialty[],
+    courses: [] as Content[],
+    loading: true,
+  });
   const subjectById = useMemo(
     () => new Map(detailData.subjects.map((item) => [item.id, item])),
     [detailData.subjects]
@@ -422,15 +432,7 @@ function LearningContentDetail({
     [detailData.specialties]
   );
 
-  const [detailData, setDetailData] = useState({
-    related: [] as Content[],
-    translations: [] as { title?: string; description?: string }[],
-    levels: [] as Level[],
-    subjects: [] as Subject[],
-    specialties: [] as Specialty[],
-    courses: [] as Content[],
-    loading: true,
-  });
+  
   
   useEffect(() => {
     if (!content) return;
