@@ -12,6 +12,8 @@ import { useI18n } from "@/hooks/useI18n";
 import type { User } from "@/types/user";
 import { getNavigation } from "./NavigationItems";
 
+import { PremiumBadge } from "@/components/ui/PremiumBadge";
+
 type Props = {
   user?: User | null;
   open: boolean;
@@ -121,15 +123,17 @@ export function MobileDrawer({
                 />
 
                 <div>
-
-                  <div className="font-bold">
-                    {user.prenom} {user.nom}
+                  <div className="flex items-center gap-2 font-bold">
+                    <span>
+                      {user.prenom} {user.nom}
+                    </span>
+                
+                    {user.is_premium ? <PremiumBadge /> : null}
                   </div>
-
+                
                   <div className="text-sm text-slate-500">
                     {user.role}
                   </div>
-
                 </div>
 
               </div>
