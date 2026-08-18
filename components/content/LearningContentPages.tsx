@@ -280,7 +280,11 @@ function LearningContentCatalog({
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("common.search")} className="w-full rounded-2xl border border-slate-200 py-3 pl-11 pr-4 text-sm font-bold outline-none" />
           </label>
           <Select value={subjectId} onChange={setSubjectId} label={t("common.subject")} options={subjects.map((item) => [item.id, item.name_fr])} />
-          <Select value={levelId} onChange={setLevelId} label={t("common.level")} options={levels.map((item) => [item.id, item.name_fr])} />
+
+          {user?.role !== "ELEVE" && (
+            <Select value={levelId} onChange={setLevelId} label={t("common.level")} options={levels.map((item) => [item.id, item.name_fr])} />
+          )}
+          
           <Select value={specialtyId} onChange={setSpecialtyId} label={t("subject.specialty")} options={specialties.map((item) => [item.id, item.name_fr])} />
           {kind === "subjects" ? <Select value={year} onChange={setYear} label={t("content.year")} options={years.map((item) => [item, item])} /> : null}
           {kind === "subjects" ? <Select value={examType} onChange={setExamType} label={t("content.examType")} options={examTypes.map((item) => [item, item])} /> : null}
