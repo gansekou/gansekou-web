@@ -237,6 +237,17 @@ function LearningContentCatalog({
   const levelById = useMemo(() => new Map(levels.map((item) => [item.id, item])), [levels]);
   const years = Array.from(new Set(contents.map(readYear).filter(Boolean))).sort().reverse();
   const examTypes = Array.from(new Set(contents.map(readExamType).filter(Boolean)));
+  console.log("CATALOGUE CONTENTS", {
+    total: contents.length,
+    premium: contents.filter((item) => item.is_premium).length,
+    gratuits: contents.filter((item) => !item.is_premium).length,
+    userPremium: user.is_premium,
+    contents: contents.map((item) => ({
+      id: item.id,
+      title: item.translations?.[0]?.title,
+      is_premium: item.is_premium,
+    })),
+  });
   const filtered = contents.filter((item) => {
     const label = `${item.title || ""} ${item.description || ""} ${item.tags || ""}`.toLowerCase();
     return (
