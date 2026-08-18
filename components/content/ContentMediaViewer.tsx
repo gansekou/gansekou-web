@@ -91,18 +91,6 @@ export function ContentMediaViewer({
     return () => media.removeEventListener("timeupdate", onTimeUpdate);
   }, [blobUrl, kind, progressKey]);
 
-  async function download() {
-    setDownloading(true);
-    setError(null);
-    try {
-      await downloadAuthenticatedFile(content);
-    } catch {
-      setError(t("content.readerAuthError"));
-    } finally {
-      setDownloading(false);
-    }
-  }
-
   function addBookmark() {
     const current = mediaRef.current ? Math.floor(mediaRef.current.currentTime) : 0;
     const next = Array.from(new Set([...bookmarks, current])).sort((a, b) => a - b).slice(-8);
@@ -178,9 +166,7 @@ export function ContentMediaViewer({
               {t("content.open")}
             </a>
           )}
-          <button type="button" onClick={download} disabled={downloading} className="rounded-full bg-[#071d3a] px-4 py-2 text-sm font-black text-white disabled:opacity-60">
-            {downloading ? t("common.loading") : t("content.download")}
-          </button>
+          
         </div>
       </div>
       {loading ? (
