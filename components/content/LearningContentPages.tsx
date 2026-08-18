@@ -446,6 +446,10 @@ function LearningContentDetail({
     let cancelled = false;
   
     async function loadDetails() {
+      if (!content) return;
+    
+      const contentId = content.id;
+    
       const [
         related,
         translations,
@@ -454,18 +458,31 @@ function LearningContentDetail({
         specialties,
         courses,
       ] = await Promise.all([
-        platformService.contents.related(content.id).catch(() => [] as Content[]),
-        platformService.contents.translations(content.id).catch(
-          () => [] as { title?: string; description?: string }[]
-        ),
-        platformService.education.levels().catch(() => [] as Level[]),
-        platformService.education.subjects().catch(() => [] as Subject[]),
-        platformService.education.specialties().catch(() => [] as Specialty[]),
-        platformService.contents.byTypeAll("COURS").catch(
-          () => [] as Content[]
-        ),
+        platformService.contents
+          .related(contentId)
+          .catch(() => [] as Content[]),
+    
+        platformService.contents
+          .translations(contentId)
+          .catch(() => [] as { title?: string; description?: string }[]),
+    
+        platformService.education
+          .levels()
+          .catch(() => [] as Level[]),
+    
+        platformService.education
+          .subjects()
+          .catch(() => [] as Subject[]),
+    
+        platformService.education
+          .specialties()
+          .catch(() => [] as Specialty[]),
+    
+        platformService.contents
+          .byTypeAll("COURS")
+          .catch(() => [] as Content[]),
       ]);
-  
+    
       if (!cancelled) {
         setDetailData({
           related,
@@ -478,7 +495,9 @@ function LearningContentDetail({
         });
       }
     }
-  
+
+
+    
     loadDetails();
   
     return () => {
