@@ -549,12 +549,11 @@ function LearningContentDetail({
         <h2 className="mt-3 text-4xl font-black tracking-tight">{title}</h2>
         <p className="mt-3 max-w-3xl leading-7 text-white/70">{description || content.content_type}</p>
         <div className="mt-5 flex flex-wrap gap-2">
-          {getContentMainUrl(content) ? (
+          {content.is_available_offline && getContentMainUrl(content) ? (
             <DownloadButton
               content={content}
               label={t("content.download")}
               dark
-              isPremiumUser={Boolean(user.is_premium)}
             />
           ) : null}
           <Link href={config[kind].basePath} className="rounded-full bg-white/10 px-5 py-3 font-black text-white">{t("content.all")}</Link>
