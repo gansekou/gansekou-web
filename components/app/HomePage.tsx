@@ -11,7 +11,8 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { analytics } from "@/lib/analytics";
 
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicMobileDrawer } from "@/components/navigation/PublicMobileDrawer";
@@ -38,6 +39,10 @@ export function HomePage() {
   const { user, loading } = useCurrentUser();
   const { t } = useI18n(user || undefined);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    void analytics.track("home_view");
+  }, []);
 
   const isAuthenticated = Boolean(user);
 
