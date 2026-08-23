@@ -3,7 +3,7 @@ import { PWARegistrar } from "@/components/premium/PWARegistrar";
 import { RouteProgress } from "@/components/ui/RouteProgress";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 import "./globals.css";
-import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
+
 
 export const metadata: Metadata = {
   metadataBase: new URL("http://localhost:3000"),
@@ -67,8 +67,6 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
     >
       <body className="min-h-full flex flex-col">
-        <AnalyticsProvider />
-        
         <RouteProgress />
         {children}
         <PWARegistrar />
