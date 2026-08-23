@@ -21,7 +21,10 @@ export const analytics = {
         return;
       }
 
-      logEvent(instance, eventName, params);
+      logEvent(instance, eventName, {
+        ...params,
+        debug_mode: true,
+      });
 
       console.log("[GA4] Événement envoyé:", eventName);
     } catch (error) {
