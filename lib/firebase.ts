@@ -39,6 +39,20 @@ let analyticsInstance: Analytics | null = null;
 
 export async function getFirebaseAnalytics(): Promise<Analytics | null> {
   if (typeof window === "undefined") {
+    console.log("[GA4] Exécution côté serveur");
+    return null;
+  }
+
+  console.log(
+    "[GA4] measurementId:",
+    process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  );
+
+  const supported = await isSupported();
+
+  console.log("[GA4] Analytics supported:", supported);
+
+  if (!supported) {
     return null;
   }
 
@@ -46,13 +60,14 @@ export async function getFirebaseAnalytics(): Promise<Analytics | null> {
     return analyticsInstance;
   }
 
-  const supported = await isSupported();
+  try {
+    analyticsInstance = getAnalytics(app);
 
-  if (!supported) {
+    console.log("[GA4] Analytics initialisé");
+
+    return analyticsInstance;
+  } catch (error) {
+    console.error("[GA4] Erreur initialisation:", error);
     return null;
   }
-
-  analyticsInstance = getAnalytics(app);
-
-  return analyticsInstance;
 }
