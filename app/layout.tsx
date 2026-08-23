@@ -3,6 +3,7 @@ import { PWARegistrar } from "@/components/premium/PWARegistrar";
 import { RouteProgress } from "@/components/ui/RouteProgress";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 import "./globals.css";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 
 
 export const metadata: Metadata = {
@@ -67,6 +68,8 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
     >
       <body className="min-h-full flex flex-col">
+        <GoogleAnalytics />
+        
         <RouteProgress />
         {children}
         <PWARegistrar />
