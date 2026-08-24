@@ -1572,6 +1572,7 @@ function SubscriptionPanel({ data }: { data: PageData }) {
   const { t, language } = useI18n();
 
   const plans = (data.plans as SubscriptionPlan[]) || [];
+  const MONETBIL_ENABLED = false
 
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -1601,7 +1602,7 @@ function SubscriptionPanel({ data }: { data: PageData }) {
     if (!selectedPlan) return;
 
     const phone = phoneNumber.trim();
-    const MONETBIL_ENABLED = false;
+    
 
     if (!phone) {
       setError(
