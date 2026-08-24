@@ -11,13 +11,22 @@ import type { Level } from "@/types/platform";
 
 export function AdminUsersPage() {
   const load = useCallback(async (): Promise<PageData> => {
-    const users = await platformService.users.all().catch(() => [] as User[]);
-    return { users };
+    const [users, levels] = await Promise.all([
+      platformService.users.all().catch(() => [] as User[]),
+      platformService.education.levels().catch(() => [] as Level[]),
+    ]);
+  
+    return { users, levels };
   }, []);
 
   return (
     <AuthenticatedPage loadingLabel="Chargement des utilisateurs..." load={load}>
-      {({ data }) => <UserTable users={(data.users as User[]) || []} />}
+      {({ data }) => (
+        <UserTable
+          users={(data.users as User[]) || []}
+          levels={(data.levels as Level[]) || []}
+        />
+      )}
     </AuthenticatedPage>
   );
 }
