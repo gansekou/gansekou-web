@@ -70,7 +70,16 @@ function UserTable({
 
   const getProfileUrl = (profileUrl?: string | null) => {
     if (!profileUrl) return null;
-
+  
+    // Photo externe déjà sous forme d'URL complète
+    if (
+      profileUrl.startsWith("http://") ||
+      profileUrl.startsWith("https://")
+    ) {
+      return profileUrl;
+    }
+  
+    // Photo stockée sur GANSEKOU / Cloudflare R2
     return platformService.uploads.publicFileUrl(profileUrl);
   };
 
