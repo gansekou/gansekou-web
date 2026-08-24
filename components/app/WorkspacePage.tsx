@@ -1601,6 +1601,7 @@ function SubscriptionPanel({ data }: { data: PageData }) {
     if (!selectedPlan) return;
 
     const phone = phoneNumber.trim();
+    const MONETBIL_ENABLED = false;
 
     if (!phone) {
       setError(
@@ -1704,15 +1705,35 @@ function SubscriptionPanel({ data }: { data: PageData }) {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => openPayment(plan)}
-              className="mt-6 w-full rounded-full bg-[#0f5f3a] px-5 py-3 text-sm font-black text-white transition hover:bg-[#082f1f]"
-            >
-              {language === "EN"
-                ? "Choose this plan"
-                : "Choisir cette offre"}
-            </button>
+            {MONETBIL_ENABLED ? (
+              <button
+                type="button"
+                onClick={() => openPayment(plan)}
+                className="mt-6 w-full rounded-full bg-[#0f5f3a] px-5 py-3 text-sm font-black text-white transition hover:bg-[#082f1f]"
+              >
+                {language === "EN"
+                  ? "Choose this plan"
+                  : "Choisir cette offre"}
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  disabled
+                  className="mt-6 w-full cursor-not-allowed rounded-full bg-slate-200 px-5 py-3 text-sm font-black text-slate-500"
+                >
+                  {language === "EN"
+                    ? "Payment temporarily unavailable"
+                    : "Paiement temporairement indisponible"}
+                </button>
+            
+                <p className="mt-3 text-center text-xs font-bold text-slate-400">
+                  {language === "EN"
+                    ? "Online payment will be available soon."
+                    : "Le paiement en ligne sera bientôt disponible."}
+                </p>
+              </>
+            )}
           </div>
         ))}
       </section>
