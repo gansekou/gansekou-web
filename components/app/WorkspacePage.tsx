@@ -1078,10 +1078,7 @@ function AdminPanel({ kind, data, user, reload }: { kind: string; data: PageData
           )}
         </div>
       ) : kind.includes("users") ? (
-        <UserTable
-          users={users}
-          levels={(data.levels as Level[]) || []}
-        />
+        <UserTable users={users} />
       ) : kind.includes("contents") ? (
         <ContentManager
           user={user}
