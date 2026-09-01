@@ -214,62 +214,95 @@ async function loginWithGoogleInternal(options?: {
 export const authService = {
   async registerEmail(payload: RegisterEmailPayload) {
     return authSessionManager.runAuthRequest(async () => {
-      await firebaseAuthReady;
-
-      const credential = await createUserWithEmailAndPassword(
-        firebaseAuth,
-        payload.email.trim(),
-        payload.password || ""
-      );
-
-      await updateProfile(credential.user, {
-        displayName: `${payload.prenom} ${payload.nom}`.trim(),
-      });
-
-      const firebaseToken = await getFreshFirebaseToken(credential.user, "register-email");
-
-      let data: AuthResponse;
-
       try {
-        data = await apiFetch<AuthResponse>(ENDPOINTS.auth.registerEmail, {
-          method: "POST",
-          token: null,
-          body: {
-            firebase_uid: credential.user.uid,
-            nom: payload.nom,
-            prenom: payload.prenom,
-            email: payload.email.trim(),
-            phone: payload.phone,
-            genre: payload.genre,
-            age: payload.age,
-            preferred_language: payload.preferred_language,
-            role: "ELEVE",
-            device_id: getDeviceId(),
-            device_name: getDeviceName(),
-            platform: getPlatform(),
-          },
+        await firebaseAuthReady;
+  
+        authLog("[register-email] Firebase account creation start");
+  
+        const credential = await withTimeout(
+          createUserWithEmailAndPassword(
+            firebaseAuth,
+            payload.email.trim(),
+            payload.password || ""
+          ),
+          "Création du compte Firebase trop lente."
+        );
+  
+        authLog(
+          `[register-email] Firebase account created uid=${credential.user.uid}`
+        );
+  
+        await updateProfile(credential.user, {
+          displayName: `${payload.prenom} ${payload.nom}`.trim(),
         });
+  
+        const firebaseToken = await getFreshFirebaseToken(
+          credential.user,
+          "register-email"
+        );
+  
+        authLog("[register-email] backend registration start");
+  
+        const data = await apiFetch<AuthResponse>(
+          ENDPOINTS.auth.registerEmail,
+          {
+            method: "POST",
+            token: firebaseToken,
+            body: {
+              id_token: firebaseToken,
+  
+              nom: payload.nom.trim(),
+              prenom: payload.prenom.trim(),
+  
+              phone: payload.phone,
+              genre: payload.genre,
+              age: payload.age,
+  
+              preferred_language:
+                payload.preferred_language || "FR",
+  
+              role: "ELEVE",
+  
+              device_id: getDeviceId(),
+              device_name: getDeviceName(),
+              platform: getPlatform(),
+            },
+          }
+        );
+  
+        authLog("[register-email] backend registration success");
+  
         if (data.refresh_token) {
           saveRefreshToken(data.refresh_token);
         }
+  
+        setAuthToken(firebaseToken);
+  
+        return {
+          ...data,
+          token: firebaseToken,
+        };
+  
       } catch (error) {
-        console.error("[auth] register backend failed, deleting Firebase user", {
-          uid: credential.user.uid,
-          error,
-        });
-        await credential.user.delete();
+        authErrorLog(
+          "register-email",
+          "registration",
+          error
+        );
+  
+        /*
+         * IMPORTANT :
+         * NE PAS supprimer automatiquement l'utilisateur Firebase.
+         *
+         * Si Firebase a été créé mais PostgreSQL a échoué,
+         * le compte Firebase pourra être récupéré lors d'une
+         * nouvelle tentative.
+         */
+  
         throw error;
       }
-
-      setAuthToken(firebaseToken);
-
-      return {
-        ...data,
-        token: firebaseToken,
-      };
     });
   },
-
   async loginWithEmail(
     email: string,
     password: string,
