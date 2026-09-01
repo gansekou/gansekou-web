@@ -132,7 +132,8 @@ export default function LoginPage() {
         </button>
       </div>
 
-      <LoadingButton
+    {/*
+    <LoadingButton
         onClick={handleGoogleLogin}
         disabled={loading !== null}
         loading={loading === "google"}
@@ -146,7 +147,7 @@ export default function LoginPage() {
           </span>
         ) : null}
         {t.google}
-      </LoadingButton>
+      </LoadingButton>*/}
 
       <div className="mb-5 flex items-center gap-4">
         <div className="h-px flex-1 bg-slate-200" />
