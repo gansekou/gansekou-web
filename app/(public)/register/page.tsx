@@ -172,7 +172,7 @@ export default function RegisterPage() {
           {language === "fr" ? "EN" : "FR"}
         </button>
       </div>
-
+{/*
       <LoadingButton
         type="button"
         onClick={handleGoogleLogin}
@@ -188,7 +188,7 @@ export default function RegisterPage() {
           </span>
         ) : null}
         {t.google}
-      </LoadingButton>
+      </LoadingButton>*/}
 
       <div className="mb-5 flex items-center gap-4">
         <div className="h-px flex-1 bg-slate-200" />
