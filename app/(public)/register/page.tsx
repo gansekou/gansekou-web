@@ -172,7 +172,7 @@ export default function RegisterPage() {
           {language === "fr" ? "EN" : "FR"}
         </button>
       </div>
-{/*
+      {/*
       <LoadingButton
         type="button"
         onClick={handleGoogleLogin}
