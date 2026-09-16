@@ -34,6 +34,11 @@ export function QuizImportPanel({ onImport }: Props) {
 
   const editorRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * ============================================================
+   * COLLAGE DEPUIS WORD
+   * ============================================================
+   */
   async function handleWordPaste(
     event: React.ClipboardEvent<HTMLDivElement>
   ) {
@@ -41,14 +46,6 @@ export function QuizImportPanel({ onImport }: Props) {
 
     const html = event.clipboardData.getData("text/html");
     const text = event.clipboardData.getData("text/plain");
-
-    const clipboardImages = Array.from(event.clipboardData.items)
-      .filter(
-        (item) =>
-          item.kind === "file" && item.type.toLowerCase().startsWith("image/")
-      )
-      .map((item) => item.getAsFile())
-      .filter((file): file is File => Boolean(file));
 
     setPastedHtml(html || "");
 
@@ -61,47 +58,85 @@ export function QuizImportPanel({ onImport }: Props) {
     setUploading(true);
 
     try {
+      /*
+       * Récupération des images réellement présentes
+       * dans le presse-papiers.
+       */
+      const clipboardImages = Array.from(event.clipboardData.items)
+        .filter(
+          (item) =>
+            item.kind === "file" &&
+            item.type.toLowerCase().startsWith("image/")
+        )
+        .map((item) => item.getAsFile())
+        .filter((file): file is File => Boolean(file));
+
+      /*
+       * Certaines versions de Word/Chrome placent les images
+       * dans le HTML sous forme de data:image.
+       */
       const htmlImages = html ? extractDataImages(html) : [];
 
       const files =
         clipboardImages.length > 0 ? clipboardImages : htmlImages;
 
-      const imageUrls = files.length
-        ? (
-            await Promise.all(
-              files.map((file) =>
-                platformService.uploads.questionImage(file)
-              )
-            )
-          )
-            .map((item) => item.file_url)
-            .filter(Boolean)
-        : [];
+      /*
+       * Upload des images vers le stockage GANSEKOU.
+       */
+      const imageUrls: string[] = [];
+
+      for (const file of files) {
+        try {
+          const uploaded =
+            await platformService.uploads.questionImage(file);
+
+          if (uploaded?.file_url) {
+            imageUrls.push(uploaded.file_url);
+          }
+        } catch {
+          /*
+           * Une erreur d'image ne doit pas empêcher
+           * l'importation des questions.
+           */
+        }
+      }
 
       /*
-       * IMPORTANT :
-       * Pour Word, on analyse d'abord le texte brut.
-       * Le parser est volontairement tolérant aux différentes
-       * présentations produites par Word.
+       * Le texte brut est la meilleure source pour analyser
+       * les questions.
        */
-      const source = normalizeWordText(text || htmlToText(html));
+      const source = normalizeWordText(
+        text || htmlToText(html)
+      );
 
       const result = parseQuizText(source);
 
       /*
-       * Si des images ont été collées, on les associe aux questions.
+       * Association provisoire des images aux questions.
        *
-       * Pour l'instant, une question possède une image principale.
-       * Les images supplémentaires sont signalées.
+       * Une image par question est conservée pour le moment.
        */
-      result.questions = result.questions.map((question, index) => ({
-        ...question,
-        question_image_url: imageUrls[index] || undefined,
-      }));
+      result.questions = result.questions.map(
+        (question, index) => ({
+          ...question,
+          question_image_url:
+            imageUrls[index] || question.question_image_url || null,
+        })
+      );
 
       if (imageUrls.length > result.questions.length) {
         result.warnings.push(
-          `${imageUrls.length - result.questions.length} image(s) supplémentaire(s) détectée(s).`
+          `${imageUrls.length} image(s) ont été détectées. ` +
+            `Le système conserve actuellement une image principale par question.`
+        );
+      }
+
+      if (
+        imageUrls.length > 0 &&
+        result.questions.length === 0
+      ) {
+        result.warnings.push(
+          "Des images ont été détectées mais aucune question exploitable n'a été reconnue."
         );
       }
 
@@ -122,10 +157,17 @@ export function QuizImportPanel({ onImport }: Props) {
     }
   }
 
+  /**
+   * ============================================================
+   * ANALYSE
+   * ============================================================
+   */
   function analyze() {
     const source =
       mode === "word"
-        ? normalizeWordText(raw || htmlToText(pastedHtml))
+        ? normalizeWordText(
+            raw || htmlToText(pastedHtml)
+          )
         : raw;
 
     if (!source.trim()) {
@@ -138,16 +180,34 @@ export function QuizImportPanel({ onImport }: Props) {
     }
 
     setParsed(
-      mode === "json" ? parseQuizJson(source) : parseQuizText(source)
+      mode === "json"
+        ? parseQuizJson(source)
+        : parseQuizText(source)
     );
   }
 
+  /**
+   * ============================================================
+   * AJOUT DES QUESTIONS DANS L'EDITEUR
+   * ============================================================
+   */
   function apply() {
-    if (!parsed?.questions.length || parsed.errors.length > 0) {
+    if (
+      !parsed ||
+      parsed.questions.length === 0 ||
+      parsed.errors.length > 0
+    ) {
       return;
     }
 
-    onImport(parsed.questions);
+    onImport(
+      parsed.questions.map((question, index) => ({
+        ...question,
+        client_id:
+          question.client_id || crypto.randomUUID(),
+        order_index: index,
+      }))
+    );
 
     setParsed(null);
     setRaw("");
@@ -167,8 +227,8 @@ export function QuizImportPanel({ onImport }: Props) {
           </h3>
 
           <p className="mt-1 text-sm font-bold text-slate-500">
-            Préparez vos QCM dans Word, copiez-les avec leurs schémas, puis
-            collez-les ici.
+            Préparez vos QCM dans Word, copiez-les avec leurs
+            schémas, puis collez-les ici.
           </p>
         </div>
 
@@ -205,23 +265,43 @@ export function QuizImportPanel({ onImport }: Props) {
           contentEditable
           suppressContentEditableWarning
           onPaste={handleWordPaste}
-          className="mt-4 min-h-64 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-4 text-sm font-medium outline-none focus:border-[#0f5f3a] [&_img]:my-3 [&_img]:max-h-64 [&_img]:max-w-full [&_img]:object-contain"
+          className="
+            mt-4 min-h-64 rounded-2xl
+            border-2 border-dashed border-slate-300
+            bg-slate-50 p-4
+            text-sm font-medium
+            outline-none
+            focus:border-[#0f5f3a]
+            [&_img]:my-3
+            [&_img]:max-h-72
+            [&_img]:max-w-full
+            [&_img]:object-contain
+          "
         >
           {!pastedHtml && (
             <p className="pointer-events-none text-slate-400">
-              Copiez une ou plusieurs questions depuis Word puis faites
-              Ctrl+V ici. Les images et schémas seront importés
-              automatiquement.
+              Copiez une ou plusieurs questions depuis Word puis
+              faites Ctrl+V ici.
+              <br />
+              <br />
+              Les textes et schémas seront analysés automatiquement.
             </p>
           )}
         </div>
       ) : (
         <textarea
           value={raw}
-          onChange={(e) => setRaw(e.target.value)}
-          className="mt-4 min-h-56 w-full rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 p-4 font-mono text-sm outline-none focus:border-[#0f5f3a]"
+          onChange={(event) => setRaw(event.target.value)}
+          className="
+            mt-4 min-h-56 w-full rounded-2xl
+            border-2 border-dashed border-slate-300
+            bg-slate-50 p-4 font-mono text-sm
+            outline-none focus:border-[#0f5f3a]
+          "
           placeholder={
-            mode === "json" ? JSON_PLACEHOLDER : TEXT_PLACEHOLDER
+            mode === "json"
+              ? JSON_PLACEHOLDER
+              : TEXT_PLACEHOLDER
           }
         />
       )}
@@ -229,7 +309,7 @@ export function QuizImportPanel({ onImport }: Props) {
       {uploading && (
         <p className="mt-3 flex items-center gap-2 text-sm font-black text-[#0f5f3a]">
           <Loader2 size={16} className="animate-spin" />
-          Import des images et analyse du collage…
+          Analyse du document et import des images…
         </p>
       )}
 
@@ -239,7 +319,11 @@ export function QuizImportPanel({ onImport }: Props) {
           onClick={analyze}
           disabled={
             uploading ||
-            !(raw || editorRef.current?.innerText || pastedHtml).trim()
+            !(
+              raw ||
+              editorRef.current?.innerText ||
+              pastedHtml
+            ).trim()
           }
           className="ds-button-primary disabled:opacity-50"
         >
@@ -264,9 +348,15 @@ export function QuizImportPanel({ onImport }: Props) {
         <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center gap-2 text-sm font-black text-slate-700">
             {parsed.errors.length > 0 ? (
-              <AlertTriangle size={18} className="text-amber-600" />
+              <AlertTriangle
+                size={18}
+                className="text-amber-600"
+              />
             ) : (
-              <CheckCircle2 size={18} className="text-emerald-600" />
+              <CheckCircle2
+                size={18}
+                className="text-emerald-600"
+              />
             )}
 
             {parsed.questions.length} question
@@ -277,7 +367,9 @@ export function QuizImportPanel({ onImport }: Props) {
           {parsed.errors.length > 0 && (
             <ul className="mt-2 list-disc pl-5 text-sm font-bold text-amber-700">
               {parsed.errors.map((error, index) => (
-                <li key={`error-${index}`}>{error}</li>
+                <li key={`error-${index}`}>
+                  {error}
+                </li>
               ))}
             </ul>
           )}
@@ -285,17 +377,20 @@ export function QuizImportPanel({ onImport }: Props) {
           {parsed.warnings.length > 0 && (
             <ul className="mt-2 list-disc pl-5 text-sm font-bold text-slate-600">
               {parsed.warnings.map((warning, index) => (
-                <li key={`warning-${index}`}>{warning}</li>
+                <li key={`warning-${index}`}>
+                  {warning}
+                </li>
               ))}
             </ul>
           )}
 
           {parsed.questions.some(
-            (question) => question.question_image_url
+            (question) =>
+              Boolean(question.question_image_url)
           ) && (
             <p className="mt-3 flex items-center gap-2 text-xs font-black text-[#0f5f3a]">
               <ImagePlus size={15} />
-              Images associées aux questions et prêtes à être enregistrées.
+              Image(s) associée(s) aux questions.
             </p>
           )}
         </div>
@@ -333,7 +428,7 @@ function ModeButton({
 }
 
 /* ============================================================
-   PARSER TEXTE / WORD
+   PARSER TEXTE
 ============================================================ */
 
 function parseQuizText(input: string): Parsed {
@@ -348,45 +443,40 @@ function parseQuizText(input: string): Parsed {
   }
 
   /*
-   * On accepte maintenant :
+   * Formats acceptés :
    *
    * 1. Question
+   * 1) Question
+   * 1 - Question
+   * 1 : Question
    * Question 1
    * Q1
-   * Q.1
-   * 1)
-   * 1.
-   * 1 -
-   * 1 :
-   *
-   * Le numéro n'est donc plus obligatoire d'avoir exactement
-   * la même présentation.
+   * Q1.
    */
-
   const questionRegex =
-    /(?:^|\n)\s*(?:question\s*)?(?:q\s*)?(\d{1,3})\s*(?:[.)\-:]\s*|\n)/gi;
+    /(?:^|\n)\s*(?:(?:question|q)\s*)?(\d{1,3})\s*[.)\-:]\s*/gi;
 
-  const matches = [...normalized.matchAll(questionRegex)];
+  const matches = [
+    ...normalized.matchAll(questionRegex),
+  ];
 
   let chunks: string[] = [];
 
   if (matches.length > 0) {
     chunks = matches.map((match, index) => {
       const start = match.index ?? 0;
+
       const end =
         index + 1 < matches.length
-          ? matches[index + 1].index ?? normalized.length
+          ? matches[index + 1].index ??
+            normalized.length
           : normalized.length;
 
-      return normalized.slice(start, end).trim();
+      return normalized
+        .slice(start, end)
+        .trim();
     });
   } else {
-    /*
-     * Aucun numéro détecté.
-     *
-     * On essaye alors de détecter les questions en fonction
-     * des blocs contenant A/B/C/D.
-     */
     chunks = splitByChoiceGroups(normalized);
   }
 
@@ -395,25 +485,18 @@ function parseQuizText(input: string): Parsed {
   const warnings: string[] = [];
 
   chunks.forEach((chunk, index) => {
-    const parsed = parseSingleQuestion(chunk, index);
+    const result = parseSingleQuestion(
+      chunk,
+      index
+    );
 
-    if (parsed.question) {
-      questions.push(parsed.question);
+    if (result.question) {
+      questions.push(result.question);
     }
 
-    errors.push(...parsed.errors);
-    warnings.push(...parsed.warnings);
+    errors.push(...result.errors);
+    warnings.push(...result.warnings);
   });
-
-  /*
-   * Si aucune question n'a été reconnue, on donne une erreur
-   * réellement utile au lieu de "question manquante".
-   */
-  if (questions.length === 0 && errors.length === 0) {
-    errors.push(
-      "Aucune question exploitable n'a été trouvée. Vérifiez que chaque question possède des propositions A, B, C et D."
-    );
-  }
 
   return {
     questions,
@@ -442,24 +525,21 @@ function parseSingleQuestion(
     .map((line) =>
       line
         .replace(/\u00a0/g, " ")
+        .replace(/\u202f/g, " ")
         .replace(/\u200b/g, "")
         .trim()
     )
     .filter(Boolean);
 
   /*
-   * On recherche A/B/C/D de manière beaucoup plus tolérante :
-   *
    * A. texte
    * A) texte
    * A - texte
    * A : texte
    * A texte
-   *
-   * Le dernier cas est volontairement accepté pour Word.
    */
-
-  const choiceRegex = /^([A-D])(?:\s*[.)\-:]\s*|\s+)(.+)$/i;
+  const choiceRegex =
+    /^([A-D])(?:\s*[.)\-:]\s*|\s+)(.+)$/i;
 
   const choiceStart = lines.findIndex((line) =>
     choiceRegex.test(line)
@@ -481,33 +561,32 @@ function parseSingleQuestion(
     .slice(0, choiceStart)
     .filter(
       (line) =>
-        !/^(?:question\s*)?(?:q\s*)?\d{1,3}\s*[.)\-:]?\s*$/i.test(
+        !/^(?:question|q)?\s*\d{1,3}\s*[.)\-:]?\s*$/i.test(
           line
         )
     );
 
-  const choices: {
-    choice_text: string;
-    is_correct: boolean;
-  }[] = [];
-
-  let currentChoice: {
+  /*
+   * Les choix peuvent être sur plusieurs lignes.
+   */
+  const choices: Array<{
     letter: string;
     text: string;
-  } | null = null;
+  }> = [];
 
-  /*
-   * Les propositions peuvent occuper plusieurs lignes.
-   */
+  let currentChoice:
+    | {
+        letter: string;
+        text: string;
+      }
+    | null = null;
+
   for (const line of lines.slice(choiceStart)) {
     const match = line.match(choiceRegex);
 
     if (match) {
       if (currentChoice) {
-        choices.push({
-          choice_text: currentChoice.text.trim(),
-          is_correct: false,
-        });
+        choices.push(currentChoice);
       }
 
       currentChoice = {
@@ -516,22 +595,19 @@ function parseSingleQuestion(
       };
     } else if (currentChoice) {
       /*
-       * Suite d'une proposition sur une deuxième ligne.
+       * Suite d'une proposition.
        */
       currentChoice.text += ` ${line}`;
     }
   }
 
   if (currentChoice) {
-    choices.push({
-      choice_text: currentChoice.text.trim(),
-      is_correct: false,
-    });
+    choices.push(currentChoice);
   }
 
   if (choices.length < 2) {
     errors.push(
-      `Question ${index + 1} : moins de deux propositions ont été reconnues.`
+      `Question ${index + 1} : au moins deux propositions sont nécessaires.`
     );
 
     return {
@@ -542,15 +618,13 @@ function parseSingleQuestion(
   }
 
   /*
-   * Recherche de la bonne réponse.
+   * Bonne réponse.
    *
-   * Accepte :
-   *
+   * Exemples acceptés :
    * Réponse : B
    * Bonne réponse : B
    * Réponse correcte : B
    * Correct : B
-   * Correcte : B
    * Bonne réponse = B
    * Answer: B
    */
@@ -558,28 +632,28 @@ function parseSingleQuestion(
     /(?:bonne\s+réponse|réponse\s+correcte?|réponse|correcte?|correct|answer)\s*[:=\-]?\s*\(?([A-D])\)?/i
   );
 
-  let correctLetter: string | null = answerMatch
-    ? answerMatch[1].toUpperCase()
-    : null;
+  let correctLetter =
+    answerMatch?.[1]?.toUpperCase() || null;
 
   /*
-   * Deuxième tentative :
-   *
-   * "B est la bonne réponse"
+   * Variante :
+   * B est la bonne réponse.
    */
   if (!correctLetter) {
-    const reverseAnswerMatch = chunk.match(
-      /\b([A-D])\b\s+(?:est|is)\s+(?:la\s+)?bonne\s+réponse/i
-    );
+    const reverseAnswerMatch =
+      chunk.match(
+        /\b([A-D])\b\s+(?:est|is)\s+(?:la\s+)?bonne\s+réponse/i
+      );
 
     if (reverseAnswerMatch) {
-      correctLetter = reverseAnswerMatch[1].toUpperCase();
+      correctLetter =
+        reverseAnswerMatch[1].toUpperCase();
     }
   }
 
   if (!correctLetter) {
     errors.push(
-      `Question ${index + 1} : bonne réponse introuvable. Ajoutez par exemple « Réponse : B ».`
+      `Question ${index + 1} : bonne réponse introuvable. Ajoutez « Réponse : B ».`
     );
 
     return {
@@ -589,14 +663,13 @@ function parseSingleQuestion(
     };
   }
 
-  const hasCorrectChoice = choices.some(
-    (_, choiceIndex) =>
-      String.fromCharCode(65 + choiceIndex) === correctLetter
-  );
-
-  if (!hasCorrectChoice) {
+  if (
+    !choices.some(
+      (choice) => choice.letter === correctLetter
+    )
+  ) {
     errors.push(
-      `Question ${index + 1} : la réponse correcte « ${correctLetter} » ne correspond pas aux propositions détectées.`
+      `Question ${index + 1} : la bonne réponse « ${correctLetter} » ne correspond pas aux choix détectés.`
     );
 
     return {
@@ -607,13 +680,14 @@ function parseSingleQuestion(
   }
 
   /*
-   * Correction / explication.
+   * Correction.
    */
   const explanationMatch = chunk.match(
     /(?:correction|explication|solution)\s*[:=\-]\s*([\s\S]*)/i
   );
 
-  const explanation = explanationMatch?.[1]?.trim() || "";
+  const explanation =
+    explanationMatch?.[1]?.trim() || "";
 
   if (!explanation) {
     warnings.push(
@@ -621,14 +695,12 @@ function parseSingleQuestion(
     );
   }
 
-  /*
-   * Nettoyage du texte de la question.
-   */
-  let questionText = questionLines.join("\n").trim();
+  let questionText =
+    questionLines.join("\n").trim();
 
   questionText = questionText
     .replace(
-      /^(?:question\s*)?(?:q\s*)?\d{1,3}\s*[.)\-:]\s*/i,
+      /^(?:question|q)?\s*\d{1,3}\s*[.)\-:]\s*/i,
       ""
     )
     .trim();
@@ -652,10 +724,10 @@ function parseSingleQuestion(
     question_type: "SINGLE_CHOICE",
     points: 1,
 
-    choices: choices.map((choice, choiceIndex) => ({
-      choice_text: choice.choice_text,
+    choices: choices.map((choice) => ({
+      choice_text: choice.text,
       is_correct:
-        String.fromCharCode(65 + choiceIndex) === correctLetter,
+        choice.letter === correctLetter,
     })),
   };
 
@@ -664,59 +736,6 @@ function parseSingleQuestion(
     errors,
     warnings,
   };
-}
-
-/* ============================================================
-   SPLIT ALTERNATIF
-============================================================ */
-
-function splitByChoiceGroups(input: string): string[] {
-  const lines = input.split("\n");
-
-  const chunks: string[] = [];
-  let current: string[] = [];
-  let choiceCount = 0;
-
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
-
-    if (!line) {
-      current.push("");
-      continue;
-    }
-
-    const choice = line.match(
-      /^([A-D])(?:\s*[.)\-:]\s*|\s+)(.+)$/i
-    );
-
-    if (choice) {
-      choiceCount++;
-    }
-
-    /*
-     * Une nouvelle question est généralement détectée après
-     * une réponse/correction et avant une nouvelle ligne de texte.
-     */
-    if (
-      current.length > 0 &&
-      choiceCount >= 2 &&
-      /^(?:question\s*)?(?:q\s*)?\d{1,3}\s*[.)\-:]/i.test(line)
-    ) {
-      chunks.push(current.join("\n").trim());
-
-      current = [line];
-      choiceCount = 0;
-      continue;
-    }
-
-    current.push(line);
-  }
-
-  if (current.join("\n").trim()) {
-    chunks.push(current.join("\n").trim());
-  }
-
-  return chunks.filter(Boolean);
 }
 
 /* ============================================================
@@ -741,74 +760,90 @@ function parseQuizJson(input: string): Parsed {
       };
     }
 
+    const questions: EditableQuizQuestion[] = [];
     const errors: string[] = [];
+    const warnings: string[] = [];
 
-    const questions = items
-      .map((item, index) => {
-        const questionText =
-          item?.question_text ??
-          item?.question ??
-          item?.text ??
-          "";
+    items.forEach((item, index) => {
+      const questionText =
+        item?.question_text ??
+        item?.question ??
+        item?.text ??
+        "";
 
-        const choices = Array.isArray(item?.choices)
-          ? item.choices
-          : Array.isArray(item?.options)
-          ? item.options
-          : [];
+      const choices = Array.isArray(item?.choices)
+        ? item.choices
+        : Array.isArray(item?.options)
+        ? item.options
+        : [];
 
-        if (!String(questionText).trim()) {
-          errors.push(
-            `Question ${index + 1} : texte de question manquant.`
-          );
-          return null;
-        }
+      if (!String(questionText).trim()) {
+        errors.push(
+          `Question ${index + 1} : texte manquant.`
+        );
+        return;
+      }
 
-        if (choices.length < 2) {
-          errors.push(
-            `Question ${index + 1} : au moins deux propositions sont nécessaires.`
-          );
-          return null;
-        }
+      if (choices.length < 2) {
+        errors.push(
+          `Question ${index + 1} : au moins deux propositions sont nécessaires.`
+        );
+        return;
+      }
 
-        const correctAnswer =
-          typeof item?.correct_answer === "string"
-            ? item.correct_answer
-                .trim()
-                .replace(/[.)]/g, "")
-                .toUpperCase()
-            : typeof item?.correct === "string"
-            ? item.correct
-                .trim()
-                .replace(/[.)]/g, "")
-                .toUpperCase()
-            : null;
+      const correctAnswer =
+        typeof item?.correct_answer === "string"
+          ? item.correct_answer
+              .trim()
+              .replace(/[.)]/g, "")
+              .toUpperCase()
+          : null;
 
-        return {
-          ...createEmptyQuestion(index),
+      questions.push({
+        ...createEmptyQuestion(index),
 
-          question_text: String(questionText),
+        question_text: String(questionText),
 
-          explanation:
-            item?.explanation ??
-            item?.correction ??
-            item?.solution ??
-            "",
+        explanation:
+          item?.explanation ??
+          item?.correction ??
+          item?.solution ??
+          "",
 
-          question_type:
-            item?.question_type ??
-            "SINGLE_CHOICE",
+        question_type:
+          item?.question_type ??
+          "SINGLE_CHOICE",
 
-          points: Number(item?.points) || 1,
+        points: Number(item?.points) || 1,
 
-          question_image_url:
-            item?.question_image_url ??
-            item?.image_url ??
-            item?.image ??
-            undefined,
+        question_image_url:
+          item?.question_image_url ??
+          item?.image_url ??
+          item?.image ??
+          null,
 
-          choices: choices.map(
-            (choice: any, choiceIndex: number) => ({
+        choices: choices.map(
+          (choice: any, choiceIndex: number) => {
+            const letter =
+              String.fromCharCode(
+                65 + choiceIndex
+              );
+
+            const choiceCorrect =
+              Boolean(
+                choice?.is_correct ??
+                  choice?.correct
+              ) ||
+              Boolean(
+                correctAnswer &&
+                  (
+                    letter === correctAnswer ||
+                    String(choiceIndex + 1) ===
+                      correctAnswer
+                  )
+              );
+
+            return {
               choice_text: String(
                 choice?.choice_text ??
                   choice?.text ??
@@ -816,31 +851,17 @@ function parseQuizJson(input: string): Parsed {
                   choice?.option ??
                   ""
               ),
-
-              is_correct: Boolean(
-                choice?.is_correct ??
-                  choice?.correct ??
-                  (
-                    correctAnswer &&
-                    (
-                      String.fromCharCode(
-                        65 + choiceIndex
-                      ) === correctAnswer ||
-                      String(choiceIndex + 1) ===
-                        correctAnswer
-                    )
-                  )
-              ),
-            })
-          ),
-        };
-      })
-      .filter(Boolean) as EditableQuizQuestion[];
+              is_correct: choiceCorrect,
+            };
+          }
+        ),
+      });
+    });
 
     return {
       questions,
       errors,
-      warnings: [],
+      warnings,
     };
   } catch {
     return {
@@ -857,7 +878,9 @@ function parseQuizJson(input: string): Parsed {
    WORD / HTML
 ============================================================ */
 
-function normalizeWordText(input: string): string {
+function normalizeWordText(
+  input: string
+): string {
   return input
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
@@ -870,7 +893,9 @@ function normalizeWordText(input: string): string {
     .trim();
 }
 
-function extractDataImages(html: string): File[] {
+function extractDataImages(
+  html: string
+): File[] {
   if (typeof DOMParser === "undefined") {
     return [];
   }
@@ -887,7 +912,9 @@ function extractDataImages(html: string): File[] {
         `question-image-${Date.now()}-${index}.png`
       )
     )
-    .filter((file): file is File => Boolean(file));
+    .filter(
+      (file): file is File => Boolean(file)
+    );
 }
 
 function dataUrlToFile(
@@ -903,7 +930,8 @@ function dataUrlToFile(
   }
 
   try {
-    const mime = match[1] || "image/png";
+    const mime =
+      match[1] || "image/png";
 
     const bytes = match[2]
       ? Uint8Array.from(
@@ -914,21 +942,28 @@ function dataUrlToFile(
           decodeURIComponent(match[3])
         );
 
-    return new File([bytes], filename, {
-      type: mime,
-    });
+    return new File(
+      [bytes],
+      filename,
+      { type: mime }
+    );
   } catch {
     return null;
   }
 }
 
-function htmlToText(html: string): string {
+function htmlToText(
+  html: string
+): string {
   if (!html) {
     return "";
   }
 
   if (typeof DOMParser === "undefined") {
-    return html.replace(/<[^>]+>/g, " ");
+    return html.replace(
+      /<[^>]+>/g,
+      " "
+    );
   }
 
   const doc = new DOMParser().parseFromString(
@@ -937,22 +972,21 @@ function htmlToText(html: string): string {
   );
 
   /*
-   * Les images deviennent un séparateur.
-   * Elles ne doivent pas perturber la détection des questions.
+   * Les images ne doivent pas devenir du texte.
+   * Elles servent seulement de séparateurs.
    */
-  doc.querySelectorAll("img").forEach((img) => {
-    img.replaceWith(
-      doc.createTextNode("\n[IMAGE]\n")
-    );
-  });
+  doc.querySelectorAll("img").forEach(
+    (img) => {
+      img.replaceWith(
+        doc.createTextNode("\n[IMAGE]\n")
+      );
+    }
+  );
 
-  /*
-   * Les éléments de type bloc sont séparés par des retours
-   * à la ligne afin de récupérer correctement les paragraphes
-   * provenant de Word.
-   */
   doc
-    .querySelectorAll("p, div, li, br, tr")
+    .querySelectorAll(
+      "p, div, li, br, tr"
+    )
     .forEach((element) => {
       if (element.tagName === "BR") {
         element.replaceWith(
@@ -974,10 +1008,56 @@ function htmlToText(html: string): string {
 }
 
 /* ============================================================
-   SECURITE HTML
+   SÉPARATION SANS NUMÉROS
 ============================================================ */
 
-function sanitizePastedHtml(html: string): string {
+function splitByChoiceGroups(
+  input: string
+): string[] {
+  const lines = input.split("\n");
+
+  const chunks: string[] = [];
+  let current: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    /*
+     * Si une nouvelle question numérotée apparaît,
+     * on commence un nouveau bloc.
+     */
+    if (
+      current.length > 0 &&
+      /^(?:question|q)?\s*\d{1,3}\s*[.)\-:]/i.test(
+        trimmed
+      )
+    ) {
+      chunks.push(
+        current.join("\n").trim()
+      );
+
+      current = [trimmed];
+    } else {
+      current.push(trimmed);
+    }
+  }
+
+  if (current.join("\n").trim()) {
+    chunks.push(
+      current.join("\n").trim()
+    );
+  }
+
+  return chunks.filter(Boolean);
+}
+
+/* ============================================================
+   NETTOYAGE HTML
+============================================================ */
+
+function sanitizePastedHtml(
+  html: string
+): string {
   if (!html) {
     return "";
   }
@@ -997,24 +1077,30 @@ function sanitizePastedHtml(html: string): string {
     )
     .forEach((node) => node.remove());
 
-  doc.querySelectorAll("*").forEach((node) => {
-    Array.from(node.attributes).forEach(
-      (attribute) => {
-        if (
-          attribute.name
-            .toLowerCase()
-            .startsWith("on")
-        ) {
-          node.removeAttribute(attribute.name);
+  doc.querySelectorAll("*").forEach(
+    (node) => {
+      Array.from(node.attributes).forEach(
+        (attribute) => {
+          if (
+            attribute.name
+              .toLowerCase()
+              .startsWith("on")
+          ) {
+            node.removeAttribute(
+              attribute.name
+            );
+          }
         }
-      }
-    );
-  });
+      );
+    }
+  );
 
   return doc.body.innerHTML;
 }
 
-function escapeHtml(value: string): string {
+function escapeHtml(
+  value: string
+): string {
   return value.replace(
     /[&<>"']/g,
     (char) =>
@@ -1033,6 +1119,7 @@ function escapeHtml(value: string): string {
 ============================================================ */
 
 const TEXT_PLACEHOLDER = `1. Quel est le résultat de 2 + 3 × 4 ?
+
 A. 20
 B. 14
 C. 24
@@ -1043,6 +1130,7 @@ Réponse : B
 Correction : La multiplication est prioritaire sur l'addition.
 
 2. Quelle est la dérivée de x² ?
+
 A. x
 B. 2x
 C. x²
@@ -1055,9 +1143,18 @@ const JSON_PLACEHOLDER = `[
   {
     "question": "Quel est le résultat de 2 + 3 ?",
     "choices": [
-      {"text": "4", "is_correct": false},
-      {"text": "5", "is_correct": true},
-      {"text": "6", "is_correct": false}
+      {
+        "text": "4",
+        "is_correct": false
+      },
+      {
+        "text": "5",
+        "is_correct": true
+      },
+      {
+        "text": "6",
+        "is_correct": false
+      }
     ],
     "explanation": "2 + 3 = 5."
   }
