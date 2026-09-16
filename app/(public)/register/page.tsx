@@ -21,6 +21,7 @@ import {
 import { ApiError } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 
+
 const text = {
   fr: {
     title: "Créer un compte",
@@ -83,6 +84,7 @@ export default function RegisterPage() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState<"email" | "google" | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const t = text[language];
 
@@ -425,27 +427,43 @@ export default function RegisterPage() {
           <label className="mb-2 block text-sm font-bold text-[#082f1f]">
             {t.password}
           </label>
-
+        
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-            <Lock
-              size={20}
-              className="text-slate-400"
-            />
-
+            <Lock size={20} className="shrink-0 text-slate-400" />
+        
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
               minLength={6}
               placeholder="••••••••"
               className="w-full bg-transparent outline-none"
               value={form.password}
               onChange={(event) =>
-                updateField(
-                  "password",
-                  event.target.value
-                )
+                updateField("password", event.target.value)
               }
             />
+        
+            <button
+              type="button"
+              onClick={() => setShowPassword((current) => !current)}
+              className="shrink-0 text-slate-400 transition hover:text-[#0f5f3a]"
+              aria-label={
+                showPassword
+                  ? "Masquer le mot de passe"
+                  : "Afficher le mot de passe"
+              }
+              title={
+                showPassword
+                  ? "Masquer le mot de passe"
+                  : "Afficher le mot de passe"
+              }
+            >
+              {showPassword ? (
+                <EyeOff size={20} />
+              ) : (
+                <Eye size={20} />
+              )}
+            </button>
           </div>
         </div>
 
