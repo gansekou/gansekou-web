@@ -55,6 +55,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState<"email" | "google" | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const t = text[language];
 
@@ -190,7 +191,7 @@ export default function LoginPage() {
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
             <Lock size={20} className="text-slate-400" />
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
               placeholder="••••••••"
               className="w-full bg-transparent outline-none"
