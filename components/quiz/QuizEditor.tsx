@@ -53,12 +53,32 @@ export function QuizEditor({ user, quiz, subjects, levels, courses }: Props) {
   const canManageQuestions = canManageQuizQuestions(user, quiz || undefined);
   const aiAvailable = canUseQuizAI(user);
 
-  function importQuestions(imported: EditableQuizQuestion[]) {
-    setQuestions((current) => {
-      const base = current.length === 1 && !current[0].question_text.trim() ? [] : current;
-      return [...base, ...imported.map((question, index) => ({ ...question, order_index: base.length + index }))];
-    });
-  }
+  function importQuestions(
+  imported: EditableQuizQuestion[]
+) {
+  setQuestions((current) => {
+    const base =
+      current.length === 1 &&
+      !current[0].question_text.trim()
+        ? []
+        : current;
+
+    const importedQuestions =
+      imported.map((question, index) => ({
+        ...question,
+        client_id:
+          question.client_id ||
+          crypto.randomUUID(),
+        order_index:
+          base.length + index,
+      }));
+
+    return [
+      ...base,
+      ...importedQuestions,
+    ];
+  });
+}
 
   function setField<K extends keyof QuizCreatePayload>(key: K, value: QuizCreatePayload[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -118,11 +138,11 @@ export function QuizEditor({ user, quiz, subjects, levels, courses }: Props) {
       for (const item of questions.filter((entry) => entry.question_text.trim())) {
         const questionPayload = {
           question_text: item.question_text.trim(),
-          question_image_url: item.question_image_url || null,
           explanation: item.explanation || null,
           question_type: item.question_type,
           points: item.points,
           order_index: item.order_index,
+          question_image_url: item.question_image_url || null,
         };
         const savedQuestion = item.id
           ? await quizService.updateQuestion(item.id, questionPayload)
