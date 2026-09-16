@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bot, Save } from "lucide-react";
+import { QuizImportPanel } from "@/components/quiz/QuizImportPanel";
 import { ApiError } from "@/lib/api";
 import { useI18n } from "@/hooks/useI18n";
 import { quizService } from "@/services/quiz.service";
@@ -51,6 +52,13 @@ export function QuizEditor({ user, quiz, subjects, levels, courses }: Props) {
   const isEditing = Boolean(quiz?.id);
   const canManageQuestions = canManageQuizQuestions(user, quiz || undefined);
   const aiAvailable = canUseQuizAI(user);
+
+  function importQuestions(imported: EditableQuizQuestion[]) {
+    setQuestions((current) => {
+      const base = current.length === 1 && !current[0].question_text.trim() ? [] : current;
+      return [...base, ...imported.map((question, index) => ({ ...question, order_index: base.length + index }))];
+    });
+  }
 
   function setField<K extends keyof QuizCreatePayload>(key: K, value: QuizCreatePayload[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -110,6 +118,7 @@ export function QuizEditor({ user, quiz, subjects, levels, courses }: Props) {
       for (const item of questions.filter((entry) => entry.question_text.trim())) {
         const questionPayload = {
           question_text: item.question_text.trim(),
+          question_image_url: item.question_image_url || null,
           explanation: item.explanation || null,
           question_type: item.question_type,
           points: item.points,
@@ -257,7 +266,9 @@ export function QuizEditor({ user, quiz, subjects, levels, courses }: Props) {
       </section>
 
       {canManageQuestions ? (
-        <QuizQuestionList
+        <>
+          <QuizImportPanel onImport={importQuestions} />
+          <QuizQuestionList
           questions={questions}
           labels={text}
           onChange={(nextQuestions) => {
@@ -273,7 +284,8 @@ export function QuizEditor({ user, quiz, subjects, levels, courses }: Props) {
             ]);
             setQuestions(nextQuestions);
           }}
-        />
+          />
+        </>
       ) : null}
 
       {isEditing && (
@@ -308,6 +320,7 @@ function toEditableQuestion(question: NonNullable<Quiz["questions"]>[number]): E
     question_type: question.question_type,
     points: question.points,
     order_index: question.order_index || 0,
+    question_image_url: question.question_image_url || null,
     choices: (question.choices || []).map((choice) => ({
       id: choice.id,
       choice_text: choice.choice_text,
