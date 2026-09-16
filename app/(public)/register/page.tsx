@@ -11,9 +11,13 @@ import {
   Phone,
   UserRound,
 } from "lucide-react";
+
 import { AuthShell } from "@/components/layouts/AuthShell";
 import { LoadingButton } from "@/components/ui/LoadingButton";
-import { authService } from "@/services/auth.service";
+import {
+  authService,
+  FirebaseEmailAlreadyExistsError,
+} from "@/services/auth.service";
 import { ApiError } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -62,6 +66,7 @@ const text = {
 
 export default function RegisterPage() {
   const router = useRouter();
+
   const setSession = useAuthStore((state) => state.setSession);
 
   const [language, setLanguage] = useState<"fr" | "en">("fr");
@@ -88,9 +93,13 @@ export default function RegisterPage() {
     }));
   }
 
-  async function handleRegister(event: React.FormEvent<HTMLFormElement>) {
+  async function handleRegister(
+    event: React.FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
+
     if (loading) return;
+
     setError("");
     setLoading("email");
 
@@ -114,10 +123,33 @@ export default function RegisterPage() {
 
       router.replace("/dashboard");
     } catch (err) {
-      console.error(err);
+      console.error("[register-page] registration error", err);
 
-      if (err instanceof ApiError) {
+      /*
+       * Compte Firebase déjà existant.
+       *
+       * Normalement, avec la nouvelle logique de auth.service.ts,
+       * cette erreur ne devrait plus être levée lors d'une inscription :
+       * le service tente maintenant de récupérer le compte existant.
+       *
+       * On garde néanmoins ce traitement pour éviter un message générique
+       * si cette erreur est encore rencontrée.
+       */
+      if (err instanceof FirebaseEmailAlreadyExistsError) {
+        setError(
+          language === "fr"
+            ? "Cette adresse email possède déjà un compte. Connecte-toi avec cette adresse et ton mot de passe."
+            : "This email address already has an account. Please log in with this email and password."
+        );
+      } else if (err instanceof ApiError) {
         setError(err.message);
+      } else if (err instanceof Error) {
+        setError(
+          err.message ||
+            (language === "fr"
+              ? "Création du compte impossible. Vérifie tes informations."
+              : "Unable to create account. Please check your information.")
+        );
       } else {
         setError(
           language === "fr"
@@ -132,6 +164,7 @@ export default function RegisterPage() {
 
   async function handleGoogleLogin() {
     if (loading) return;
+
     setError("");
     setLoading("google");
 
@@ -148,7 +181,7 @@ export default function RegisterPage() {
 
       router.replace("/dashboard");
     } catch (err) {
-      console.error(err);
+      console.error("[register-page] Google login error", err);
 
       setError(
         language === "fr"
@@ -161,17 +194,24 @@ export default function RegisterPage() {
   }
 
   return (
-    <AuthShell title={t.title} subtitle={t.subtitle}>
+    <AuthShell
+      title={t.title}
+      subtitle={t.subtitle}
+    >
       <div className="mb-6 flex justify-end">
         <button
           type="button"
-          onClick={() => setLanguage(language === "fr" ? "en" : "fr")}
+          onClick={() =>
+            setLanguage(language === "fr" ? "en" : "fr")
+          }
           className="premium-action inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-[#082f1f] shadow-sm"
         >
           <Globe2 size={16} />
+
           {language === "fr" ? "EN" : "FR"}
         </button>
       </div>
+
       {/*
       <LoadingButton
         type="button"
@@ -187,14 +227,18 @@ export default function RegisterPage() {
             G
           </span>
         ) : null}
+
         {t.google}
-      </LoadingButton>*/}
+      </LoadingButton>
+      */}
 
       <div className="mb-5 flex items-center gap-4">
         <div className="h-px flex-1 bg-slate-200" />
+
         <span className="text-xs font-bold uppercase tracking-widest text-slate-400">
           Email
         </span>
+
         <div className="h-px flex-1 bg-slate-200" />
       </div>
 
@@ -204,89 +248,152 @@ export default function RegisterPage() {
         </div>
       )}
 
-      <form onSubmit={handleRegister} className="space-y-5">
+      <form
+        onSubmit={handleRegister}
+        className="space-y-5"
+      >
         <div className="grid gap-4 md:grid-cols-2">
+          {/* PRÉNOM */}
           <div>
             <label className="mb-2 block text-sm font-bold text-[#082f1f]">
               {t.prenom}
             </label>
+
             <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-              <UserRound size={20} className="text-slate-400" />
+              <UserRound
+                size={20}
+                className="text-slate-400"
+              />
+
               <input
                 required
                 placeholder="Wilfried"
                 className="w-full bg-transparent outline-none"
                 value={form.prenom}
-                onChange={(event) => updateField("prenom", event.target.value)}
+                onChange={(event) =>
+                  updateField(
+                    "prenom",
+                    event.target.value
+                  )
+                }
               />
             </div>
           </div>
 
+          {/* NOM */}
           <div>
             <label className="mb-2 block text-sm font-bold text-[#082f1f]">
               {t.nom}
             </label>
+
             <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-              <UserRound size={20} className="text-slate-400" />
+              <UserRound
+                size={20}
+                className="text-slate-400"
+              />
+
               <input
                 required
                 placeholder="Sheffer"
                 className="w-full bg-transparent outline-none"
                 value={form.nom}
-                onChange={(event) => updateField("nom", event.target.value)}
+                onChange={(event) =>
+                  updateField(
+                    "nom",
+                    event.target.value
+                  )
+                }
               />
             </div>
           </div>
         </div>
 
+        {/* EMAIL */}
         <div>
           <label className="mb-2 block text-sm font-bold text-[#082f1f]">
             {t.email}
           </label>
+
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-            <Mail size={20} className="text-slate-400" />
+            <Mail
+              size={20}
+              className="text-slate-400"
+            />
+
             <input
               type="email"
               required
               placeholder="user@example.com"
               className="w-full bg-transparent outline-none"
               value={form.email}
-              onChange={(event) => updateField("email", event.target.value)}
+              onChange={(event) =>
+                updateField(
+                  "email",
+                  event.target.value
+                )
+              }
             />
           </div>
         </div>
 
+        {/* TÉLÉPHONE */}
         <div>
           <label className="mb-2 block text-sm font-bold text-[#082f1f]">
             {t.phone}
           </label>
+
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-            <Phone size={20} className="text-slate-400" />
+            <Phone
+              size={20}
+              className="text-slate-400"
+            />
+
             <input
               required
               placeholder="+237 6XX XXX XXX"
               className="w-full bg-transparent outline-none"
               value={form.phone}
-              onChange={(event) => updateField("phone", event.target.value)}
+              onChange={(event) =>
+                updateField(
+                  "phone",
+                  event.target.value
+                )
+              }
             />
           </div>
         </div>
 
+        {/* GENRE + ÂGE */}
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm font-bold text-[#082f1f]">
               {t.genre}
             </label>
+
             <select
               required
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 font-bold outline-none"
               value={form.genre}
-              onChange={(event) => updateField("genre", event.target.value)}
+              onChange={(event) =>
+                updateField(
+                  "genre",
+                  event.target.value
+                )
+              }
             >
               <option value="">---</option>
-              <option value="MASCULIN">{t.male}</option>
-              <option value="FEMININ">{t.female}</option>
-              <option value="AUTRE">{t.other}</option>
+
+              <option value="MASCULIN">
+                {t.male}
+              </option>
+
+              <option value="FEMININ">
+                {t.female}
+              </option>
+
+              <option value="AUTRE">
+                {t.other}
+              </option>
             </select>
           </div>
 
@@ -294,6 +401,7 @@ export default function RegisterPage() {
             <label className="mb-2 block text-sm font-bold text-[#082f1f]">
               {t.age}
             </label>
+
             <input
               type="number"
               min={5}
@@ -302,17 +410,28 @@ export default function RegisterPage() {
               placeholder="18"
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 font-bold outline-none"
               value={form.age}
-              onChange={(event) => updateField("age", event.target.value)}
+              onChange={(event) =>
+                updateField(
+                  "age",
+                  event.target.value
+                )
+              }
             />
           </div>
         </div>
 
+        {/* MOT DE PASSE */}
         <div>
           <label className="mb-2 block text-sm font-bold text-[#082f1f]">
             {t.password}
           </label>
+
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-            <Lock size={20} className="text-slate-400" />
+            <Lock
+              size={20}
+              className="text-slate-400"
+            />
+
             <input
               type="password"
               required
@@ -320,13 +439,23 @@ export default function RegisterPage() {
               placeholder="••••••••"
               className="w-full bg-transparent outline-none"
               value={form.password}
-              onChange={(event) => updateField("password", event.target.value)}
+              onChange={(event) =>
+                updateField(
+                  "password",
+                  event.target.value
+                )
+              }
             />
           </div>
         </div>
 
-        <input type="hidden" name="role" value="ELEVE" />
+        <input
+          type="hidden"
+          name="role"
+          value="ELEVE"
+        />
 
+        {/* BOUTON */}
         <LoadingButton
           type="submit"
           disabled={loading !== null}
@@ -336,6 +465,7 @@ export default function RegisterPage() {
           className="group w-full px-6 py-4"
         >
           {t.register}
+
           {loading !== "email" ? (
             <ArrowRight
               size={20}
@@ -344,9 +474,13 @@ export default function RegisterPage() {
           ) : null}
         </LoadingButton>
 
+        {/* LOGIN */}
         <p className="text-center text-sm text-slate-600">
           {t.already}{" "}
-          <Link href="/login" className="font-black text-[#0f5f3a]">
+          <Link
+            href="/login"
+            className="font-black text-[#0f5f3a]"
+          >
             {t.login}
           </Link>
         </p>
