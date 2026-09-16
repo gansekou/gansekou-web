@@ -59,8 +59,7 @@ export function QuizImportPanel({ onImport }: Props) {
 
     try {
       /*
-       * Récupération des images réellement présentes
-       * dans le presse-papiers.
+       * Images réellement présentes dans le presse-papiers.
        */
       const clipboardImages = Array.from(event.clipboardData.items)
         .filter(
@@ -72,8 +71,8 @@ export function QuizImportPanel({ onImport }: Props) {
         .filter((file): file is File => Boolean(file));
 
       /*
-       * Certaines versions de Word/Chrome placent les images
-       * dans le HTML sous forme de data:image.
+       * Certaines versions de Word/Chrome
+       * mettent les images directement en data:image.
        */
       const htmlImages = html ? extractDataImages(html) : [];
 
@@ -81,7 +80,7 @@ export function QuizImportPanel({ onImport }: Props) {
         clipboardImages.length > 0 ? clipboardImages : htmlImages;
 
       /*
-       * Upload des images vers le stockage GANSEKOU.
+       * Upload vers le stockage GANSEKOU.
        */
       const imageUrls: string[] = [];
 
@@ -95,15 +94,13 @@ export function QuizImportPanel({ onImport }: Props) {
           }
         } catch {
           /*
-           * Une erreur d'image ne doit pas empêcher
-           * l'importation des questions.
+           * Une erreur d'image ne bloque pas l'import.
            */
         }
       }
 
       /*
-       * Le texte brut est la meilleure source pour analyser
-       * les questions.
+       * Analyse du texte.
        */
       const source = normalizeWordText(
         text || htmlToText(html)
@@ -112,15 +109,18 @@ export function QuizImportPanel({ onImport }: Props) {
       const result = parseQuizText(source);
 
       /*
-       * Association provisoire des images aux questions.
+       * Association des images aux questions.
        *
-       * Une image par question est conservée pour le moment.
+       * Pour cette version, une image principale
+       * est associée à chaque question dans l'ordre.
        */
       result.questions = result.questions.map(
         (question, index) => ({
           ...question,
           question_image_url:
-            imageUrls[index] || question.question_image_url || null,
+            imageUrls[index] ||
+            question.question_image_url ||
+            null,
         })
       );
 
@@ -594,9 +594,6 @@ function parseSingleQuestion(
         text: match[2].trim(),
       };
     } else if (currentChoice) {
-      /*
-       * Suite d'une proposition.
-       */
       currentChoice.text += ` ${line}`;
     }
   }
@@ -620,7 +617,7 @@ function parseSingleQuestion(
   /*
    * Bonne réponse.
    *
-   * Exemples acceptés :
+   * Formats acceptés :
    * Réponse : B
    * Bonne réponse : B
    * Réponse correcte : B
@@ -746,6 +743,21 @@ function parseQuizJson(input: string): Parsed {
   try {
     const value = JSON.parse(input);
 
+    /*
+     * Deux formats sont acceptés :
+     *
+     * 1. Tableau direct :
+     * [
+     *   {...},
+     *   {...}
+     * ]
+     *
+     * 2. Format complet GANSEKOU :
+     * {
+     *   "title": "...",
+     *   "questions": [...]
+     * }
+     */
     const items = Array.isArray(value)
       ? value
       : value?.questions;
@@ -764,18 +776,12 @@ function parseQuizJson(input: string): Parsed {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    items.forEach((item, index) => {
+    items.forEach((item: any, index: number) => {
       const questionText =
         item?.question_text ??
         item?.question ??
         item?.text ??
         "";
-
-      const choices = Array.isArray(item?.choices)
-        ? item.choices
-        : Array.isArray(item?.options)
-        ? item.options
-        : [];
 
       if (!String(questionText).trim()) {
         errors.push(
@@ -784,25 +790,192 @@ function parseQuizJson(input: string): Parsed {
         return;
       }
 
-      if (choices.length < 2) {
+      /*
+       * --------------------------------------------------------
+       * RÉCUPÉRATION DES OPTIONS
+       * --------------------------------------------------------
+       *
+       * Format moderne :
+       *
+       * "options": [
+       *   "réponse A",
+       *   "réponse B",
+       *   "réponse C",
+       *   "réponse D"
+       * ]
+       *
+       * Ancien format :
+       *
+       * "choices": [
+       *   {
+       *     "text": "...",
+       *     "is_correct": true
+       *   }
+       * ]
+       */
+      let rawChoices: any[] = [];
+
+      if (Array.isArray(item?.options)) {
+        rawChoices = item.options;
+      } else if (Array.isArray(item?.choices)) {
+        rawChoices = item.choices;
+      }
+
+      if (rawChoices.length < 2) {
         errors.push(
           `Question ${index + 1} : au moins deux propositions sont nécessaires.`
         );
         return;
       }
 
-      const correctAnswer =
-        typeof item?.correct_answer === "string"
-          ? item.correct_answer
-              .trim()
-              .replace(/[.)]/g, "")
-              .toUpperCase()
-          : null;
+      /*
+       * --------------------------------------------------------
+       * TYPE DE QUESTION
+       * --------------------------------------------------------
+       */
+      const questionType =
+        normalizeQuestionType(
+          item?.question_type ??
+            item?.type ??
+            "SINGLE_CHOICE"
+        );
 
+      /*
+       * --------------------------------------------------------
+       * BONNE RÉPONSE
+       * --------------------------------------------------------
+       *
+       * Format recommandé :
+       *
+       * "correct_answer": 0
+       *
+       * signifie :
+       * première proposition correcte.
+       *
+       * "correct_answer": 1
+       *
+       * signifie :
+       * deuxième proposition correcte.
+       *
+       * On accepte aussi :
+       *
+       * "correct_answer": "A"
+       * "correct_answer": "B"
+       * "correct_answer": "C"
+       * "correct_answer": "D"
+       *
+       * Et pour le choix multiple :
+       *
+       * "correct_answer": [0, 2]
+       */
+      const correctIndexes =
+        resolveCorrectIndexes(
+          item?.correct_answer,
+          item?.correct_answers,
+          rawChoices
+        );
+
+      /*
+       * Si aucune bonne réponse n'est indiquée,
+       * on vérifie si les objets choices contiennent
+       * déjà is_correct/correct.
+       */
+      const choices = rawChoices.map(
+        (choice: any, choiceIndex: number) => {
+          const text =
+            typeof choice === "string"
+              ? choice
+              : String(
+                  choice?.choice_text ??
+                    choice?.text ??
+                    choice?.label ??
+                    choice?.option ??
+                    ""
+                );
+
+          const explicitCorrect =
+            typeof choice === "object" &&
+            choice !== null &&
+            (
+              choice?.is_correct === true ||
+              choice?.correct === true
+            );
+
+          const indexCorrect =
+            correctIndexes.includes(choiceIndex);
+
+          return {
+            choice_text: text,
+            is_correct:
+              indexCorrect || explicitCorrect,
+          };
+        }
+      );
+
+      /*
+       * Vérification supplémentaire.
+       */
+      if (
+        questionType !== "SHORT_ANSWER" &&
+        !choices.some(
+          (choice) => choice.is_correct
+        )
+      ) {
+        errors.push(
+          `Question ${index + 1} : aucune bonne réponse n'a été détectée. Utilisez « correct_answer » avec un index comme 0, 1, 2 ou 3.`
+        );
+        return;
+      }
+
+      /*
+       * Pour SINGLE_CHOICE et TRUE_FALSE,
+       * une seule réponse doit être correcte.
+       */
+      if (
+        (questionType === "SINGLE_CHOICE" ||
+          questionType === "TRUE_FALSE") &&
+        choices.filter(
+          (choice) => choice.is_correct
+        ).length > 1
+      ) {
+        warnings.push(
+          `Question ${index + 1} : plusieurs réponses sont marquées correctes. La première sera conservée pour un choix unique.`
+        );
+
+        let firstCorrectFound = false;
+
+        choices.forEach((choice) => {
+          if (choice.is_correct) {
+            if (!firstCorrectFound) {
+              firstCorrectFound = true;
+            } else {
+              choice.is_correct = false;
+            }
+          }
+        });
+      }
+
+      /*
+       * --------------------------------------------------------
+       * IMAGE
+       * --------------------------------------------------------
+       */
+      const image =
+        item?.question_image_url ??
+        item?.image_url ??
+        item?.image ??
+        null;
+
+      /*
+       * --------------------------------------------------------
+       * QUESTION FINALE
+       * --------------------------------------------------------
+       */
       questions.push({
         ...createEmptyQuestion(index),
 
-        question_text: String(questionText),
+        question_text:
+          String(questionText).trim(),
 
         explanation:
           item?.explanation ??
@@ -810,51 +983,20 @@ function parseQuizJson(input: string): Parsed {
           item?.solution ??
           "",
 
-        question_type:
-          item?.question_type ??
-          "SINGLE_CHOICE",
+        question_type: questionType,
 
-        points: Number(item?.points) || 1,
+        points:
+          Number(item?.points) > 0
+            ? Number(item.points)
+            : 1,
 
         question_image_url:
-          item?.question_image_url ??
-          item?.image_url ??
-          item?.image ??
-          null,
+          typeof image === "string" &&
+          image.trim()
+            ? image.trim()
+            : null,
 
-        choices: choices.map(
-          (choice: any, choiceIndex: number) => {
-            const letter =
-              String.fromCharCode(
-                65 + choiceIndex
-              );
-
-            const choiceCorrect =
-              Boolean(
-                choice?.is_correct ??
-                  choice?.correct
-              ) ||
-              Boolean(
-                correctAnswer &&
-                  (
-                    letter === correctAnswer ||
-                    String(choiceIndex + 1) ===
-                      correctAnswer
-                  )
-              );
-
-            return {
-              choice_text: String(
-                choice?.choice_text ??
-                  choice?.text ??
-                  choice?.label ??
-                  choice?.option ??
-                  ""
-              ),
-              is_correct: choiceCorrect,
-            };
-          }
-        ),
+        choices,
       });
     });
 
@@ -872,6 +1014,184 @@ function parseQuizJson(input: string): Parsed {
       warnings: [],
     };
   }
+}
+
+/* ============================================================
+   NORMALISATION DU TYPE
+============================================================ */
+
+function normalizeQuestionType(
+  value: unknown
+): EditableQuizQuestion["question_type"] {
+  const type = String(
+    value || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  switch (type) {
+    case "MULTIPLE_CHOICE":
+    case "MULTIPLE":
+    case "MULTI_CHOICE":
+      return "MULTIPLE_CHOICE";
+
+    case "TRUE_FALSE":
+    case "TRUEFALSE":
+    case "VRAI_FAUX":
+      return "TRUE_FALSE";
+
+    case "SHORT_ANSWER":
+    case "SHORT":
+    case "RESPONSE_COURTE":
+      return "SHORT_ANSWER";
+
+    case "SINGLE_CHOICE":
+    case "SINGLE":
+    case "QCM":
+    default:
+      return "SINGLE_CHOICE";
+  }
+}
+
+/* ============================================================
+   RÉSOLUTION DE LA BONNE RÉPONSE
+============================================================ */
+
+function resolveCorrectIndexes(
+  correctAnswer: unknown,
+  correctAnswers: unknown,
+  choices: any[]
+): number[] {
+  /*
+   * Priorité à correct_answers pour le choix multiple.
+   */
+  const source =
+    Array.isArray(correctAnswers)
+      ? correctAnswers
+      : correctAnswer;
+
+  if (Array.isArray(source)) {
+    return source
+      .map((value) =>
+        resolveOneCorrectIndex(
+          value,
+          choices.length
+        )
+      )
+      .filter(
+        (index): index is number =>
+          index !== null
+      );
+  }
+
+  const singleIndex =
+    resolveOneCorrectIndex(
+      source,
+      choices.length
+    );
+
+  return singleIndex === null
+    ? []
+    : [singleIndex];
+}
+
+function resolveOneCorrectIndex(
+  value: unknown,
+  choiceCount: number
+): number | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * INDEX NUMÉRIQUE
+   * ----------------------------------------------------------
+   *
+   * 0 => A
+   * 1 => B
+   * 2 => C
+   * 3 => D
+   */
+  if (
+    typeof value === "number" &&
+    Number.isInteger(value)
+  ) {
+    if (
+      value >= 0 &&
+      value < choiceCount
+    ) {
+      return value;
+    }
+
+    /*
+     * Tolérance pour un format 1-based :
+     * 1 => A
+     * 2 => B
+     * 3 => C
+     * 4 => D
+     */
+    if (
+      value >= 1 &&
+      value <= choiceCount
+    ) {
+      return value - 1;
+    }
+
+    return null;
+  }
+
+  const normalized = String(value)
+    .trim()
+    .toUpperCase()
+    .replace(/[.)]/g, "");
+
+  /*
+   * Lettre :
+   *
+   * A => 0
+   * B => 1
+   * C => 2
+   * D => 3
+   */
+  if (/^[A-D]$/.test(normalized)) {
+    const index =
+      normalized.charCodeAt(0) - 65;
+
+    return index < choiceCount
+      ? index
+      : null;
+  }
+
+  /*
+   * Chaîne numérique :
+   *
+   * "0" => 0
+   * "1" => 1
+   */
+  if (/^\d+$/.test(normalized)) {
+    const numeric =
+      Number(normalized);
+
+    if (
+      numeric >= 0 &&
+      numeric < choiceCount
+    ) {
+      return numeric;
+    }
+
+    /*
+     * Tolérance 1-based.
+     */
+    if (
+      numeric >= 1 &&
+      numeric <= choiceCount
+    ) {
+      return numeric - 1;
+    }
+  }
+
+  return null;
 }
 
 /* ============================================================
@@ -972,8 +1292,8 @@ function htmlToText(
   );
 
   /*
-   * Les images ne doivent pas devenir du texte.
-   * Elles servent seulement de séparateurs.
+   * Les images servent uniquement
+   * de séparateurs dans l'analyse texte.
    */
   doc.querySelectorAll("img").forEach(
     (img) => {
@@ -1022,10 +1342,6 @@ function splitByChoiceGroups(
   for (const line of lines) {
     const trimmed = line.trim();
 
-    /*
-     * Si une nouvelle question numérotée apparaît,
-     * on commence un nouveau bloc.
-     */
     if (
       current.length > 0 &&
       /^(?:question|q)?\s*\d{1,3}\s*[.)\-:]/i.test(
@@ -1139,23 +1455,38 @@ D. 2
 Réponse : B
 Correction : La dérivée de x² est 2x.`;
 
-const JSON_PLACEHOLDER = `[
-  {
-    "question": "Quel est le résultat de 2 + 3 ?",
-    "choices": [
-      {
-        "text": "4",
-        "is_correct": false
-      },
-      {
-        "text": "5",
-        "is_correct": true
-      },
-      {
-        "text": "6",
-        "is_correct": false
-      }
-    ],
-    "explanation": "2 + 3 = 5."
-  }
-]`;
+const JSON_PLACEHOLDER = `{
+  "title": "Les entiers naturels : lecture et écriture",
+  "language": "FREN",
+  "subject": "Mathématiques",
+  "level": "6 EME",
+  "difficulty": "BEGINNER",
+  "type": "QCM",
+  "estimated_duration": 10,
+  "required_score": 60,
+  "description": "Évaluation sur la lecture et l’écriture des entiers naturels.",
+  "questions": [
+    {
+      "question": "Quel est le nombre qui vient après 999 ?",
+      "options": [
+        "100",
+        "999",
+        "1000",
+        "1001"
+      ],
+      "correct_answer": 2,
+      "explanation": "Après 999 vient 1000."
+    },
+    {
+      "question": "Quel est le chiffre des milliers dans 47 326 ?",
+      "options": [
+        "4",
+        "7",
+        "3",
+        "6"
+      ],
+      "correct_answer": 1,
+      "explanation": "Dans 47 326, le chiffre des milliers est 7."
+    }
+  ]
+}`;
