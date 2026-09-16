@@ -15,6 +15,7 @@ export type EditableQuizQuestion = {
   points: number;
   order_index: number;
   choices: EditableQuizChoice[];
+  question_image_url?: string | null;
 };
 
 type Props = {
@@ -83,6 +84,11 @@ export function QuizQuestionEditor({ question, labels, onChange, onRemove }: Pro
           <Trash2 size={18} />
         </button>
       </div>
+      {question.question_image_url ? (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2">
+          <img src={question.question_image_url} alt="Illustration de la question" className="max-h-72 w-full object-contain" />
+        </div>
+      ) : null}
       <div className="mt-3 grid gap-3 md:grid-cols-[1fr_140px]">
         <select
           value={question.question_type}
