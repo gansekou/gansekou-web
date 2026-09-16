@@ -295,35 +295,30 @@ export const authService = {
             );
           }
         } catch (error) {
-          authErrorLog(
-            "register-email",
-            "Firebase account creation",
-            error
-          );
-  
-          // -------------------------------------------------------
-          // IMPORTANT:
-          // If Firebase says that the email already exists,
-          // DO NOT create another account.
-          //
-          // The user must use the login page to recover the account.
-          // -------------------------------------------------------
-  
-          const code =
-            error &&
-            typeof error === "object" &&
-            "code" in error
-              ? String(
-                  (error as { code?: unknown }).code || ""
-                )
-              : "";
-  
-          if (code.includes("auth/email-already-in-use")) {
-            throw new FirebaseEmailAlreadyExistsError();
+            authErrorLog(
+              "register-email",
+              "Firebase account creation",
+              error
+            );
+          
+            const code =
+              error &&
+              typeof error === "object" &&
+              "code" in error
+                ? String(
+                    (error as { code?: unknown }).code || ""
+                  )
+                : "";
+          
+            if (
+              code === "auth/email-already-in-use" ||
+              code.includes("email-already-in-use")
+            ) {
+              throw new FirebaseEmailAlreadyExistsError();
+            }
+          
+            throw error;
           }
-  
-          throw error;
-        }
   
         // ---------------------------------------------------------
         // STEP 2 — Firebase token
