@@ -86,7 +86,11 @@ export function QuizQuestionEditor({ question, labels, onChange, onRemove }: Pro
       </div>
       {question.question_image_url ? (
         <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2">
-          <img src={question.question_image_url} alt="Illustration de la question" className="max-h-72 w-full object-contain" />
+          <img
+            src={question.question_image_url}
+            alt="Illustration de la question"
+            className="max-h-72 w-full object-contain"
+          />
         </div>
       ) : null}
       <div className="mt-3 grid gap-3 md:grid-cols-[1fr_140px]">
