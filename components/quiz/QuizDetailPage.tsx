@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { Edit3, Lock, Play, ShieldAlert, Trash2 } from "lucide-react";
+
 import { ErrorState, LoadingState } from "@/components/app/StateViews";
 import { useI18n } from "@/hooks/useI18n";
 import { ApiError } from "@/lib/api";
@@ -14,10 +15,18 @@ import type { Level, Subject } from "@/types/education";
 import type { Quiz } from "@/types/quiz";
 import type { User } from "@/types/user";
 
-export function QuizDetailPage({ user, quizId }: { user: User; quizId: string }) {
+export function QuizDetailPage({
+  user,
+  quizId,
+}: {
+  user: User;
+  quizId: string;
+}) {
   const { language, t } = useI18n(user);
   const router = useRouter();
+
   const labels = useMemo(() => pageLabels(language), [language]);
+
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
@@ -26,78 +35,181 @@ export function QuizDetailPage({ user, quizId }: { user: User; quizId: string })
 
   useEffect(() => {
     let cancelled = false;
+
     async function load() {
       try {
         setLoading(true);
+        setError(null);
+
         const [quizData, subjectData, levelData] = await Promise.all([
           quizService.getById(quizId),
           educationService.subjects(),
           educationService.levels(),
         ]);
+
         if (!cancelled) {
           setQuiz(quizData);
           setSubjects(subjectData);
           setLevels(levelData);
         }
       } catch (loadError) {
-        if (!cancelled) setError(loadError instanceof Error ? loadError.message : labels.loadError);
+        if (!cancelled) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : labels.loadError
+          );
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
+
     load();
+
     return () => {
       cancelled = true;
     };
   }, [labels.loadError, quizId]);
 
-  if (loading) return <LoadingState label={labels.loading} />;
-  if (error) return <ErrorState message={error} />;
-  if (!quiz) return <ErrorState title={labels.notFound} message={labels.notFoundHelp} />;
+  if (loading) {
+    return <LoadingState label={labels.loading} />;
+  }
 
-  const subject = subjects.find((item) => item.id === quiz.subject_id);
-  const level = levels.find((item) => item.id === quiz.level_id);
+  if (error) {
+    return <ErrorState message={error} />;
+  }
+
+  if (!quiz) {
+    return (
+      <ErrorState
+        title={labels.notFound}
+        message={labels.notFoundHelp}
+      />
+    );
+  }
+
+  /*
+   * Compatibilité avec les anciens quiz :
+   *
+   * - nouveau format : quiz.level_ids
+   * - ancien format : quiz.level_id
+   */
+  const quizLevelIds =
+    quiz.level_ids && quiz.level_ids.length > 0
+      ? quiz.level_ids
+      : quiz.level_id
+        ? [quiz.level_id]
+        : [];
+
+  const subject = subjects.find(
+    (item) => item.id === quiz.subject_id
+  );
+
+  const quizLevels = levels.filter((item) =>
+    quizLevelIds.includes(item.id)
+  );
+
   const canEdit = canEditQuiz(user, quiz);
   const canDelete = canDeleteQuiz(user, quiz);
   const canPlay = canPlayQuiz(user, quiz);
+
   const questions = quiz.questions || [];
   const playableQuestions = questions.length;
   const currentQuiz = quiz;
+
   const canPreviewQuestions =
     user.role === "ENSEIGNANT" ||
     user.role === "ADMIN" ||
     user.role === "ADMINISTRATEUR" ||
     user.role === "PROMOTEUR";
 
+  /*
+   * Affichage bilingue du nom de la matière.
+   */
+  const subjectName = subject
+    ? language === "EN"
+      ? subject.name_en
+      : subject.name_fr
+    : "-";
+
+  /*
+   * Affichage de tous les niveaux du quiz.
+   *
+   * Exemple :
+   * Terminale C, Terminale D
+   */
+  const levelNames =
+    quizLevels.length > 0
+      ? quizLevels
+          .map((item) =>
+            language === "EN" ? item.name_en : item.name_fr
+          )
+          .join(", ")
+      : "-";
+
   async function deleteQuiz() {
     const confirmed = window.confirm(labels.confirmDelete);
-    if (!confirmed) return;
+
+    if (!confirmed) {
+      return;
+    }
+
     try {
       await quizService.remove(currentQuiz.id);
       router.replace("/quizzes");
     } catch (deleteError) {
-      setError(deleteError instanceof ApiError ? deleteError.message : labels.deleteError);
+      setError(
+        deleteError instanceof ApiError
+          ? deleteError.message
+          : labels.deleteError
+      );
     }
   }
 
   return (
     <div className="grid gap-6">
+      {/* =========================================================
+          HEADER
+      ========================================================== */}
       <section className="premium-surface rounded-[1.75rem] p-6 text-white">
         <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#f6c445]">{quiz.quiz_type}</p>
-            <h1 className="mt-3 text-3xl font-black md:text-5xl">{quiz.title}</h1>
-            <p className="mt-4 max-w-3xl text-sm font-bold leading-7 text-white/75">{quiz.description || labels.noDescription}</p>
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#f6c445]">
+              {quiz.quiz_type}
+            </p>
+
+            <h1 className="mt-3 text-3xl font-black md:text-5xl">
+              {quiz.title}
+            </h1>
+
+            <p className="mt-4 max-w-3xl text-sm font-bold leading-7 text-white/75">
+              {quiz.description || labels.noDescription}
+            </p>
           </div>
+
           <div className="flex flex-wrap gap-3">
             {canPlay && (
-              <Link href={`/quizzes/${quiz.id}/play`} className={`ds-button-premium ${!playableQuestions ? "pointer-events-none opacity-60" : ""}`}>
+              <Link
+                href={`/quizzes/${quiz.id}/play`}
+                className={`ds-button-premium ${
+                  !playableQuestions
+                    ? "pointer-events-none opacity-60"
+                    : ""
+                }`}
+              >
                 <Play size={18} />
                 {t("quiz.startQuiz")}
               </Link>
             )}
+
             {canEdit && (
-              <Link href={`/quizzes/${quiz.id}/edit`} className="ds-button-primary bg-white text-[#071d3a]">
+              <Link
+                href={`/quizzes/${quiz.id}/edit`}
+                className="ds-button-primary bg-white text-[#071d3a]"
+              >
                 <Edit3 size={18} />
                 {t("quiz.editQuiz")}
               </Link>
@@ -106,38 +218,61 @@ export function QuizDetailPage({ user, quizId }: { user: User; quizId: string })
         </div>
       </section>
 
+      {/* =========================================================
+          NO QUESTIONS WARNING
+      ========================================================== */}
       {!playableQuestions && (
         <section className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-5 text-sm font-bold leading-6 text-amber-800">
-          <ShieldAlert className="mr-2 inline" size={18} />
+          <ShieldAlert
+            className="mr-2 inline"
+            size={18}
+          />
           {labels.noQuestions}
         </section>
       )}
 
+      {/* =========================================================
+          INFORMATIONS
+      ========================================================== */}
       <section className="grid gap-4 md:grid-cols-2">
-        <Info label={labels.subject} value={subject ? (language === "EN" ? subject.name_en : subject.name_fr) : "-"} />
-        <Info label={labels.level} value={level ? (language === "EN" ? level.name_en : level.name_fr) : "-"} />
+        <Info
+          label={labels.subject}
+          value={subjectName}
+        />
+
+        <Info
+          label={labels.level}
+          value={levelNames}
+        />
       </section>
 
+      {/* =========================================================
+          QUESTIONS PREVIEW
+      ========================================================== */}
       {canPreviewQuestions ? (
         <section className="ds-card rounded-[1.5rem] p-5">
           <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
             <h2 className="text-xl font-black text-[#071d3a]">
               {t("quiz.questions")}
             </h2>
-      
+
             <div className="flex flex-wrap gap-2">
               {quiz.is_premium && (
                 <span className="rounded-full bg-[#fff7df] px-3 py-1 text-xs font-black text-[#071d3a]">
-                  <Lock size={13} className="inline" /> Premium
+                  <Lock
+                    size={13}
+                    className="mr-1 inline"
+                  />
+                  Premium
                 </span>
               )}
-      
+
               <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
                 {quiz.status || "PUBLISHED"}
               </span>
             </div>
           </div>
-      
+
           <div className="mt-5 space-y-3">
             {questions.slice(0, 12).map((question, index) => (
               <div
@@ -147,7 +282,7 @@ export function QuizDetailPage({ user, quizId }: { user: User; quizId: string })
                 <p className="font-black text-[#071d3a]">
                   {index + 1}. {question.question_text}
                 </p>
-      
+
                 <div className="mt-3 grid gap-2 md:grid-cols-2">
                   {(question.choices || []).map((choice) => (
                     <span
@@ -160,7 +295,7 @@ export function QuizDetailPage({ user, quizId }: { user: User; quizId: string })
                 </div>
               </div>
             ))}
-      
+
             {!questions.length && (
               <p className="text-sm font-bold text-slate-500">
                 {labels.noPreview}
@@ -169,35 +304,40 @@ export function QuizDetailPage({ user, quizId }: { user: User; quizId: string })
           </div>
         </section>
       ) : (
+        /* =======================================================
+           QUESTIONS PROTECTED
+        ======================================================== */
         <section className="ds-card rounded-[1.5rem] p-8">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#fff7df]">
               <Lock className="h-8 w-8 text-[#d29b00]" />
             </div>
-      
+
             <h2 className="mt-5 text-2xl font-black text-[#071d3a]">
-              Les questions sont protégées
+              {labels.protectedTitle}
             </h2>
-      
+
             <p className="mt-4 text-base leading-7 text-slate-600">
-              Pour garantir une évaluation équitable, les questions et les propositions
-              de réponses ne sont visibles qu'après le démarrage du quiz.
+              {labels.protectedDescription}
             </p>
-      
+
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-700">
-                {playableQuestions} questions
+                {playableQuestions}{" "}
+                {playableQuestions > 1
+                  ? labels.questions
+                  : labels.question}
               </span>
-      
+
               <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-700">
-                {quiz.estimated_duration_minutes} min
+                {quiz.estimated_duration_minutes ?? "-"} min
               </span>
-      
+
               <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-black text-slate-700">
-                {quiz.passing_score}% requis
+                {quiz.passing_score}% {labels.required}
               </span>
             </div>
-      
+
             {canPlay && playableQuestions > 0 && (
               <Link
                 href={`/quizzes/${quiz.id}/play`}
@@ -211,8 +351,15 @@ export function QuizDetailPage({ user, quizId }: { user: User; quizId: string })
         </section>
       )}
 
+      {/* =========================================================
+          DELETE
+      ========================================================== */}
       {canDelete && (
-        <button type="button" onClick={deleteQuiz} className="inline-flex w-fit items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-black text-red-700">
+        <button
+          type="button"
+          onClick={deleteQuiz}
+          className="inline-flex w-fit items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-black text-red-700"
+        >
           <Trash2 size={18} />
           {labels.deleteQuiz}
         </button>
@@ -221,29 +368,96 @@ export function QuizDetailPage({ user, quizId }: { user: User; quizId: string })
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
+function Info({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
   return (
     <div className="ds-card rounded-[1.5rem] p-5">
-      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">{label}</p>
-      <p className="mt-3 text-2xl font-black text-[#071d3a]">{value}</p>
+      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">
+        {label}
+      </p>
+
+      <p className="mt-3 text-2xl font-black text-[#071d3a]">
+        {value}
+      </p>
     </div>
   );
 }
 
 function pageLabels(language: string) {
   const fr = language !== "EN";
+
   return {
-    loading: fr ? "Chargement du quiz..." : "Loading quiz...",
-    loadError: fr ? "Chargement impossible." : "Unable to load.",
-    notFound: fr ? "Quiz introuvable" : "Quiz not found",
-    notFoundHelp: fr ? "Aucun quiz n'a ete retourne pour cet identifiant." : "No quiz was returned for this id.",
-    noDescription: fr ? "Aucune description." : "No description.",
-    subject: fr ? "Matiere" : "Subject",
-    level: fr ? "Niveau" : "Level",
-    noPreview: fr ? "Les questions apparaitront ici des qu'elles seront ajoutees." : "Questions will appear here as soon as they are added.",
-    noQuestions: fr ? "Ce quiz ne contient pas encore de questions." : "This quiz has no questions yet.",
-    confirmDelete: fr ? "Supprimer ce quiz et ses questions ?" : "Delete this quiz and its questions?",
-    deleteError: fr ? "Suppression impossible." : "Unable to delete.",
-    deleteQuiz: fr ? "Supprimer le quiz" : "Delete quiz",
+    loading: fr
+      ? "Chargement du quiz..."
+      : "Loading quiz...",
+
+    loadError: fr
+      ? "Chargement impossible."
+      : "Unable to load.",
+
+    notFound: fr
+      ? "Quiz introuvable"
+      : "Quiz not found",
+
+    notFoundHelp: fr
+      ? "Aucun quiz n'a été retourné pour cet identifiant."
+      : "No quiz was returned for this id.",
+
+    noDescription: fr
+      ? "Aucune description."
+      : "No description.",
+
+    subject: fr
+      ? "Matière"
+      : "Subject",
+
+    level: fr
+      ? "Niveau(x)"
+      : "Level(s)",
+
+    noPreview: fr
+      ? "Les questions apparaîtront ici dès qu'elles seront ajoutées."
+      : "Questions will appear here as soon as they are added.",
+
+    noQuestions: fr
+      ? "Ce quiz ne contient pas encore de questions."
+      : "This quiz has no questions yet.",
+
+    confirmDelete: fr
+      ? "Supprimer ce quiz et ses questions ?"
+      : "Delete this quiz and its questions?",
+
+    deleteError: fr
+      ? "Suppression impossible."
+      : "Unable to delete.",
+
+    deleteQuiz: fr
+      ? "Supprimer le quiz"
+      : "Delete quiz",
+
+    protectedTitle: fr
+      ? "Les questions sont protégées"
+      : "Questions are protected",
+
+    protectedDescription: fr
+      ? "Pour garantir une évaluation équitable, les questions et les propositions de réponses ne sont visibles qu'après le démarrage du quiz."
+      : "To ensure a fair assessment, questions and answer choices are only visible after starting the quiz.",
+
+    question: fr
+      ? "question"
+      : "question",
+
+    questions: fr
+      ? "questions"
+      : "questions",
+
+    required: fr
+      ? "requis"
+      : "required",
   };
 }
