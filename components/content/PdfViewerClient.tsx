@@ -72,6 +72,36 @@ export function PdfViewer({
 
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [isLowPowerDevice, setIsLowPowerDevice] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+  
+    const memory =
+      "deviceMemory" in navigator
+        ? Number(
+            (navigator as Navigator & {
+              deviceMemory?: number;
+            }).deviceMemory || 0
+          )
+        : 0;
+  
+    const cores =
+      typeof navigator.hardwareConcurrency === "number"
+        ? navigator.hardwareConcurrency
+        : 0;
+  
+    const lowPower =
+      (memory > 0 && memory <= 3) ||
+      (cores > 0 && cores <= 4) ||
+      window.innerWidth <= 480;
+  
+    setIsLowPowerDevice(lowPower);
+  }, []);
+
   // ---------------------------------------------------------------------------
   // Responsive width
   // ---------------------------------------------------------------------------
@@ -160,7 +190,12 @@ export function PdfViewer({
 
   function increaseZoom() {
     setZoom((current) => {
-      return Math.min(2, Number((current + 0.1).toFixed(1)));
+      const maxZoom = isLowPowerDevice ? 1.5 : 2;
+
+      return Math.min(
+        maxZoom,
+        Number((current + 0.1).toFixed(1))
+      );
     });
   }
 
@@ -215,8 +250,11 @@ export function PdfViewer({
 
             if (entry.isIntersecting) {
               next.add(pageNumber);
-              next.add(pageNumber - 1);
-              next.add(pageNumber + 1);
+
+              if (!isLowPowerDevice) {
+                next.add(pageNumber - 1);
+                next.add(pageNumber + 1);
+              }
             }
           }
 
@@ -234,7 +272,9 @@ export function PdfViewer({
       },
       {
         root,
-        rootMargin: "1200px 0px",
+        rootMargin: isLowPowerDevice
+          ? "250px 0px"
+          : "600px 0px",
         threshold: 0,
       }
     );
@@ -246,18 +286,22 @@ export function PdfViewer({
     return () => {
       observer.disconnect();
     };
-  }, [numPages]);
+  }, [numPages, isLowPowerDevice]);
 
   // ---------------------------------------------------------------------------
   // Rendered width
   // ---------------------------------------------------------------------------
 
   const renderedWidth = useMemo(() => {
-    return Math.max(
-      280,
-      pageWidth * zoom
+    const maxWidth = isLowPowerDevice
+      ? 900
+      : 1200;
+  
+    return Math.min(
+      maxWidth,
+      Math.max(280, pageWidth * zoom)
     );
-  }, [pageWidth, zoom]);
+  }, [pageWidth, zoom, isLowPowerDevice]);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -344,7 +388,9 @@ export function PdfViewer({
           <button
             type="button"
             onClick={increaseZoom}
-            disabled={zoom >= 2}
+            disabled={
+              zoom >= (isLowPowerDevice ? 1.5 : 2)
+            }
             aria-label="Augmenter le zoom"
             className="
               flex h-9 w-9 items-center justify-center
@@ -427,38 +473,58 @@ export function PdfViewer({
             </div>
           }
           error={
-            <div className="flex min-h-[300px] items-center justify-center">
-              <div className="text-center font-semibold text-red-600">
-                Impossible d'ouvrir ce document PDF.
+            <div className="flex min-h-[300px] items-center justify-center px-6">
+              <div className="max-w-md text-center">
+                <div className="mb-3 text-lg font-black text-red-600">
+                  Impossible d'afficher ce PDF
+                </div>
+          
+                <p className="mb-5 text-sm text-slate-600">
+                  Ce navigateur n'arrive pas à afficher correctement
+                  ce document. Vous pouvez essayer de le recharger
+                  ou l'ouvrir directement.
+                </p>
+          
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+                  <button
+                    type="button"
+                    onClick={() => window.location.reload()}
+                    className="rounded-xl bg-[#0f5f3a] px-5 py-3 text-sm font-bold text-white"
+                  >
+                    Réessayer
+                  </button>
+          
+                  {typeof file === "string" && (
+                    <a
+                      href={file}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-700"
+                    >
+                      Ouvrir le PDF
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
           }
           onLoadSuccess={({ numPages }) => {
-            console.log(
-              "✅ PDF chargé :",
-              numPages
-            );
-
+            console.log("✅ PDF chargé :", numPages);
+          
+            setPdfError(null);
             setNumPages(numPages);
-
-            setVisiblePages(
-              new Set(
-                Array.from(
-                  {
-                    length: Math.min(
-                      3,
-                      numPages
-                    ),
-                  },
-                  (_, index) => index + 1
-                )
-              )
-            );
+            setVisiblePages(new Set(numPages > 0 ? [1] : []));
           }}
           onLoadError={(error) => {
             console.error(
               "❌ PDF.js Error :",
               error
+            );
+          
+            setPdfError(
+              error instanceof Error
+                ? error.message
+                : "Erreur inconnue lors du chargement du PDF."
             );
           }}
         >
