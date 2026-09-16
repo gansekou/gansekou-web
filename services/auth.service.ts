@@ -60,6 +60,15 @@ export class BackendProfileMissingError extends Error {
   }
 }
 
+export class FirebaseEmailAlreadyExistsError extends Error {
+  constructor(
+    message = "Cette adresse email possède déjà un compte Gansekou."
+  ) {
+    super(message);
+    this.name = "FirebaseEmailAlreadyExistsError";
+  }
+}
+
 function withTimeout<T>(promise: Promise<T>, message: string) {
   let timer: ReturnType<typeof setTimeout>;
   const timeout = new Promise<never>((_, reject) => {
@@ -310,9 +319,7 @@ export const authService = {
               : "";
   
           if (code.includes("auth/email-already-in-use")) {
-            throw new Error(
-              "Cette adresse email possède déjà un compte Gansekou. Connectez-vous avec cette adresse et votre mot de passe pour récupérer votre compte."
-            );
+            throw new FirebaseEmailAlreadyExistsError();
           }
   
           throw error;
