@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   Clock,
-  Filter,
   Plus,
   Search,
   Sparkles,
@@ -125,9 +124,24 @@ export function QuizListPage({
         !subjectId ||
         quiz.subject_id === subjectId;
 
+      /*
+       * Nouveau système :
+       * un quiz peut avoir plusieurs niveaux.
+       *
+       * Compatibilité :
+       * les anciens quiz peuvent encore avoir
+       * uniquement level_id.
+       */
+      const quizLevelIds =
+        quiz.level_ids?.length
+          ? quiz.level_ids
+          : quiz.level_id
+            ? [quiz.level_id]
+            : [];
+
       const matchLevel =
         !levelId ||
-        quiz.level_id === levelId;
+        quizLevelIds.includes(levelId);
 
       return (
         matchQuery &&
@@ -174,6 +188,32 @@ export function QuizListPage({
     return language === "EN"
       ? level.name_en
       : level.name_fr;
+  }
+
+  /*
+   * ============================================================
+   * NIVEAUX D'UN QUIZ
+   * ============================================================
+   */
+
+  function quizLevelNames(quiz: Quiz) {
+    /*
+     * Nouveau format multi-niveaux.
+     */
+    const ids =
+      quiz.level_ids?.length
+        ? quiz.level_ids
+        : quiz.level_id
+          ? [quiz.level_id]
+          : [];
+
+    if (ids.length === 0) {
+      return labels.level;
+    }
+
+    return ids
+      .map((id) => levelName(id))
+      .join(", ");
   }
 
   /*
@@ -234,8 +274,6 @@ export function QuizListPage({
           "
         >
 
-          {/* TEXTE */}
-
           <div className="min-w-0 flex-1">
 
             <p
@@ -285,8 +323,6 @@ export function QuizListPage({
             </p>
 
           </div>
-
-          {/* ACTIONS */}
 
           <div
             className="
@@ -542,203 +578,196 @@ export function QuizListPage({
           "
         >
 
-          {filtered.map((quiz, index) => (
-            <Link
-              key={`quiz-card-${quiz.id}-${index}`}
-              href={`/quizzes/${quiz.id}`}
-              className="
-                ds-card
-                ds-card-hover
-                group
-                block
-                min-w-0
-                overflow-hidden
-                rounded-[1.5rem]
-                p-4
-                sm:p-5
-              "
-            >
+          {filtered.map((quiz, index) => {
+            const levelsText =
+              quizLevelNames(quiz);
 
-              {/* ------------------------------------------------
-                  BADGES
-                  ------------------------------------------------ */}
-
-              <div
+            return (
+              <Link
+                key={`quiz-card-${quiz.id}-${index}`}
+                href={`/quizzes/${quiz.id}`}
                 className="
-                  flex
+                  ds-card
+                  ds-card-hover
+                  group
+                  block
                   min-w-0
-                  items-start
-                  justify-between
-                  gap-2
+                  overflow-hidden
+                  rounded-[1.5rem]
+                  p-4
+                  sm:p-5
                 "
               >
 
-                <span
+                {/* BADGES */}
+
+                <div
                   className="
+                    flex
                     min-w-0
-                    max-w-[70%]
-                    break-words
-                    rounded-full
-                    bg-[#e8f5ee]
-                    px-3
-                    py-1
-                    text-[11px]
-                    font-black
-                    text-[#0f5f3a]
-                    sm:text-xs
+                    items-start
+                    justify-between
+                    gap-2
                   "
                 >
-                  {quiz.quiz_type}
-                </span>
 
-                {quiz.is_premium && (
                   <span
                     className="
-                      shrink-0
+                      min-w-0
+                      max-w-[70%]
+                      break-words
                       rounded-full
-                      bg-[#fff7df]
+                      bg-[#e8f5ee]
                       px-3
                       py-1
                       text-[11px]
                       font-black
-                      text-[#071d3a]
+                      text-[#0f5f3a]
                       sm:text-xs
                     "
                   >
-                    {labels.premium}
+                    {quiz.quiz_type}
                   </span>
-                )}
 
-              </div>
+                  {quiz.is_premium && (
+                    <span
+                      className="
+                        shrink-0
+                        rounded-full
+                        bg-[#fff7df]
+                        px-3
+                        py-1
+                        text-[11px]
+                        font-black
+                        text-[#071d3a]
+                        sm:text-xs
+                      "
+                    >
+                      {labels.premium}
+                    </span>
+                  )}
 
-              {/* ------------------------------------------------
-                  TITRE
-                  ------------------------------------------------ */}
+                </div>
 
-              <h2
-                className="
-                  mt-3
-                  break-words
-                  text-lg
-                  font-black
-                  leading-6
-                  text-[#071d3a]
-                  transition-colors
-                  group-hover:text-[#0f5f3a]
-                  sm:mt-4
-                  sm:text-xl
-                "
-              >
-                {quiz.title}
-              </h2>
+                {/* TITRE */}
 
-              {/* ------------------------------------------------
-                  DESCRIPTION
-                  ------------------------------------------------ */}
-
-              <p
-                className="
-                  mt-2
-                  line-clamp-2
-                  min-h-10
-                  break-words
-                  text-sm
-                  font-bold
-                  leading-5
-                  text-slate-500
-                "
-              >
-                {quiz.description ||
-                  labels.noDescription}
-              </p>
-
-              {/* ------------------------------------------------
-                  INFORMATIONS
-                  ------------------------------------------------ */}
-
-              <div
-                className="
-                  mt-4
-                  grid
-                  min-w-0
-                  grid-cols-2
-                  gap-x-3
-                  gap-y-2
-                  border-t
-                  border-slate-100
-                  pt-4
-                  text-xs
-                  font-black
-                  text-slate-600
-                  sm:mt-5
-                  sm:pt-5
-                  sm:text-sm
-                "
-              >
-
-                {/* MATIERE */}
-
-                <span
+                <h2
                   className="
-                    min-w-0
+                    mt-3
                     break-words
+                    text-lg
+                    font-black
+                    leading-6
+                    text-[#071d3a]
+                    transition-colors
+                    group-hover:text-[#0f5f3a]
+                    sm:mt-4
+                    sm:text-xl
                   "
-                  title={subjectName(
-                    quiz.subject_id
-                  )}
                 >
-                  {subjectName(
-                    quiz.subject_id
-                  )}
-                </span>
+                  {quiz.title}
+                </h2>
 
-                {/* NIVEAU */}
+                {/* DESCRIPTION */}
 
-                <span
+                <p
                   className="
-                    min-w-0
+                    mt-2
+                    line-clamp-2
+                    min-h-10
                     break-words
-                    text-right
+                    text-sm
+                    font-bold
+                    leading-5
+                    text-slate-500
                   "
-                  title={levelName(
-                    quiz.level_id
-                  )}
                 >
-                  {levelName(
-                    quiz.level_id
-                  )}
-                </span>
+                  {quiz.description ||
+                    labels.noDescription}
+                </p>
 
-                {/* DUREE */}
+                {/* INFORMATIONS */}
 
-                <span
+                <div
                   className="
-                    col-span-2
-                    inline-flex
+                    mt-4
+                    grid
                     min-w-0
-                    items-center
-                    gap-1.5
+                    grid-cols-2
+                    gap-x-3
+                    gap-y-2
+                    border-t
+                    border-slate-100
+                    pt-4
+                    text-xs
+                    font-black
+                    text-slate-600
+                    sm:mt-5
+                    sm:pt-5
+                    sm:text-sm
                   "
                 >
-                  <Clock
-                    size={14}
+
+                  {/* MATIERE */}
+
+                  <span
                     className="
-                      shrink-0
-                      text-[#0f5f3a]
+                      min-w-0
+                      break-words
                     "
-                  />
-
-                  <span>
-                    {quiz.estimated_duration_minutes ||
-                      10}{" "}
-                    {labels.minutes}
+                    title={subjectName(
+                      quiz.subject_id
+                    )}
+                  >
+                    {subjectName(
+                      quiz.subject_id
+                    )}
                   </span>
-                </span>
 
-              </div>
+                  {/* NIVEAUX */}
 
-            </Link>
-          ))}
+                  <span
+                    className="
+                      min-w-0
+                      break-words
+                      text-right
+                    "
+                    title={levelsText}
+                  >
+                    {levelsText}
+                  </span>
+
+                  {/* DUREE */}
+
+                  <span
+                    className="
+                      col-span-2
+                      inline-flex
+                      min-w-0
+                      items-center
+                      gap-1.5
+                    "
+                  >
+                    <Clock
+                      size={14}
+                      className="
+                        shrink-0
+                        text-[#0f5f3a]
+                      "
+                    />
+
+                    <span>
+                      {quiz.estimated_duration_minutes ||
+                        10}{" "}
+                      {labels.minutes}
+                    </span>
+                  </span>
+
+                </div>
+
+              </Link>
+            );
+          })}
 
         </section>
       )}
