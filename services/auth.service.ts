@@ -30,7 +30,8 @@ import {
   clearRefreshToken,
 } from "@/lib/refresh-token";
 
-const AUTH_TIMEOUT_MS = 15000;
+const AUTH_TIMEOUT_MS = 20000;
+const AUTH_RETRY_DELAY_MS = 800;
 
 function authLog(message: string) {
   console.info(message);
@@ -80,20 +81,43 @@ async function retryNetwork<T>(task: () => Promise<T>, retries = 1) {
   }
 }
 
-async function getFreshFirebaseToken(firebaseUser: FirebaseUser, scope: "login-email" | "login-google" | "register-email") {
+async function getFreshFirebaseToken(
+  firebaseUser: FirebaseUser,
+  scope: "login-email" | "login-google" | "register-email"
+) {
   authLog(`[${scope}] getIdToken start`);
-  await firebaseUser.reload();
-  await new Promise((resolve) => setTimeout(resolve, 250));
 
-  let token = await firebaseUser.getIdToken(true);
-  if (!token) {
-    authLog(`[${scope}] getIdToken empty retry`);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    token = await firebaseUser.getIdToken(true);
+  let token: string | null = null;
+
+  try {
+    // Do not force reload() here.
+    // reload() creates another network request and can make
+    // authentication fragile on slow mobile connections.
+    token = await withTimeout(
+      firebaseUser.getIdToken(false),
+      "Récupération de la session trop lente."
+    );
+  } catch (error) {
+    authErrorLog(scope, "getIdToken first attempt", error);
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, AUTH_RETRY_DELAY_MS)
+    );
+
+    token = await withTimeout(
+      firebaseUser.getIdToken(true),
+      "Récupération de la session impossible."
+    );
   }
 
-  if (!token) throw new AuthTokenMissingError();
-  authLog(`[${scope}] getIdToken success length=${token.length}`);
+  if (!token) {
+    throw new AuthTokenMissingError();
+  }
+
+  authLog(
+    `[${scope}] getIdToken success length=${token.length}`
+  );
+
   return token;
 }
 
@@ -214,34 +238,111 @@ async function loginWithGoogleInternal(options?: {
 export const authService = {
   async registerEmail(payload: RegisterEmailPayload) {
     return authSessionManager.runAuthRequest(async () => {
+      const email = payload.email.trim().toLowerCase();
+  
       try {
         await firebaseAuthReady;
   
-        authLog("[register-email] Firebase account creation start");
+        authLog("[register-email] start");
   
-        const credential = await withTimeout(
-          createUserWithEmailAndPassword(
-            firebaseAuth,
-            payload.email.trim(),
-            payload.password || ""
-          ),
-          "Création du compte Firebase trop lente."
-        );
+        let firebaseUser: FirebaseUser;
+  
+        // ---------------------------------------------------------
+        // STEP 1 — Create Firebase account
+        // ---------------------------------------------------------
+  
+        try {
+          authLog("[register-email] Firebase account creation start");
+  
+          const credential = await withTimeout(
+            createUserWithEmailAndPassword(
+              firebaseAuth,
+              email,
+              payload.password || ""
+            ),
+            "Création du compte trop lente. Vérifiez votre connexion."
+          );
+  
+          firebaseUser = credential.user;
+  
+          authLog(
+            `[register-email] Firebase account created uid=${firebaseUser.uid}`
+          );
+  
+          // Update display name.
+          try {
+            await withTimeout(
+              updateProfile(firebaseUser, {
+                displayName: `${payload.prenom} ${payload.nom}`.trim(),
+              }),
+              "Mise à jour du profil trop lente."
+            );
+          } catch (profileError) {
+            // This should NOT invalidate the Firebase account.
+            authErrorLog(
+              "register-email",
+              "updateProfile",
+              profileError
+            );
+          }
+        } catch (error) {
+          authErrorLog(
+            "register-email",
+            "Firebase account creation",
+            error
+          );
+  
+          // -------------------------------------------------------
+          // IMPORTANT:
+          // If Firebase says that the email already exists,
+          // DO NOT create another account.
+          //
+          // The user must use the login page to recover the account.
+          // -------------------------------------------------------
+  
+          const code =
+            error &&
+            typeof error === "object" &&
+            "code" in error
+              ? String(
+                  (error as { code?: unknown }).code || ""
+                )
+              : "";
+  
+          if (code.includes("auth/email-already-in-use")) {
+            throw new Error(
+              "Cette adresse email possède déjà un compte Gansekou. Connectez-vous avec cette adresse et votre mot de passe pour récupérer votre compte."
+            );
+          }
+  
+          throw error;
+        }
+  
+        // ---------------------------------------------------------
+        // STEP 2 — Firebase token
+        // ---------------------------------------------------------
+  
+        const firebaseToken =
+          await getFreshFirebaseToken(
+            firebaseUser,
+            "register-email"
+          );
+  
+        // ---------------------------------------------------------
+        // STEP 3 — Device information
+        // ---------------------------------------------------------
+  
+        const deviceId = getDeviceId();
+        const deviceName = getDeviceName();
+        const platform = getPlatform();
+  
+        // ---------------------------------------------------------
+        // STEP 4 — Create/sync Gansekou profile
+        // ---------------------------------------------------------
   
         authLog(
-          `[register-email] Firebase account created uid=${credential.user.uid}`
+          "[register-email] backend registration start"
         );
-  
-        await updateProfile(credential.user, {
-          displayName: `${payload.prenom} ${payload.nom}`.trim(),
-        });
-  
-        const firebaseToken = await getFreshFirebaseToken(
-          credential.user,
-          "register-email"
-        );
-  
-        authLog("[register-email] backend registration start");
   
         const data = await apiFetch<AuthResponse>(
           ENDPOINTS.auth.registerEmail,
@@ -254,7 +355,7 @@ export const authService = {
               nom: payload.nom.trim(),
               prenom: payload.prenom.trim(),
   
-              phone: payload.phone,
+              phone: payload.phone.trim(),
               genre: payload.genre,
               age: payload.age,
   
@@ -263,14 +364,16 @@ export const authService = {
   
               role: "ELEVE",
   
-              device_id: getDeviceId(),
-              device_name: getDeviceName(),
-              platform: getPlatform(),
+              device_id: deviceId,
+              device_name: deviceName,
+              platform,
             },
           }
         );
   
-        authLog("[register-email] backend registration success");
+        authLog(
+          "[register-email] backend registration success"
+        );
   
         if (data.refresh_token) {
           saveRefreshToken(data.refresh_token);
@@ -282,22 +385,12 @@ export const authService = {
           ...data,
           token: firebaseToken,
         };
-  
       } catch (error) {
         authErrorLog(
           "register-email",
           "registration",
           error
         );
-  
-        /*
-         * IMPORTANT :
-         * NE PAS supprimer automatiquement l'utilisateur Firebase.
-         *
-         * Si Firebase a été créé mais PostgreSQL a échoué,
-         * le compte Firebase pourra être récupéré lors d'une
-         * nouvelle tentative.
-         */
   
         throw error;
       }
