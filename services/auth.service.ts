@@ -251,23 +251,22 @@ export const authService = {
   
       try {
         await firebaseAuthReady;
-  
         authLog("[register-email] start");
   
         let firebaseUser: FirebaseUser;
-  
-        // ---------------------------------------------------------
-        // STEP 1 — Create Firebase account
-        // ---------------------------------------------------------
+        let recoveredExistingAccount = false;
   
         try {
+          // 1. Tentative normale de création du compte Firebase
           authLog("[register-email] Firebase account creation start");
   
           const credential = await withTimeout(
-            createUserWithEmailAndPassword(
-              firebaseAuth,
-              email,
-              payload.password || ""
+            retryNetwork(() =>
+              createUserWithEmailAndPassword(
+                firebaseAuth,
+                email,
+                payload.password || ""
+              )
             ),
             "Création du compte trop lente. Vérifiez votre connexion."
           );
@@ -278,7 +277,7 @@ export const authService = {
             `[register-email] Firebase account created uid=${firebaseUser.uid}`
           );
   
-          // Update display name.
+          // Mise à jour du nom
           try {
             await withTimeout(
               updateProfile(firebaseUser, {
@@ -287,7 +286,6 @@ export const authService = {
               "Mise à jour du profil trop lente."
             );
           } catch (profileError) {
-            // This should NOT invalidate the Firebase account.
             authErrorLog(
               "register-email",
               "updateProfile",
@@ -295,55 +293,70 @@ export const authService = {
             );
           }
         } catch (error) {
-            authErrorLog(
-              "register-email",
-              "Firebase account creation",
-              error
-            );
-          
-            const code =
-              error &&
-              typeof error === "object" &&
-              "code" in error
-                ? String(
-                    (error as { code?: unknown }).code || ""
-                  )
-                : "";
-          
-            if (
-              code === "auth/email-already-in-use" ||
-              code.includes("email-already-in-use")
-            ) {
-              throw new FirebaseEmailAlreadyExistsError();
-            }
-          
-            throw error;
-          }
-  
-        // ---------------------------------------------------------
-        // STEP 2 — Firebase token
-        // ---------------------------------------------------------
-  
-        const firebaseToken =
-          await getFreshFirebaseToken(
-            firebaseUser,
-            "register-email"
+          authErrorLog(
+            "register-email",
+            "Firebase account creation",
+            error
           );
   
-        // ---------------------------------------------------------
-        // STEP 3 — Device information
-        // ---------------------------------------------------------
+          const code =
+            error &&
+            typeof error === "object" &&
+            "code" in error
+              ? String(
+                  (error as { code?: unknown }).code || ""
+                )
+              : "";
+  
+          // 2. Le compte Firebase existe déjà
+          if (
+            code === "auth/email-already-in-use" ||
+            code.includes("email-already-in-use")
+          ) {
+            authLog(
+              "[register-email] Firebase account already exists"
+            );
+  
+            authLog(
+              "[register-email] existing Firebase account recovery start"
+            );
+  
+            // On se connecte avec les identifiants fournis
+            const credential = await withTimeout(
+              retryNetwork(() =>
+                signInWithEmailAndPassword(
+                  firebaseAuth,
+                  email,
+                  payload.password || ""
+                )
+              ),
+              "Récupération du compte trop lente. Vérifiez votre connexion."
+            );
+  
+            firebaseUser = credential.user;
+            recoveredExistingAccount = true;
+  
+            authLog(
+              `[register-email] existing Firebase account recovered uid=${firebaseUser.uid}`
+            );
+          } else {
+            throw error;
+          }
+        }
+  
+        // 3. Récupération du token Firebase
+        const firebaseToken = await getFreshFirebaseToken(
+          firebaseUser,
+          "register-email"
+        );
   
         const deviceId = getDeviceId();
         const deviceName = getDeviceName();
         const platform = getPlatform();
   
-        // ---------------------------------------------------------
-        // STEP 4 — Create/sync Gansekou profile
-        // ---------------------------------------------------------
-  
+        // 4. Envoi du profil au backend GANSEKOU
         authLog(
-          "[register-email] backend registration start"
+          `[register-email] backend registration start recovered=${recoveredExistingAccount}`
         );
   
         const data = await apiFetch<AuthResponse>(
@@ -353,28 +366,23 @@ export const authService = {
             token: firebaseToken,
             body: {
               id_token: firebaseToken,
-  
               nom: payload.nom.trim(),
               prenom: payload.prenom.trim(),
-  
-              phone: payload.phone.trim(),
+              phone: payload.phone?.trim() || null,
               genre: payload.genre,
               age: payload.age,
-  
               preferred_language:
                 payload.preferred_language || "FR",
-  
               role: "ELEVE",
-  
               device_id: deviceId,
               device_name: deviceName,
-              platform,
+              platform: platform,
             },
           }
         );
   
         authLog(
-          "[register-email] backend registration success"
+          `[register-email] backend registration success recovered=${recoveredExistingAccount}`
         );
   
         if (data.refresh_token) {
