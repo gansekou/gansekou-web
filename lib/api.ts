@@ -21,6 +21,7 @@ type ApiOptions = {
   token?: string | null;
   headers?: HeadersInit;
   cache?: RequestCache;
+  timeoutMs?: number;
 };
 
 
@@ -187,6 +188,38 @@ function buildApiUrl(
 
 }
 
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  timeoutMs = 20000
+): Promise<Response> {
+  const controller = new AbortController();
+
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (
+      error instanceof DOMException &&
+      error.name === "AbortError"
+    ) {
+      throw new ApiError(
+        "La connexion au serveur est trop lente. Vérifiez votre connexion puis réessayez.",
+        408
+      );
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 
 // =====================================================
@@ -294,11 +327,11 @@ export async function apiFetch<T>(
 
 
 
-  let response =
-    await fetch(
-      finalUrl,
-      requestInit
-    );
+  let response = await fetchWithTimeout(
+    finalUrl,
+    requestInit,
+    options.timeoutMs || 20000
+  );
 
 
 
@@ -338,14 +371,14 @@ export async function apiFetch<T>(
 
 
 
-      response =
-        await fetch(
-          finalUrl,
-          {
-            ...requestInit,
-            headers
-          }
-        );
+      response = await fetchWithTimeout(
+        finalUrl,
+        {
+          ...requestInit,
+          headers,
+        },
+        options.timeoutMs || 20000
+      );
 
     }
 
