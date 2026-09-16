@@ -2,158 +2,905 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Clock, Filter, Plus, Sparkles, Trophy } from "lucide-react";
-import { ErrorState, LoadingState } from "@/components/app/StateViews";
+import {
+  Clock,
+  Filter,
+  Plus,
+  Search,
+  Sparkles,
+  Trophy,
+} from "lucide-react";
+
+import {
+  ErrorState,
+  LoadingState,
+} from "@/components/app/StateViews";
+
 import { useI18n } from "@/hooks/useI18n";
 import { canCreateQuiz } from "@/lib/permissions";
 import { quizService } from "@/services/quiz.service";
 import { educationService } from "@/services/education.service";
-import type { Level, Subject } from "@/types/education";
+
+import type {
+  Level,
+  Subject,
+} from "@/types/education";
+
 import type { Quiz } from "@/types/quiz";
 import type { User } from "@/types/user";
 
-export function QuizListPage({ user }: { user: User }) {
+export function QuizListPage({
+  user,
+}: {
+  user: User;
+}) {
   const { language, t } = useI18n(user);
+
   const labels = pageLabels(language);
+
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [query, setQuery] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [levelId, setLevelId] = useState("");
 
+  /*
+   * ============================================================
+   * CHARGEMENT
+   * ============================================================
+   */
+
   useEffect(() => {
     let cancelled = false;
+
     async function load() {
       try {
         setLoading(true);
-        const [quizData, subjectData, levelData] = await Promise.all([
+        setError(null);
+
+        const [
+          quizData,
+          subjectData,
+          levelData,
+        ] = await Promise.all([
           quizService.getAll(),
           educationService.subjects(),
           educationService.levels(),
         ]);
-        if (!cancelled) {
-          setQuizzes(quizData);
-          setSubjects(subjectData);
-          setLevels(levelData);
-        }
+
+        if (cancelled) return;
+
+        setQuizzes(quizData);
+        setSubjects(subjectData);
+        setLevels(levelData);
       } catch (loadError) {
-        if (!cancelled) setError(loadError instanceof Error ? loadError.message : labels.loadError);
+        if (cancelled) return;
+
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : labels.loadError
+        );
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
+
     load();
+
     return () => {
       cancelled = true;
     };
   }, [labels.loadError]);
 
+  /*
+   * ============================================================
+   * FILTRAGE
+   * ============================================================
+   */
+
   const filtered = useMemo(() => {
+    const normalizedQuery = query
+      .trim()
+      .toLowerCase();
+
     return quizzes.filter((quiz) => {
-      const matchQuery = !query || `${quiz.title} ${quiz.description || ""}`.toLowerCase().includes(query.toLowerCase());
-      return matchQuery && (!subjectId || quiz.subject_id === subjectId) && (!levelId || quiz.level_id === levelId);
+      const searchableText = `
+        ${quiz.title}
+        ${quiz.description || ""}
+      `.toLowerCase();
+
+      const matchQuery =
+        !normalizedQuery ||
+        searchableText.includes(normalizedQuery);
+
+      const matchSubject =
+        !subjectId ||
+        quiz.subject_id === subjectId;
+
+      const matchLevel =
+        !levelId ||
+        quiz.level_id === levelId;
+
+      return (
+        matchQuery &&
+        matchSubject &&
+        matchLevel
+      );
     });
-  }, [levelId, query, quizzes, subjectId]);
+  }, [
+    levelId,
+    query,
+    quizzes,
+    subjectId,
+  ]);
+
+  /*
+   * ============================================================
+   * NOMS
+   * ============================================================
+   */
 
   function subjectName(id: string) {
-    const subject = subjects.find((item) => item.id === id);
-    return subject ? (language === "EN" ? subject.name_en : subject.name_fr) : labels.subject;
+    const subject = subjects.find(
+      (item) => item.id === id
+    );
+
+    if (!subject) {
+      return labels.subject;
+    }
+
+    return language === "EN"
+      ? subject.name_en
+      : subject.name_fr;
   }
 
   function levelName(id: string) {
-    const level = levels.find((item) => item.id === id);
-    return level ? (language === "EN" ? level.name_en : level.name_fr) : labels.level;
+    const level = levels.find(
+      (item) => item.id === id
+    );
+
+    if (!level) {
+      return labels.level;
+    }
+
+    return language === "EN"
+      ? level.name_en
+      : level.name_fr;
   }
 
-  if (loading) return <LoadingState label={labels.loading} />;
-  if (error) return <ErrorState message={error} />;
+  /*
+   * ============================================================
+   * ETATS
+   * ============================================================
+   */
+
+  if (loading) {
+    return (
+      <LoadingState
+        label={labels.loading}
+      />
+    );
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        message={error}
+      />
+    );
+  }
+
+  /*
+   * ============================================================
+   * PAGE
+   * ============================================================
+   */
 
   return (
-    <div className="grid gap-6">
-      <section className="premium-surface rounded-[1.75rem] p-6 text-white">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#f6c445]">{t("quiz.interactiveAssessments")}</p>
-            <h1 className="mt-3 text-3xl font-black md:text-5xl">{t("quiz.interactiveAssessments")}</h1>
-            <p className="mt-3 max-w-2xl text-sm font-bold leading-7 text-white/75">{labels.hero}</p>
+    <div className="min-w-0 space-y-5 sm:space-y-6">
+
+      {/* ========================================================
+          HERO
+          ======================================================== */}
+
+      <section
+        className="
+          premium-surface
+          min-w-0
+          overflow-hidden
+          rounded-[1.5rem]
+          p-4
+          sm:rounded-[1.75rem]
+          sm:p-6
+        "
+      >
+        <div
+          className="
+            flex
+            min-w-0
+            flex-col
+            gap-5
+            md:flex-row
+            md:items-end
+            md:justify-between
+          "
+        >
+
+          {/* TEXTE */}
+
+          <div className="min-w-0 flex-1">
+
+            <p
+              className="
+                break-words
+                text-xs
+                font-black
+                uppercase
+                tracking-[0.14em]
+                text-[#f6c445]
+                sm:text-sm
+                sm:tracking-[0.18em]
+              "
+            >
+              {t("quiz.interactiveAssessments")}
+            </p>
+
+            <h1
+              className="
+                mt-2
+                break-words
+                text-2xl
+                font-black
+                leading-tight
+                text-white
+                sm:mt-3
+                sm:text-3xl
+                md:text-5xl
+              "
+            >
+              {t("quiz.interactiveAssessments")}
+            </h1>
+
+            <p
+              className="
+                mt-3
+                max-w-2xl
+                break-words
+                text-sm
+                font-bold
+                leading-6
+                text-white/75
+                sm:leading-7
+              "
+            >
+              {labels.hero}
+            </p>
+
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/quizzes/history" className="ds-button-premium">
-              <Trophy size={18} />
-              {labels.history}
+
+          {/* ACTIONS */}
+
+          <div
+            className="
+              flex
+              w-full
+              min-w-0
+              flex-col
+              gap-2
+              sm:flex-row
+              sm:flex-wrap
+              sm:gap-3
+              md:w-auto
+              md:shrink-0
+            "
+          >
+
+            <Link
+              href="/quizzes/history"
+              className="
+                ds-button-premium
+                w-full
+                !px-4
+                !py-3
+                text-sm
+                sm:w-auto
+              "
+            >
+              <Trophy
+                size={17}
+                className="shrink-0"
+              />
+
+              <span>
+                {labels.history}
+              </span>
             </Link>
+
             {canCreateQuiz(user) && (
-              <Link href="/quizzes/new" className="ds-button-primary bg-white text-[#071d3a]">
-                <Plus size={18} />
-                {t("quiz.addQuiz")}
+              <Link
+                href="/quizzes/new"
+                className="
+                  ds-button-primary
+                  w-full
+                  bg-white
+                  text-[#071d3a]
+                  !px-4
+                  !py-3
+                  text-sm
+                  sm:w-auto
+                "
+              >
+                <Plus
+                  size={17}
+                  className="shrink-0"
+                />
+
+                <span>
+                  {t("quiz.addQuiz")}
+                </span>
               </Link>
             )}
+
           </div>
         </div>
       </section>
 
-      <section className="ds-card rounded-[1.5rem] p-5">
-        <div className="grid gap-3 md:grid-cols-[1fr_220px_220px]">
-          <div className="relative">
-            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={labels.search} className="quiz-input pl-11" />
+      {/* ========================================================
+          FILTRES
+          ======================================================== */}
+
+      <section
+        className="
+          ds-card
+          min-w-0
+          overflow-hidden
+          rounded-[1.5rem]
+          p-4
+          sm:p-5
+        "
+      >
+
+        <div
+          className="
+            grid
+            min-w-0
+            gap-3
+            md:grid-cols-[minmax(0,1fr)_220px_220px]
+          "
+        >
+
+          {/* RECHERCHE */}
+
+          <div className="relative min-w-0">
+
+            <Search
+              className="
+                pointer-events-none
+                absolute
+                left-4
+                top-1/2
+                -translate-y-1/2
+                text-slate-400
+              "
+              size={18}
+            />
+
+            <input
+              value={query}
+              onChange={(event) =>
+                setQuery(event.target.value)
+              }
+              placeholder={labels.search}
+              aria-label={labels.search}
+              className="
+                quiz-input
+                min-w-0
+                pl-11
+                text-sm
+                sm:text-base
+              "
+            />
+
           </div>
-          <select value={subjectId} onChange={(event) => setSubjectId(event.target.value)} className="quiz-input">
-            <option value="">{labels.subject}</option>
-            {subjects.map((subject) => <option key={subject.id} value={subject.id}>{language === "EN" ? subject.name_en : subject.name_fr}</option>)}
+
+          {/* MATIERE */}
+
+          <select
+            value={subjectId}
+            onChange={(event) =>
+              setSubjectId(event.target.value)
+            }
+            aria-label={labels.subject}
+            className="
+              quiz-input
+              min-w-0
+              text-sm
+              sm:text-base
+            "
+          >
+            <option value="">
+              {labels.subject}
+            </option>
+
+            {subjects.map((subject) => (
+              <option
+                key={subject.id}
+                value={subject.id}
+              >
+                {language === "EN"
+                  ? subject.name_en
+                  : subject.name_fr}
+              </option>
+            ))}
           </select>
-          <select value={levelId} onChange={(event) => setLevelId(event.target.value)} className="quiz-input">
-            <option value="">{labels.level}</option>
-            {levels.map((level) => <option key={level.id} value={level.id}>{language === "EN" ? level.name_en : level.name_fr}</option>)}
+
+          {/* NIVEAU */}
+
+          <select
+            value={levelId}
+            onChange={(event) =>
+              setLevelId(event.target.value)
+            }
+            aria-label={labels.level}
+            className="
+              quiz-input
+              min-w-0
+              text-sm
+              sm:text-base
+            "
+          >
+            <option value="">
+              {labels.level}
+            </option>
+
+            {levels.map((level) => (
+              <option
+                key={level.id}
+                value={level.id}
+              >
+                {language === "EN"
+                  ? level.name_en
+                  : level.name_fr}
+              </option>
+            ))}
           </select>
+
         </div>
+
+        {/* COMPTEUR */}
+
+        <div
+          className="
+            mt-3
+            flex
+            min-w-0
+            flex-wrap
+            items-center
+            justify-between
+            gap-2
+            text-xs
+            font-bold
+            text-slate-500
+          "
+        >
+          <span>
+            {filtered.length}{" "}
+            {filtered.length > 1
+              ? labels.results
+              : labels.result}
+          </span>
+
+          {(query ||
+            subjectId ||
+            levelId) && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setSubjectId("");
+                setLevelId("");
+              }}
+              className="
+                rounded-full
+                px-3
+                py-1.5
+                font-black
+                text-[#0f5f3a]
+                transition
+                hover:bg-[#e8f5ee]
+              "
+            >
+              {labels.clearFilters}
+            </button>
+          )}
+        </div>
+
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((quiz, index) => (
-          <Link key={`quiz-card-${quiz.id}-${index}`} href={`/quizzes/${quiz.id}`} className="ds-card ds-card-hover block rounded-[1.5rem] p-5">
-            <div className="flex items-start justify-between gap-3">
-              <span className="rounded-full bg-[#e8f5ee] px-3 py-1 text-xs font-black text-[#0f5f3a]">{quiz.quiz_type}</span>
-              {quiz.is_premium && <span className="rounded-full bg-[#fff7df] px-3 py-1 text-xs font-black text-[#071d3a]">{labels.premium}</span>}
-            </div>
-            <h2 className="mt-4 text-xl font-black text-[#071d3a]">{quiz.title}</h2>
-            <p className="mt-2 line-clamp-2 min-h-10 text-sm font-bold leading-5 text-slate-500">{quiz.description || labels.noDescription}</p>
-            <div className="mt-5 grid grid-cols-2 gap-2 text-sm font-black text-slate-600">
-              <span>{subjectName(quiz.subject_id)}</span>
-              <span>{levelName(quiz.level_id)}</span>
-              <span className="inline-flex items-center gap-1"><Clock size={15} />{quiz.estimated_duration_minutes || 10} min</span>
-            </div>
-          </Link>
-        ))}
-      </section>
+      {/* ========================================================
+          GRILLE DES QUIZ
+          ======================================================== */}
 
-      {!filtered.length && (
-        <section className="ds-card rounded-[1.5rem] p-8 text-center">
-          <Sparkles className="mx-auto text-[#f6c445]" size={34} />
-          <h2 className="mt-3 text-2xl font-black text-[#071d3a]">{labels.empty}</h2>
-          <p className="mt-2 text-sm font-bold text-slate-500">{labels.emptyHelp}</p>
+      {filtered.length > 0 && (
+        <section
+          className="
+            grid
+            min-w-0
+            grid-cols-1
+            gap-4
+            sm:gap-5
+            md:grid-cols-2
+            xl:grid-cols-3
+          "
+        >
+
+          {filtered.map((quiz, index) => (
+            <Link
+              key={`quiz-card-${quiz.id}-${index}`}
+              href={`/quizzes/${quiz.id}`}
+              className="
+                ds-card
+                ds-card-hover
+                group
+                block
+                min-w-0
+                overflow-hidden
+                rounded-[1.5rem]
+                p-4
+                sm:p-5
+              "
+            >
+
+              {/* ------------------------------------------------
+                  BADGES
+                  ------------------------------------------------ */}
+
+              <div
+                className="
+                  flex
+                  min-w-0
+                  items-start
+                  justify-between
+                  gap-2
+                "
+              >
+
+                <span
+                  className="
+                    min-w-0
+                    max-w-[70%]
+                    break-words
+                    rounded-full
+                    bg-[#e8f5ee]
+                    px-3
+                    py-1
+                    text-[11px]
+                    font-black
+                    text-[#0f5f3a]
+                    sm:text-xs
+                  "
+                >
+                  {quiz.quiz_type}
+                </span>
+
+                {quiz.is_premium && (
+                  <span
+                    className="
+                      shrink-0
+                      rounded-full
+                      bg-[#fff7df]
+                      px-3
+                      py-1
+                      text-[11px]
+                      font-black
+                      text-[#071d3a]
+                      sm:text-xs
+                    "
+                  >
+                    {labels.premium}
+                  </span>
+                )}
+
+              </div>
+
+              {/* ------------------------------------------------
+                  TITRE
+                  ------------------------------------------------ */}
+
+              <h2
+                className="
+                  mt-3
+                  break-words
+                  text-lg
+                  font-black
+                  leading-6
+                  text-[#071d3a]
+                  transition-colors
+                  group-hover:text-[#0f5f3a]
+                  sm:mt-4
+                  sm:text-xl
+                "
+              >
+                {quiz.title}
+              </h2>
+
+              {/* ------------------------------------------------
+                  DESCRIPTION
+                  ------------------------------------------------ */}
+
+              <p
+                className="
+                  mt-2
+                  line-clamp-2
+                  min-h-10
+                  break-words
+                  text-sm
+                  font-bold
+                  leading-5
+                  text-slate-500
+                "
+              >
+                {quiz.description ||
+                  labels.noDescription}
+              </p>
+
+              {/* ------------------------------------------------
+                  INFORMATIONS
+                  ------------------------------------------------ */}
+
+              <div
+                className="
+                  mt-4
+                  grid
+                  min-w-0
+                  grid-cols-2
+                  gap-x-3
+                  gap-y-2
+                  border-t
+                  border-slate-100
+                  pt-4
+                  text-xs
+                  font-black
+                  text-slate-600
+                  sm:mt-5
+                  sm:pt-5
+                  sm:text-sm
+                "
+              >
+
+                {/* MATIERE */}
+
+                <span
+                  className="
+                    min-w-0
+                    break-words
+                  "
+                  title={subjectName(
+                    quiz.subject_id
+                  )}
+                >
+                  {subjectName(
+                    quiz.subject_id
+                  )}
+                </span>
+
+                {/* NIVEAU */}
+
+                <span
+                  className="
+                    min-w-0
+                    break-words
+                    text-right
+                  "
+                  title={levelName(
+                    quiz.level_id
+                  )}
+                >
+                  {levelName(
+                    quiz.level_id
+                  )}
+                </span>
+
+                {/* DUREE */}
+
+                <span
+                  className="
+                    col-span-2
+                    inline-flex
+                    min-w-0
+                    items-center
+                    gap-1.5
+                  "
+                >
+                  <Clock
+                    size={14}
+                    className="
+                      shrink-0
+                      text-[#0f5f3a]
+                    "
+                  />
+
+                  <span>
+                    {quiz.estimated_duration_minutes ||
+                      10}{" "}
+                    {labels.minutes}
+                  </span>
+                </span>
+
+              </div>
+
+            </Link>
+          ))}
+
         </section>
       )}
+
+      {/* ========================================================
+          AUCUN RESULTAT
+          ======================================================== */}
+
+      {!filtered.length && (
+        <section
+          className="
+            ds-card
+            min-w-0
+            overflow-hidden
+            rounded-[1.5rem]
+            p-6
+            text-center
+            sm:p-8
+          "
+        >
+
+          <div
+            className="
+              mx-auto
+              flex
+              h-14
+              w-14
+              items-center
+              justify-center
+              rounded-full
+              bg-[#fff7df]
+            "
+          >
+            <Sparkles
+              className="text-[#f6c445]"
+              size={28}
+            />
+          </div>
+
+          <h2
+            className="
+              mt-4
+              break-words
+              text-xl
+              font-black
+              text-[#071d3a]
+              sm:text-2xl
+            "
+          >
+            {labels.empty}
+          </h2>
+
+          <p
+            className="
+              mx-auto
+              mt-2
+              max-w-xl
+              break-words
+              text-sm
+              font-bold
+              leading-6
+              text-slate-500
+            "
+          >
+            {labels.emptyHelp}
+          </p>
+
+          {(query ||
+            subjectId ||
+            levelId) && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery("");
+                setSubjectId("");
+                setLevelId("");
+              }}
+              className="
+                ds-button-premium
+                mt-5
+                !px-5
+                !py-3
+                text-sm
+              "
+            >
+              {labels.clearFilters}
+            </button>
+          )}
+
+        </section>
+      )}
+
     </div>
   );
 }
 
+/*
+ * ================================================================
+ * TEXTES
+ * ================================================================
+ */
+
 function pageLabels(language: string) {
   const fr = language !== "EN";
+
   return {
-    hero: fr ? "Filtrez, lancez et suivez les evaluations disponibles selon votre niveau." : "Filter, start and track assessments available for your level.",
-    history: fr ? "Historique" : "History",
-    loading: fr ? "Chargement des quiz..." : "Loading quizzes...",
-    loadError: fr ? "Chargement impossible." : "Unable to load.",
-    search: fr ? "Rechercher un quiz" : "Search a quiz",
-    subject: fr ? "Matiere" : "Subject",
-    level: fr ? "Niveau" : "Level",
+    hero: fr
+      ? "Filtrez, lancez et suivez les évaluations disponibles selon votre niveau."
+      : "Filter, start and track assessments available for your level.",
+
+    history: fr
+      ? "Historique"
+      : "History",
+
+    loading: fr
+      ? "Chargement des quiz..."
+      : "Loading quizzes...",
+
+    loadError: fr
+      ? "Chargement impossible."
+      : "Unable to load.",
+
+    search: fr
+      ? "Rechercher un quiz"
+      : "Search a quiz",
+
+    subject: fr
+      ? "Matière"
+      : "Subject",
+
+    level: fr
+      ? "Niveau"
+      : "Level",
+
     premium: "Premium",
-    noDescription: fr ? "Aucune description." : "No description.",
-    empty: fr ? "Aucun quiz" : "No quizzes",
-    emptyHelp: fr ? "Les evaluations publiees correspondant aux filtres apparaitront ici." : "Published assessments matching filters will appear here.",
+
+    noDescription: fr
+      ? "Aucune description."
+      : "No description.",
+
+    empty: fr
+      ? "Aucun quiz"
+      : "No quizzes",
+
+    emptyHelp: fr
+      ? "Les évaluations publiées correspondant aux filtres apparaîtront ici."
+      : "Published assessments matching filters will appear here.",
+
+    result: fr
+      ? "résultat"
+      : "result",
+
+    results: fr
+      ? "résultats"
+      : "results",
+
+    minutes: fr
+      ? "min"
+      : "min",
+
+    clearFilters: fr
+      ? "Effacer les filtres"
+      : "Clear filters",
   };
 }
