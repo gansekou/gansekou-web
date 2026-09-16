@@ -24,6 +24,7 @@ const text = {
     invalid: "Email ou mot de passe incorrect.",
     network: "Connexion reseau impossible. Verifiez votre connexion puis reessayez.",
     googleError: "Connexion Google impossible.",
+    emailExists: "Cette adresse email possède déjà un compte. Connecte-toi pour continuer.",
   },
   en: {
     title: "Login",
@@ -38,6 +39,7 @@ const text = {
     invalid: "Invalid email or password.",
     network: "Network connection failed. Check your connection and try again.",
     googleError: "Google login failed.",
+    emailExists: "This email already has an account. Sign in to continue.",
   },
 };
 
@@ -237,6 +239,12 @@ function resolveAuthError(
   if (code.includes("popup-closed-by-user")) return "Connexion Google annulee.";
   if (code.includes("cancelled-popup-request")) return "Une connexion Google est deja en cours.";
   if (code.includes("unauthorized-domain")) return "Domaine non autorise dans Firebase Authentication.";
+  if (
+    code.includes("email-already-in-use") ||
+    code.includes("email-already-exists")
+  ) {
+    return labels.emailExists;
+  }
   if (
     code.includes("invalid-credential") ||
     code.includes("wrong-password") ||
