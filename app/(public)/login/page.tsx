@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Globe2, Lock, Mail } from "lucide-react";
 import { AuthShell } from "@/components/layouts/AuthShell";
 import { LoadingButton } from "@/components/ui/LoadingButton";
-import { AuthTokenMissingError, BackendProfileMissingError, authService } from "@/services/auth.service";
+import { AuthTokenMissingError, BackendProfileMissingError, authService, FirebaseEmailAlreadyExistsError } from "@/services/auth.service";
 import { ApiError } from "@/lib/api";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -243,6 +243,9 @@ function resolveAuthError(
     code.includes("email-already-in-use") ||
     code.includes("email-already-exists")
   ) {
+    return labels.emailExists;
+  }
+  if (error instanceof FirebaseEmailAlreadyExistsError) {
     return labels.emailExists;
   }
   if (
