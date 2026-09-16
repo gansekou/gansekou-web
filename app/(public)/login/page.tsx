@@ -3,7 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Globe2, Lock, Mail } from "lucide-react";
+import {
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Globe2,
+  Lock,
+  Mail,
+} from "lucide-react";
 import { AuthShell } from "@/components/layouts/AuthShell";
 import { LoadingButton } from "@/components/ui/LoadingButton";
 import { AuthTokenMissingError, BackendProfileMissingError, authService, FirebaseEmailAlreadyExistsError } from "@/services/auth.service";
@@ -188,16 +195,47 @@ export default function LoginPage() {
           <label className="mb-2 block text-sm font-bold text-[#082f1f]">
             {t.password}
           </label>
+        
           <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
-            <Lock size={20} className="text-slate-400" />
+            <Lock
+              size={20}
+              className="shrink-0 text-slate-400"
+            />
+        
             <input
               type={showPassword ? "text" : "password"}
               required
               placeholder="••••••••"
               className="w-full bg-transparent outline-none"
               value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(event) =>
+                setPassword(event.target.value)
+              }
             />
+        
+            <button
+              type="button"
+              onClick={() =>
+                setShowPassword((current) => !current)
+              }
+              className="shrink-0 text-slate-400 transition hover:text-[#0f5f3a]"
+              aria-label={
+                showPassword
+                  ? "Masquer le mot de passe"
+                  : "Afficher le mot de passe"
+              }
+              title={
+                showPassword
+                  ? "Masquer le mot de passe"
+                  : "Afficher le mot de passe"
+              }
+            >
+              {showPassword ? (
+                <EyeOff size={20} />
+              ) : (
+                <Eye size={20} />
+              )}
+            </button>
           </div>
         </div>
 
