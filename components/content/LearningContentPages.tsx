@@ -35,15 +35,7 @@ import type {
 } from "@/types/platform";
 import type { User } from "@/types/user";
 
-/* =========================================================
-   TYPE
-========================================================= */
-
 type LearningKind = "courses" | "exercises" | "subjects";
-
-/* =========================================================
-   CONFIGURATION
-========================================================= */
 
 const config = {
   courses: {
@@ -58,7 +50,6 @@ const config = {
     basePath: "/courses",
     adminPath: "/admin/courses",
   },
-
   exercises: {
     type: "EXERCICE",
     listTitleKey: "exercise.title",
@@ -71,7 +62,6 @@ const config = {
     basePath: "/exercises",
     adminPath: "/admin/exercises",
   },
-
   subjects: {
     type: "SUJET",
     listTitleKey: "subjectPaper.title",
@@ -85,38 +75,6 @@ const config = {
     adminPath: "/admin/subjects",
   },
 } as const;
-
-/* =========================================================
-   LABELS
-========================================================= */
-
-function getLearningListLabel(
-  kind: LearningKind
-): string {
-  if (kind === "courses") {
-    return "Cours";
-  }
-
-  if (kind === "exercises") {
-    return "Exercices";
-  }
-
-  return "Sujets";
-}
-
-function getLearningDetailLabel(
-  kind: LearningKind
-): string {
-  if (kind === "courses") {
-    return "Détail du cours";
-  }
-
-  if (kind === "exercises") {
-    return "Détail de l'exercice";
-  }
-
-  return "Détail du sujet";
-}
 
 function getLearningActionLabel(
   kind: LearningKind,
@@ -139,9 +97,53 @@ function getLearningActionLabel(
     : "Voir le sujet";
 }
 
-/* =========================================================
-   LIST PAGE
-========================================================= */
+function getLearningDetailLabel(kind: LearningKind): string {
+  if (kind === "courses") {
+    return "Détail du cours";
+  }
+
+  if (kind === "exercises") {
+    return "Détail de l'exercice";
+  }
+
+  return "Détail du sujet";
+}
+
+function getLearningHelpText(kind: LearningKind): string {
+  if (kind === "courses") {
+    return "Découvrez les cours disponibles et accédez aux ressources pédagogiques adaptées à votre niveau.";
+  }
+
+  if (kind === "exercises") {
+    return "Entraînez-vous avec des exercices adaptés à votre niveau.";
+  }
+
+  return "Retrouvez les sujets d’examen et entraînez-vous dans les conditions réelles.";
+}
+
+function getLearningSimilarLabel(kind: LearningKind): string {
+  if (kind === "courses") {
+    return "Cours similaires";
+  }
+
+  if (kind === "exercises") {
+    return "Exercices similaires";
+  }
+
+  return "Sujets similaires";
+}
+
+function getLearningEmptyTitle(kind: LearningKind): string {
+  if (kind === "courses") {
+    return "Aucun cours disponible";
+  }
+
+  if (kind === "exercises") {
+    return "Aucun exercice disponible";
+  }
+
+  return "Aucun sujet disponible";
+}
 
 export function LearningContentListPage({
   kind,
@@ -197,10 +199,6 @@ export function LearningContentListPage({
   );
 }
 
-/* =========================================================
-   DETAIL PAGE
-========================================================= */
-
 export function LearningContentDetailPage({
   kind,
   id,
@@ -244,10 +242,6 @@ export function LearningContentDetailPage({
     </AuthenticatedPage>
   );
 }
-
-/* =========================================================
-   ADMIN LIST PAGE
-========================================================= */
 
 export function AdminLearningContentListPage({
   kind,
@@ -305,10 +299,6 @@ export function AdminLearningContentListPage({
   );
 }
 
-/* =========================================================
-   ADMIN MANAGER
-========================================================= */
-
 function AdminLearningContentManager({
   kind,
   user,
@@ -332,8 +322,10 @@ function AdminLearningContentManager({
       ? "Cours"
       : t(settings.listTitleKey);
 
-  const createLabel =
-    getLearningActionLabel(kind, "add");
+  const createLabel = getLearningActionLabel(
+    kind,
+    "add"
+  );
 
   return (
     <ContentManager
@@ -351,10 +343,6 @@ function AdminLearningContentManager({
   );
 }
 
-/* =========================================================
-   ADMIN EDITOR
-========================================================= */
-
 export function AdminLearningContentEditorPage({
   kind,
   id,
@@ -365,26 +353,30 @@ export function AdminLearningContentEditorPage({
   const settings = config[kind];
 
   const load = useCallback(async (): Promise<PageData> => {
-    const [content, levels, subjects, specialties] =
-      await Promise.all([
-        id
-          ? platformService.contents
-              .byId(id)
-              .catch(() => undefined)
-          : Promise.resolve(undefined),
+    const [
+      content,
+      levels,
+      subjects,
+      specialties,
+    ] = await Promise.all([
+      id
+        ? platformService.contents
+            .byId(id)
+            .catch(() => undefined)
+        : Promise.resolve(undefined),
 
-        platformService.education
-          .levels()
-          .catch(() => [] as Level[]),
+      platformService.education
+        .levels()
+        .catch(() => [] as Level[]),
 
-        platformService.education
-          .subjects()
-          .catch(() => [] as Subject[]),
+      platformService.education
+        .subjects()
+        .catch(() => [] as Subject[]),
 
-        platformService.education
-          .specialties()
-          .catch(() => [] as Specialty[]),
-      ]);
+      platformService.education
+        .specialties()
+        .catch(() => [] as Specialty[]),
+    ]);
 
     return {
       content,
@@ -405,7 +397,9 @@ export function AdminLearningContentEditorPage({
           content={(data.content as Content | null) || null}
           subjects={(data.subjects as Subject[]) || []}
           levels={(data.levels as Level[]) || []}
-          specialties={(data.specialties as Specialty[]) || []}
+          specialties={
+            (data.specialties as Specialty[]) || []
+          }
           defaultType={settings.type}
           lockedType={settings.type}
           scope={kind}
@@ -416,10 +410,6 @@ export function AdminLearningContentEditorPage({
     </AuthenticatedPage>
   );
 }
-
-/* =========================================================
-   CATALOG
-========================================================= */
 
 function LearningContentCatalog({
   kind,
@@ -447,25 +437,20 @@ function LearningContentCatalog({
 
   const subjectById = useMemo(() => {
     return new Map(
-      subjects.map((item) => [
-        item.id,
-        item,
-      ])
+      subjects.map((item) => [item.id, item])
     );
   }, [subjects]);
 
   const levelById = useMemo(() => {
     return new Map(
-      levels.map((item) => [
-        item.id,
-        item,
-      ])
+      levels.map((item) => [item.id, item])
     );
   }, [levels]);
 
   const filtered = useMemo(() => {
-    const normalizedQuery =
-      query.trim().toLowerCase();
+    const normalizedQuery = query
+      .trim()
+      .toLowerCase();
 
     return contents.filter((item) => {
       const translationsText =
@@ -479,9 +464,7 @@ function LearningContentCatalog({
           .join(" ") || "";
 
       const subjectName =
-        subjectById.get(
-          item.subject_id
-        )?.name_fr || "";
+        subjectById.get(item.subject_id)?.name_fr || "";
 
       const searchText = [
         item.title || "",
@@ -496,9 +479,7 @@ function LearningContentCatalog({
 
       const matchesQuery =
         !normalizedQuery ||
-        searchText.includes(
-          normalizedQuery
-        );
+        searchText.includes(normalizedQuery);
 
       const matchesSubject =
         !subjectId ||
@@ -506,18 +487,12 @@ function LearningContentCatalog({
 
       const matchesLevel =
         !levelId ||
-        Boolean(
-          item.level_ids?.includes(
-            levelId
-          )
-        );
+        Boolean(item.level_ids?.includes(levelId));
 
       const matchesSpecialty =
         !specialtyId ||
         Boolean(
-          item.specialty_ids?.includes(
-            specialtyId
-          )
+          item.specialty_ids?.includes(specialtyId)
         );
 
       return (
@@ -538,14 +513,8 @@ function LearningContentCatalog({
 
   return (
     <section className="grid gap-4">
-
-      {/* ===================================================
-          HEADER
-      =================================================== */}
-
       <section className="rounded-[1.5rem] bg-[#071d3a] p-5 text-white shadow-xl shadow-[#071d3a]/15 sm:p-6">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#f6c445] sm:text-xs">
               {kind === "courses"
@@ -560,7 +529,7 @@ function LearningContentCatalog({
             </h2>
 
             <p className="mt-2 max-w-2xl text-xs font-bold leading-5 text-white/65 sm:text-sm">
-              {t(settings.listHelpKey)}
+              {getLearningHelpText(kind)}
             </p>
           </div>
 
@@ -569,26 +538,14 @@ function LearningContentCatalog({
               href={settings.adminPath + "/new"}
               className="ds-button-premium !rounded-xl !px-4 !py-2 !text-xs"
             >
-              {getLearningActionLabel(
-                kind,
-                "add"
-              )}
+              {getLearningActionLabel(kind, "add")}
             </Link>
           ) : null}
-
         </div>
       </section>
 
-      {/* ===================================================
-          FILTERS
-      =================================================== */}
-
       <section className="rounded-[1.5rem] bg-white p-3 shadow-lg shadow-[#082f1f]/5 sm:p-4">
-
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-
-          {/* SEARCH */}
-
           <label
             className={
               "relative " +
@@ -605,30 +562,22 @@ function LearningContentCatalog({
             <input
               value={query}
               onChange={(event) => {
-                setQuery(
-                  event.target.value
-                );
+                setQuery(event.target.value);
               }}
               placeholder={t("common.search")}
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs font-bold text-[#071d3a] outline-none transition placeholder:text-slate-400 focus:border-[#0f5132] focus:bg-white focus:ring-2 focus:ring-[#0f5132]/10"
             />
           </label>
 
-          {/* SUBJECT */}
-
           <Select
             value={subjectId}
             onChange={setSubjectId}
             label={t("common.subject")}
-            options={subjects.map(
-              (item) => [
-                item.id,
-                item.name_fr,
-              ]
-            )}
+            options={subjects.map((item) => [
+              item.id,
+              item.name_fr,
+            ])}
           />
-
-          {/* LEVEL + SPECIALTY */}
 
           {user?.role !== "ELEVE" ? (
             <>
@@ -636,84 +585,51 @@ function LearningContentCatalog({
                 value={levelId}
                 onChange={setLevelId}
                 label={t("common.level")}
-                options={levels.map(
-                  (item) => [
-                    item.id,
-                    item.name_fr,
-                  ]
-                )}
+                options={levels.map((item) => [
+                  item.id,
+                  item.name_fr,
+                ])}
               />
 
               <Select
                 value={specialtyId}
                 onChange={setSpecialtyId}
                 label={t("subject.specialty")}
-                options={specialties.map(
-                  (item) => [
-                    item.id,
-                    item.name_fr,
-                  ]
-                )}
+                options={specialties.map((item) => [
+                  item.id,
+                  item.name_fr,
+                ])}
               />
             </>
           ) : null}
-
         </div>
       </section>
 
-      {/* ===================================================
-          EMPTY
-      =================================================== */}
-
       {!filtered.length ? (
         <EmptyState
-          title={
-            kind === "courses"
-              ? "Aucun cours disponible"
-              : t(settings.emptyKey)
-          }
-          message={t(
-            "state.emptyContent"
-          )}
+          title={getLearningEmptyTitle(kind)}
+          message={t("state.emptyContent")}
         />
       ) : (
-        <div
-          className="
-            grid
-            grid-cols-3
-            gap-2
-            sm:gap-3
-            lg:grid-cols-4
-            xl:grid-cols-5
-            2xl:grid-cols-6
-          "
-        >
-
-          {/* =================================================
-              CONTENT CARDS
-          ================================================= */}
-
+        <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
           {filtered.map((item) => {
             const title =
-              item.translations?.[0]
-                ?.title ||
+              item.translations?.[0]?.title ||
               item.title ||
               item.content_type +
                 " " +
                 shortId(item.id);
 
             const subjectName =
-              subjectById.get(
-                item.subject_id
-              )?.name_fr || "-";
+              subjectById.get(item.subject_id)?.name_fr ||
+              "-";
 
             const levelName =
               item.level_ids
-                ?.map((levelId) => {
-                  return levelById.get(
-                    levelId
-                  )?.name_fr;
-                })
+                ?.map(
+                  (levelId) =>
+                    levelById.get(levelId)?.name_fr
+                )
                 .filter(Boolean)
                 .join(", ") || "-";
 
@@ -726,31 +642,10 @@ function LearningContentCatalog({
             return (
               <article
                 key={item.id}
-                className="
-                  group
-                  min-w-0
-                  overflow-hidden
-                  rounded-xl
-                  border
-                  border-slate-100
-                  bg-white
-                  p-2
-                  transition
-                  duration-200
-                  hover:-translate-y-0.5
-                  hover:border-slate-200
-                  hover:shadow-md
-                  sm:rounded-2xl
-                  sm:p-2.5
-                  lg:p-3
-                "
+                className="group min-w-0 overflow-hidden rounded-xl border border-slate-100 bg-white p-2 transition duration-200 hover:-translate-y-0.5 hover:border-slate-200 hover:shadow-md sm:rounded-2xl sm:p-2.5 lg:p-3"
               >
-
-                {/* IMAGE */}
-
                 {item.thumbnail_url ? (
                   <div className="relative mb-2 h-20 w-full overflow-hidden rounded-lg bg-slate-100 sm:h-24 lg:h-28">
-
                     <Image
                       src={getThumbnailUrl(
                         item.thumbnail_url
@@ -773,11 +668,9 @@ function LearningContentCatalog({
                         />
                       </span>
                     ) : null}
-
                   </div>
                 ) : (
                   <div className="relative mb-2 flex h-20 items-center justify-center rounded-lg bg-slate-100 sm:h-24 lg:h-28">
-
                     <BookOpen
                       size={22}
                       className="text-slate-300"
@@ -795,23 +688,17 @@ function LearningContentCatalog({
                         />
                       </span>
                     ) : null}
-
                   </div>
                 )}
 
-                {/* TYPE + DOWNLOAD */}
-
                 <div className="mb-1.5 flex items-center justify-between gap-1">
-
                   <span className="truncate rounded-md bg-[#0f5f3a]/10 px-1.5 py-0.5 text-[8px] font-black text-[#0f5f3a] sm:text-[9px]">
                     {item.content_type}
                   </span>
 
                   {item.is_available_offline ? (
                     <span
-                      title={t(
-                        "content.offline"
-                      )}
+                      title={t("content.offline")}
                       aria-label={t(
                         "content.offline"
                       )}
@@ -820,16 +707,11 @@ function LearningContentCatalog({
                       <Download size={10} />
                     </span>
                   ) : null}
-
                 </div>
-
-                {/* TITLE */}
 
                 <h3 className="line-clamp-2 min-h-[2rem] text-[10px] font-black leading-4 text-[#082f1f] sm:text-[11px] sm:leading-4">
                   {title}
                 </h3>
-
-                {/* DESCRIPTION */}
 
                 <p className="mt-1 line-clamp-1 text-[8px] font-semibold leading-3.5 text-slate-400 sm:text-[9px]">
                   {item.translations?.[0]
@@ -838,10 +720,7 @@ function LearningContentCatalog({
                     ""}
                 </p>
 
-                {/* METADATA */}
-
                 <div className="mt-2 space-y-1">
-
                   <div
                     className="flex min-w-0 items-center gap-1 text-[8px] font-bold text-slate-500 sm:text-[9px]"
                     title={subjectName}
@@ -869,13 +748,9 @@ function LearningContentCatalog({
                       {levelName}
                     </span>
                   </div>
-
                 </div>
 
-                {/* ACTIONS */}
-
                 <div className="mt-2 flex items-center gap-1">
-
                   <button
                     type="button"
                     onClick={() => {
@@ -884,9 +759,7 @@ function LearningContentCatalog({
                         isStudentRole(user) &&
                         !user.is_premium
                       ) {
-                        router.push(
-                          "/premium"
-                        );
+                        router.push("/premium");
                         return;
                       }
 
@@ -898,25 +771,7 @@ function LearningContentCatalog({
                     }}
                     title={viewLabel}
                     aria-label={viewLabel}
-                    className="
-                      flex
-                      h-7
-                      min-w-0
-                      flex-1
-                      items-center
-                      justify-center
-                      gap-1
-                      rounded-lg
-                      bg-[#0f5f3a]
-                      px-1.5
-                      text-[9px]
-                      font-black
-                      text-white
-                      transition
-                      hover:bg-[#0b492c]
-                      sm:h-8
-                      sm:text-[10px]
-                    "
+                    className="flex h-7 min-w-0 flex-1 items-center justify-center gap-1 rounded-lg bg-[#0f5f3a] px-1.5 text-[9px] font-black text-white transition hover:bg-[#0b492c] sm:h-8 sm:text-[10px]"
                   >
                     <Eye size={12} />
 
@@ -936,7 +791,6 @@ function LearningContentCatalog({
                       compact
                     />
                   ) : null}
-
                 </div>
               </article>
             );
@@ -946,10 +800,6 @@ function LearningContentCatalog({
     </section>
   );
 }
-
-/* =========================================================
-   DETAIL COMPONENT
-========================================================= */
 
 function LearningContentDetail({
   kind,
@@ -981,56 +831,43 @@ function LearningContentDetail({
   const { t } = useI18n(user);
   const router = useRouter();
 
-  const [detailData, setDetailData] =
-    useState({
-      related: [] as Content[],
-
-      translations: [] as {
-        title?: string;
-        description?: string;
-      }[],
-
-      levels: [] as Level[],
-
-      subjects: [] as Subject[],
-
-      specialties: [] as Specialty[],
-
-      courses: [] as Content[],
-
-      loading: true,
-    });
+  const [detailData, setDetailData] = useState({
+    related: [] as Content[],
+    translations: [] as {
+      title?: string;
+      description?: string;
+    }[],
+    levels: [] as Level[],
+    subjects: [] as Subject[],
+    specialties: [] as Specialty[],
+    courses: [] as Content[],
+    loading: true,
+  });
 
   const subjectById = useMemo(() => {
     return new Map(
-      detailData.subjects.map(
-        (item) => [
-          item.id,
-          item,
-        ]
-      )
+      detailData.subjects.map((item) => [
+        item.id,
+        item,
+      ])
     );
   }, [detailData.subjects]);
 
   const levelById = useMemo(() => {
     return new Map(
-      detailData.levels.map(
-        (item) => [
-          item.id,
-          item,
-        ]
-      )
+      detailData.levels.map((item) => [
+        item.id,
+        item,
+      ])
     );
   }, [detailData.levels]);
 
   const specialtyById = useMemo(() => {
     return new Map(
-      detailData.specialties.map(
-        (item) => [
-          item.id,
-          item,
-        ]
-      )
+      detailData.specialties.map((item) => [
+        item.id,
+        item,
+      ])
     );
   }, [detailData.specialties]);
 
@@ -1142,12 +979,10 @@ function LearningContentDetail({
     !user.is_premium
   ) {
     router.replace("/premium");
-
     return null;
   }
 
-  const translation =
-    detailData.translations[0];
+  const translation = detailData.translations[0];
 
   const title =
     translation?.title ||
@@ -1161,8 +996,8 @@ function LearningContentDetail({
     content.description ||
     "";
 
-  const similar =
-    detailData.related.filter((item) => {
+  const similar = detailData.related.filter(
+    (item) => {
       const sameType =
         item.content_type === settings.type;
 
@@ -1170,22 +1005,19 @@ function LearningContentDetail({
         item.subject_id ===
         content.subject_id;
 
-      const sameLevel =
-        Boolean(
-          item.level_ids?.some(
-            (levelId) =>
-              content.level_ids?.includes(
-                levelId
-              )
-          )
-        );
+      const sameLevel = Boolean(
+        item.level_ids?.some((levelId) =>
+          content.level_ids?.includes(levelId)
+        )
+      );
 
       return (
         sameType &&
         sameSubject &&
         sameLevel
       );
-    });
+    }
+  );
 
   const recommendedCourse =
     kind !== "courses"
@@ -1194,15 +1026,13 @@ function LearningContentDetail({
             item.subject_id ===
             content.subject_id;
 
-          const sameLevel =
-            Boolean(
-              item.level_ids?.some(
-                (levelId) =>
-                  content.level_ids?.includes(
-                    levelId
-                  )
+          const sameLevel = Boolean(
+            item.level_ids?.some((levelId) =>
+              content.level_ids?.includes(
+                levelId
               )
-            );
+            )
+          );
 
           return (
             sameSubject &&
@@ -1213,13 +1043,7 @@ function LearningContentDetail({
 
   return (
     <section className="grid gap-5">
-
-      {/* =================================================
-          HEADER
-      ================================================= */}
-
       <section className="rounded-[2rem] bg-[#071d3a] p-7 text-white shadow-2xl shadow-[#071d3a]/20">
-
         <p className="text-sm font-black uppercase tracking-[0.25em] text-[#f6c445]">
           {getLearningDetailLabel(kind)}
         </p>
@@ -1234,16 +1058,11 @@ function LearningContentDetail({
         </p>
 
         <div className="mt-5 flex flex-wrap gap-2">
-
-          {/* DOWNLOAD */}
-
           {content.is_available_offline &&
           getContentMainUrl(content) ? (
             <DownloadButton
               content={content}
-              label={t(
-                "content.download"
-              )}
+              label={t("content.download")}
               dark
               isPremiumUser={
                 user.is_premium === true
@@ -1251,24 +1070,16 @@ function LearningContentDetail({
             />
           ) : null}
 
-          {/* BACK */}
-
           <Link
             href={settings.basePath}
             className="rounded-full bg-white/10 px-5 py-3 font-black text-white"
           >
             {t("content.all")}
           </Link>
-
         </div>
       </section>
 
-      {/* =================================================
-          INFORMATION
-      ================================================= */}
-
       <section className="grid gap-4 md:grid-cols-4">
-
         <Info
           label={t("common.subject")}
           value={
@@ -1282,11 +1093,11 @@ function LearningContentDetail({
           label={t("common.level")}
           value={
             content.level_ids
-              ?.map((levelId) => {
-                return levelById.get(
-                  levelId
-                )?.name_fr;
-              })
+              ?.map(
+                (levelId) =>
+                  levelById.get(levelId)
+                    ?.name_fr
+              )
               .filter(Boolean)
               .join(", ") || "-"
           }
@@ -1296,11 +1107,12 @@ function LearningContentDetail({
           label={t("subject.specialty")}
           value={
             content.specialty_ids
-              ?.map((specialtyId) => {
-                return specialtyById.get(
-                  specialtyId
-                )?.name_fr;
-              })
+              ?.map(
+                (specialtyId) =>
+                  specialtyById.get(
+                    specialtyId
+                  )?.name_fr
+              )
               .filter(Boolean)
               .join(", ") || "-"
           }
@@ -1332,26 +1144,16 @@ function LearningContentDetail({
               : t("common.no")
           }
         />
-
       </section>
-
-      {/* =================================================
-          MEDIA
-      ================================================= */}
 
       <ContentMediaViewer
         content={content}
         t={t}
       />
 
-      {/* =================================================
-          RECOMMENDED COURSE
-      ================================================= */}
-
       {kind !== "courses" &&
       recommendedCourse ? (
         <section className="rounded-[2rem] bg-white p-6 shadow-xl shadow-[#082f1f]/5">
-
           <h3 className="text-2xl font-black text-[#071d3a]">
             {t(
               "content.recommendedCourse"
@@ -1365,7 +1167,6 @@ function LearningContentDetail({
             }
             className="mt-5 block rounded-2xl bg-slate-50 p-5 font-black text-[#071d3a] transition hover:bg-white hover:shadow-lg"
           >
-
             <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">
               COURS
             </span>
@@ -1388,23 +1189,16 @@ function LearningContentDetail({
                 recommendedCourse.description ||
                 recommendedCourse.status}
             </p>
-
           </Link>
         </section>
       ) : null}
 
-      {/* =================================================
-          SIMILAR CONTENT
-      ================================================= */}
-
       <section className="rounded-[2rem] bg-white p-6 shadow-xl shadow-[#082f1f]/5">
-
         <h3 className="text-2xl font-black text-[#071d3a]">
-          {t(settings.similarKey)}
+          {getLearningSimilarLabel(kind)}
         </h3>
 
         <div className="mt-5 grid gap-4 md:grid-cols-3">
-
           {similar.map((item) => (
             <Link
               key={item.id}
@@ -1415,7 +1209,6 @@ function LearningContentDetail({
               }
               className="rounded-2xl bg-slate-50 p-4 font-black text-[#071d3a]"
             >
-
               <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">
                 {item.content_type}
               </span>
@@ -1426,31 +1219,20 @@ function LearningContentDetail({
                   item.title ||
                   shortId(item.id)}
               </p>
-
             </Link>
           ))}
-
         </div>
 
         {!similar.length ? (
           <EmptyState
-            title={t(
-              "content.noRelated"
-            )}
-            message={t(
-              "content.noRelated"
-            )}
+            title={t("content.noRelated")}
+            message={t("content.noRelated")}
           />
         ) : null}
-
       </section>
     </section>
   );
 }
-
-/* =========================================================
-   DOWNLOAD BUTTON
-========================================================= */
 
 function DownloadButton({
   content,
@@ -1505,18 +1287,13 @@ function DownloadButton({
 
   return (
     <span className="inline-flex flex-col gap-1">
-
       <button
         type="button"
         onClick={download}
         disabled={loading}
-        title={
-          label ||
-          "Télécharger"
-        }
+        title={label || "Télécharger"}
         aria-label={
-          label ||
-          "Télécharger"
+          label || "Télécharger"
         }
         className={
           "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg disabled:opacity-60 sm:h-8 sm:w-8 " +
@@ -1540,14 +1317,9 @@ function DownloadButton({
           {error}
         </span>
       ) : null}
-
     </span>
   );
 }
-
-/* =========================================================
-   SELECT
-========================================================= */
 
 function Select({
   value,
@@ -1564,9 +1336,7 @@ function Select({
     <select
       value={value}
       onChange={(event) => {
-        onChange(
-          event.target.value
-        );
+        onChange(event.target.value);
       }}
       className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold outline-none"
     >
@@ -1574,24 +1344,17 @@ function Select({
         {label}
       </option>
 
-      {options.map(
-        ([id, name]) => (
-          <option
-            key={label + "-" + id}
-            value={id}
-          >
-            {name}
-          </option>
-        )
-      )}
-
+      {options.map(([id, name]) => (
+        <option
+          key={label + "-" + id}
+          value={id}
+        >
+          {name}
+        </option>
+      ))}
     </select>
   );
 }
-
-/* =========================================================
-   META
-========================================================= */
 
 function Meta({
   label,
@@ -1602,22 +1365,14 @@ function Meta({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-
-      <dt>
-        {label}
-      </dt>
+      <dt>{label}</dt>
 
       <dd className="text-right text-[#071d3a]">
         {value}
       </dd>
-
     </div>
   );
 }
-
-/* =========================================================
-   INFO
-========================================================= */
 
 function Info({
   label,
@@ -1628,7 +1383,6 @@ function Info({
 }) {
   return (
     <div className="rounded-2xl bg-white p-5 shadow-xl shadow-[#082f1f]/5">
-
       <p className="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
         {label}
       </p>
@@ -1636,14 +1390,9 @@ function Info({
       <p className="mt-3 text-xl font-black text-[#071d3a]">
         {value}
       </p>
-
     </div>
   );
 }
-
-/* =========================================================
-   HELPERS
-========================================================= */
 
 function shortId(
   value?: string | null
@@ -1662,11 +1411,7 @@ function formatDate(
 
   const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return value;
   }
 
@@ -1701,10 +1446,9 @@ function readExamType(
   const source =
     content.tags || "";
 
-  const match =
-    source.match(
-      /(?:exam|examen|type)[:=]\s*([^,;]+)/i
-    );
+  const match = source.match(
+    /(?:exam|examen|type)[:=]\s*([^,;]+)/i
+  );
 
   return (
     match?.[1]?.trim() || ""
