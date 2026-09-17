@@ -1,4 +1,3 @@
-```tsx
 "use client";
 
 import Link from "next/link";
@@ -99,34 +98,24 @@ export function LearningContentListPage({
   const settings = config[kind];
 
   const load = useCallback(async (): Promise<PageData> => {
-    const [
-      contents,
-      levels,
-      subjects,
-      specialties,
-    ] = await Promise.all([
-      /*
-       * IMPORTANT :
-       * byTypeAll récupère tous les contenus.
-       * Cela permet également aux COURS de ne plus
-       * être limités à 50 éléments.
-       */
-      platformService.contents
-        .byTypeAll(settings.type)
-        .catch(() => [] as Content[]),
+    const [contents, levels, subjects, specialties] =
+      await Promise.all([
+        platformService.contents
+          .byTypeAll(settings.type)
+          .catch(() => [] as Content[]),
 
-      platformService.education
-        .levels()
-        .catch(() => [] as Level[]),
+        platformService.education
+          .levels()
+          .catch(() => [] as Level[]),
 
-      platformService.education
-        .subjects()
-        .catch(() => [] as Subject[]),
+        platformService.education
+          .subjects()
+          .catch(() => [] as Subject[]),
 
-      platformService.education
-        .specialties()
-        .catch(() => [] as Specialty[]),
-    ]);
+        platformService.education
+          .specialties()
+          .catch(() => [] as Specialty[]),
+      ]);
 
     return {
       contents,
@@ -215,33 +204,28 @@ export function AdminLearningContentListPage({
   const settings = config[kind];
 
   const load = useCallback(async (): Promise<PageData> => {
-    const [
-      contents,
-      levels,
-      subjects,
-      specialties,
-    ] = await Promise.all([
-      platformService.contents
-        .allPages()
-        .catch(() => [] as Content[]),
+    const [contents, levels, subjects, specialties] =
+      await Promise.all([
+        platformService.contents
+          .allPages()
+          .catch(() => [] as Content[]),
 
-      platformService.education
-        .levels()
-        .catch(() => [] as Level[]),
+        platformService.education
+          .levels()
+          .catch(() => [] as Level[]),
 
-      platformService.education
-        .subjects()
-        .catch(() => [] as Subject[]),
+        platformService.education
+          .subjects()
+          .catch(() => [] as Subject[]),
 
-      platformService.education
-        .specialties()
-        .catch(() => [] as Specialty[]),
-    ]);
+        platformService.education
+          .specialties()
+          .catch(() => [] as Specialty[]),
+      ]);
 
     return {
       contents: contents.filter(
-        (item) =>
-          item.content_type === settings.type
+        (item) => item.content_type === settings.type
       ),
       levels,
       subjects,
@@ -320,30 +304,26 @@ export function AdminLearningContentEditorPage({
   const settings = config[kind];
 
   const load = useCallback(async (): Promise<PageData> => {
-    const [
-      content,
-      levels,
-      subjects,
-      specialties,
-    ] = await Promise.all([
-      id
-        ? platformService.contents
-            .byId(id)
-            .catch(() => undefined)
-        : Promise.resolve(undefined),
+    const [content, levels, subjects, specialties] =
+      await Promise.all([
+        id
+          ? platformService.contents
+              .byId(id)
+              .catch(() => undefined)
+          : Promise.resolve(undefined),
 
-      platformService.education
-        .levels()
-        .catch(() => [] as Level[]),
+        platformService.education
+          .levels()
+          .catch(() => [] as Level[]),
 
-      platformService.education
-        .subjects()
-        .catch(() => [] as Subject[]),
+        platformService.education
+          .subjects()
+          .catch(() => [] as Subject[]),
 
-      platformService.education
-        .specialties()
-        .catch(() => [] as Specialty[]),
-    ]);
+        platformService.education
+          .specialties()
+          .catch(() => [] as Specialty[]),
+      ]);
 
     return {
       content,
@@ -408,85 +388,89 @@ function LearningContentCatalog({
      MAP SUBJECTS
   ======================================================= */
 
-  const subjectById = useMemo(
-    () =>
-      new Map(
-        subjects.map((item) => [
-          item.id,
-          item,
-        ])
-      ),
-    [subjects]
-  );
+  const subjectById = useMemo(() => {
+    return new Map(
+      subjects.map((item) => [item.id, item])
+    );
+  }, [subjects]);
 
   /* =======================================================
      MAP LEVELS
   ======================================================= */
 
-  const levelById = useMemo(
-    () =>
-      new Map(
-        levels.map((item) => [
-          item.id,
-          item,
-        ])
-      ),
-    [levels]
-  );
+  const levelById = useMemo(() => {
+    return new Map(
+      levels.map((item) => [item.id, item])
+    );
+  }, [levels]);
 
   /* =======================================================
      FILTER
   ======================================================= */
 
-  const filtered = contents.filter((item) => {
-    /*
-     * Avoid nested template literals here.
-     * This also prevents the Turbopack parser issue
-     * that occurred in the previous version.
-     */
-    const translationsText =
-      item.translations
-        ?.map((translation) =>
-          [
-            translation.title || "",
-            translation.description || "",
-          ].join(" ")
-        )
-        .join(" ") || "";
+  const filtered = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
 
-    const subjectName =
-      subjectById.get(
-        item.subject_id
-      )?.name_fr || "";
+    return contents.filter((item) => {
+      const translationsText =
+        item.translations
+          ?.map((translation) =>
+            [
+              translation.title || "",
+              translation.description || "",
+            ].join(" ")
+          )
+          .join(" ") || "";
 
-    const searchText = [
-      item.title || "",
-      item.description || "",
-      item.tags || "",
-      translationsText,
-      subjectName,
-      item.content_type || "",
-    ]
-      .join(" ")
-      .toLowerCase();
+      const subjectName =
+        subjectById.get(item.subject_id)?.name_fr || "";
 
-    return (
-      (!query ||
-        searchText.includes(
-          query.trim().toLowerCase()
-        )) &&
-      (!subjectId ||
-        item.subject_id === subjectId) &&
-      (!levelId ||
-        item.level_ids?.includes(
-          levelId
-        )) &&
-      (!specialtyId ||
-        item.specialty_ids?.includes(
-          specialtyId
-        ))
-    );
-  });
+      const searchText = [
+        item.title || "",
+        item.description || "",
+        item.tags || "",
+        translationsText,
+        subjectName,
+        item.content_type || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      const matchesQuery =
+        !normalizedQuery ||
+        searchText.includes(normalizedQuery);
+
+      const matchesSubject =
+        !subjectId ||
+        item.subject_id === subjectId;
+
+      const matchesLevel =
+        !levelId ||
+        Boolean(item.level_ids?.includes(levelId));
+
+      const matchesSpecialty =
+        !specialtyId ||
+        Boolean(
+          item.specialty_ids?.includes(
+            specialtyId
+          )
+        );
+
+      return (
+        matchesQuery &&
+        matchesSubject &&
+        matchesLevel &&
+        matchesSpecialty
+      );
+    });
+  }, [
+    contents,
+    query,
+    subjectId,
+    levelId,
+    specialtyId,
+    subjectById,
+  ]);
 
   return (
     <section className="grid gap-4">
@@ -514,7 +498,7 @@ function LearningContentCatalog({
 
           {isAdminRole(user) ? (
             <Link
-              href={`${settings.adminPath}/new`}
+              href={settings.adminPath + "/new"}
               className="ds-button-premium !rounded-xl !px-4 !py-2 !text-xs"
             >
               {t(settings.addKey)}
@@ -535,11 +519,12 @@ function LearningContentCatalog({
           {/* SEARCH */}
 
           <label
-            className={`relative ${
-              user?.role === "ELEVE"
+            className={
+              "relative " +
+              (user?.role === "ELEVE"
                 ? "sm:col-span-2 lg:col-span-2"
-                : "sm:col-span-2 lg:col-span-1"
-            }`}
+                : "sm:col-span-2 lg:col-span-1")
+            }
           >
             <Search
               className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
@@ -548,14 +533,10 @@ function LearningContentCatalog({
 
             <input
               value={query}
-              onChange={(event) =>
-                setQuery(
-                  event.target.value
-                )
-              }
-              placeholder={t(
-                "common.search"
-              )}
+              onChange={(event) => {
+                setQuery(event.target.value);
+              }}
+              placeholder={t("common.search")}
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs font-bold text-[#071d3a] outline-none transition placeholder:text-slate-400 focus:border-[#0f5132] focus:bg-white focus:ring-2 focus:ring-[#0f5132]/10"
             />
           </label>
@@ -566,12 +547,10 @@ function LearningContentCatalog({
             value={subjectId}
             onChange={setSubjectId}
             label={t("common.subject")}
-            options={subjects.map(
-              (item) => [
-                item.id,
-                item.name_fr,
-              ]
-            )}
+            options={subjects.map((item) => [
+              item.id,
+              item.name_fr,
+            ])}
           />
 
           {/* LEVEL + SPECIALTY */}
@@ -581,29 +560,21 @@ function LearningContentCatalog({
               <Select
                 value={levelId}
                 onChange={setLevelId}
-                label={t(
-                  "common.level"
-                )}
-                options={levels.map(
-                  (item) => [
-                    item.id,
-                    item.name_fr,
-                  ]
-                )}
+                label={t("common.level")}
+                options={levels.map((item) => [
+                  item.id,
+                  item.name_fr,
+                ])}
               />
 
               <Select
                 value={specialtyId}
                 onChange={setSpecialtyId}
-                label={t(
-                  "subject.specialty"
-                )}
-                options={specialties.map(
-                  (item) => [
-                    item.id,
-                    item.name_fr,
-                  ]
-                )}
+                label={t("subject.specialty")}
+                options={specialties.map((item) => [
+                  item.id,
+                  item.name_fr,
+                ])}
               />
             </>
           ) : null}
@@ -618,9 +589,7 @@ function LearningContentCatalog({
       {!filtered.length ? (
         <EmptyState
           title={t(settings.emptyKey)}
-          message={t(
-            "state.emptyContent"
-          )}
+          message={t("state.emptyContent")}
         />
       ) : (
         <div
@@ -640,28 +609,22 @@ function LearningContentCatalog({
           ================================================= */}
 
           {filtered.map((item) => {
-
             const title =
-              item.translations?.[0]
-                ?.title ||
+              item.translations?.[0]?.title ||
               item.title ||
-              `${item.content_type} ${item.id.slice(
-                0,
-                8
-              )}`;
+              item.content_type +
+                " " +
+                shortId(item.id);
 
             const subjectName =
-              subjectById.get(
-                item.subject_id
-              )?.name_fr || "-";
+              subjectById.get(item.subject_id)?.name_fr ||
+              "-";
 
             const levelName =
               item.level_ids
-                ?.map(
-                  (id) =>
-                    levelById.get(id)
-                      ?.name_fr
-                )
+                ?.map((levelId) => {
+                  return levelById.get(levelId)?.name_fr;
+                })
                 .filter(Boolean)
                 .join(", ") || "-";
 
@@ -701,12 +664,7 @@ function LearningContentCatalog({
                       )}
                       alt={title}
                       fill
-                      sizes="
-                        (max-width: 639px) 33vw,
-                        (max-width: 1023px) 25vw,
-                        (max-width: 1279px) 20vw,
-                        16vw
-                      "
+                      sizes="(max-width: 639px) 33vw, (max-width: 1023px) 25vw, (max-width: 1279px) 20vw, 16vw"
                       className="object-cover transition duration-300 group-hover:scale-105"
                     />
 
@@ -762,12 +720,8 @@ function LearningContentCatalog({
 
                   {item.is_available_offline ? (
                     <span
-                      title={t(
-                        "content.offline"
-                      )}
-                      aria-label={t(
-                        "content.offline"
-                      )}
+                      title={t("content.offline")}
+                      aria-label={t("content.offline")}
                       className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500"
                     >
                       <Download size={10} />
@@ -789,8 +743,7 @@ function LearningContentCatalog({
                 ========================================= */}
 
                 <p className="mt-1 line-clamp-1 text-[8px] font-semibold leading-3.5 text-slate-400 sm:text-[9px]">
-                  {item.translations?.[0]
-                    ?.description ||
+                  {item.translations?.[0]?.description ||
                     item.description ||
                     ""}
                 </p>
@@ -846,34 +799,23 @@ function LearningContentCatalog({
                   <button
                     type="button"
                     onClick={() => {
-
-                      /*
-                       * Premium content:
-                       * student without Premium
-                       * -> Premium page.
-                       */
-
                       if (
                         item.is_premium &&
                         isStudentRole(user) &&
                         !user.is_premium
                       ) {
-                        router.push(
-                          "/premium"
-                        );
+                        router.push("/premium");
                         return;
                       }
 
                       router.push(
-                        `${settings.basePath}/${item.id}`
+                        settings.basePath +
+                          "/" +
+                          item.id
                       );
                     }}
-                    title={t(
-                      settings.actionKey
-                    )}
-                    aria-label={t(
-                      settings.actionKey
-                    )}
+                    title={t(settings.actionKey)}
+                    aria-label={t(settings.actionKey)}
                     className="
                       flex
                       h-7
@@ -897,18 +839,14 @@ function LearningContentCatalog({
                     <Eye size={12} />
 
                     <span className="truncate">
-                      {t(
-                        settings.actionKey
-                      )}
+                      {t(settings.actionKey)}
                     </span>
                   </button>
 
                   {/* DOWNLOAD */}
 
                   {item.is_available_offline &&
-                  getContentMainUrl(
-                    item
-                  ) ? (
+                  getContentMainUrl(item) ? (
                     <DownloadButton
                       content={item}
                       label=""
@@ -963,78 +901,63 @@ function LearningContentDetail({
   const { t } = useI18n(user);
   const router = useRouter();
 
-  const [detailData, setDetailData] =
-    useState({
-      related: [] as Content[],
+  const [detailData, setDetailData] = useState({
+    related: [] as Content[],
 
-      translations:
-        [] as {
-          title?: string;
-          description?: string;
-        }[],
+    translations: [] as {
+      title?: string;
+      description?: string;
+    }[],
 
-      levels: [] as Level[],
+    levels: [] as Level[],
 
-      subjects: [] as Subject[],
+    subjects: [] as Subject[],
 
-      specialties:
-        [] as Specialty[],
+    specialties: [] as Specialty[],
 
-      courses: [] as Content[],
+    courses: [] as Content[],
 
-      loading: true,
-    });
+    loading: true,
+  });
 
   /* =======================================================
      MAP SUBJECTS
   ======================================================= */
 
-  const subjectById = useMemo(
-    () =>
-      new Map(
-        detailData.subjects.map(
-          (item) => [
-            item.id,
-            item,
-          ]
-        )
-      ),
-    [detailData.subjects]
-  );
+  const subjectById = useMemo(() => {
+    return new Map(
+      detailData.subjects.map((item) => [
+        item.id,
+        item,
+      ])
+    );
+  }, [detailData.subjects]);
 
   /* =======================================================
      MAP LEVELS
   ======================================================= */
 
-  const levelById = useMemo(
-    () =>
-      new Map(
-        detailData.levels.map(
-          (item) => [
-            item.id,
-            item,
-          ]
-        )
-      ),
-    [detailData.levels]
-  );
+  const levelById = useMemo(() => {
+    return new Map(
+      detailData.levels.map((item) => [
+        item.id,
+        item,
+      ])
+    );
+  }, [detailData.levels]);
 
   /* =======================================================
      MAP SPECIALTIES
   ======================================================= */
 
-  const specialtyById = useMemo(
-    () =>
-      new Map(
-        detailData.specialties.map(
-          (item) => [
-            item.id,
-            item,
-          ]
-        )
-      ),
-    [detailData.specialties]
-  );
+  const specialtyById = useMemo(() => {
+    return new Map(
+      detailData.specialties.map((item) => [
+        item.id,
+        item,
+      ])
+    );
+  }, [detailData.specialties]);
 
   /* =======================================================
      LOAD DETAIL DATA
@@ -1044,11 +967,6 @@ function LearningContentDetail({
     if (!content) {
       return;
     }
-
-    /*
-     * Student without Premium:
-     * do not load protected detail data.
-     */
 
     if (
       content.is_premium &&
@@ -1065,80 +983,60 @@ function LearningContentDetail({
         return;
       }
 
-      const contentId =
-        content.id;
+      const contentId = content.id;
 
       const [
-        related,
-        translations,
-        levels,
-        subjects,
-        specialties,
-        courses,
+        relatedContent,
+        contentTranslations,
+        allLevels,
+        allSubjects,
+        allSpecialties,
+        allCourses,
       ] = await Promise.all([
-
         platformService.contents
           .related(contentId)
-          .catch(
-            () => [] as Content[]
-          ),
+          .catch(() => [] as Content[]),
 
         platformService.contents
           .translations(content.id)
-          .then(
-            (value) =>
-              value as {
-                title?: string;
-                description?: string;
-              }[]
-          )
-          .catch(
-            () =>
-              [] as {
-                title?: string;
-                description?: string;
-              }[]
-          ),
+          .then((value) => {
+            return value as {
+              title?: string;
+              description?: string;
+            }[];
+          })
+          .catch(() => {
+            return [] as {
+              title?: string;
+              description?: string;
+            }[];
+          }),
 
         platformService.education
           .levels()
-          .catch(
-            () => [] as Level[]
-          ),
+          .catch(() => [] as Level[]),
 
         platformService.education
           .subjects()
-          .catch(
-            () => [] as Subject[]
-          ),
+          .catch(() => [] as Subject[]),
 
         platformService.education
           .specialties()
-          .catch(
-            () => [] as Specialty[]
-          ),
+          .catch(() => [] as Specialty[]),
 
-        /*
-         * Tous les cours.
-         *
-         * Utilisés pour les cours recommandés
-         * sur les exercices et sujets.
-         */
         platformService.contents
           .byTypeAll("COURS")
-          .catch(
-            () => [] as Content[]
-          ),
+          .catch(() => [] as Content[]),
       ]);
 
       if (!cancelled) {
         setDetailData({
-          related,
-          translations,
-          levels,
-          subjects,
-          specialties,
-          courses,
+          related: relatedContent,
+          translations: contentTranslations,
+          levels: allLevels,
+          subjects: allSubjects,
+          specialties: allSpecialties,
+          courses: allCourses,
           loading: false,
         });
       }
@@ -1161,17 +1059,12 @@ function LearningContentDetail({
 
   if (
     !content ||
-    content.content_type !==
-      settings.type
+    content.content_type !== settings.type
   ) {
     return (
       <EmptyState
-        title={t(
-          "content.notFound"
-        )}
-        message={t(
-          "content.notFound"
-        )}
+        title={t("content.notFound")}
+        message={t("content.notFound")}
       />
     );
   }
@@ -1200,10 +1093,9 @@ function LearningContentDetail({
   const title =
     translation?.title ||
     content.title ||
-    `${content.content_type} ${content.id.slice(
-      0,
-      8
-    )}`;
+    content.content_type +
+      " " +
+      shortId(content.id);
 
   const description =
     translation?.description ||
@@ -1215,36 +1107,55 @@ function LearningContentDetail({
   ======================================================= */
 
   const similar =
-    detailData.related.filter(
-      (item) =>
-        item.content_type ===
-          settings.type &&
-        item.subject_id ===
-          content.subject_id &&
-        item.level_ids?.some(
-          (id) =>
+    detailData.related.filter((item) => {
+      const sameType =
+        item.content_type === settings.type;
+
+      const sameSubject =
+        item.subject_id === content.subject_id;
+
+      const sameLevel =
+        Boolean(
+          item.level_ids?.some((levelId) =>
             content.level_ids?.includes(
-              id
+              levelId
             )
-        )
-    );
+          )
+        );
+
+      return (
+        sameType &&
+        sameSubject &&
+        sameLevel
+      );
+    });
 
   /* =======================================================
      RECOMMENDED COURSE
   ======================================================= */
 
   const recommendedCourse =
-    detailData.courses.find(
-      (item) =>
-        item.subject_id ===
-          content.subject_id &&
-        item.level_ids?.some(
-          (id) =>
-            content.level_ids?.includes(
-              id
-            )
-        )
-    );
+    kind !== "courses"
+      ? detailData.courses.find((item) => {
+          const sameSubject =
+            item.subject_id ===
+            content.subject_id;
+
+          const sameLevel =
+            Boolean(
+              item.level_ids?.some((levelId) =>
+                content.level_ids?.includes(
+                  levelId
+                )
+              )
+            );
+
+          return (
+            sameSubject &&
+            sameLevel
+          );
+        })
+      : undefined;
 
   return (
     <section className="grid gap-5">
@@ -1256,9 +1167,7 @@ function LearningContentDetail({
       <section className="rounded-[2rem] bg-[#071d3a] p-7 text-white shadow-2xl shadow-[#071d3a]/20">
 
         <p className="text-sm font-black uppercase tracking-[0.25em] text-[#f6c445]">
-          {t(
-            settings.detailKey
-          )}
+          {t(settings.detailKey)}
         </p>
 
         <h2 className="mt-3 text-4xl font-black tracking-tight">
@@ -1275,14 +1184,10 @@ function LearningContentDetail({
           {/* DOWNLOAD */}
 
           {content.is_available_offline &&
-          getContentMainUrl(
-            content
-          ) ? (
+          getContentMainUrl(content) ? (
             <DownloadButton
               content={content}
-              label={t(
-                "content.download"
-              )}
+              label={t("content.download")}
               dark
               isPremiumUser={
                 user.is_premium === true
@@ -1309,9 +1214,7 @@ function LearningContentDetail({
       <section className="grid gap-4 md:grid-cols-4">
 
         <Info
-          label={t(
-            "common.subject"
-          )}
+          label={t("common.subject")}
           value={
             subjectById.get(
               content.subject_id
@@ -1320,33 +1223,26 @@ function LearningContentDetail({
         />
 
         <Info
-          label={t(
-            "common.level"
-          )}
+          label={t("common.level")}
           value={
             content.level_ids
-              ?.map(
-                (id) =>
-                  levelById.get(id)
-                    ?.name_fr
-              )
+              ?.map((levelId) => {
+                return levelById.get(levelId)?.name_fr;
+              })
               .filter(Boolean)
               .join(", ") || "-"
           }
         />
 
         <Info
-          label={t(
-            "subject.specialty"
-          )}
+          label={t("subject.specialty")}
           value={
             content.specialty_ids
-              ?.map(
-                (id) =>
-                  specialtyById.get(
-                    id
-                  )?.name_fr
-              )
+              ?.map((specialtyId) => {
+                return specialtyById.get(
+                  specialtyId
+                )?.name_fr;
+              })
               .filter(Boolean)
               .join(", ") || "-"
           }
@@ -1354,34 +1250,20 @@ function LearningContentDetail({
 
         {kind === "subjects" ? (
           <Info
-            label={t(
-              "content.year"
-            )}
-            value={
-              readYear(
-                content
-              ) || "-"
-            }
+            label={t("content.year")}
+            value={readYear(content) || "-"}
           />
         ) : null}
 
         {kind === "subjects" ? (
           <Info
-            label={t(
-              "content.examType"
-            )}
-            value={
-              readExamType(
-                content
-              ) || "-"
-            }
+            label={t("content.examType")}
+            value={readExamType(content) || "-"}
           />
         ) : null}
 
         <Info
-          label={t(
-            "content.offline"
-          )}
+          label={t("content.offline")}
           value={
             content.is_available_offline
               ? t("common.yes")
@@ -1402,9 +1284,6 @@ function LearningContentDetail({
 
       {/* =================================================
           RECOMMENDED COURSE
-
-          IMPORTANT:
-          A COURSE does not recommend itself.
       ================================================= */}
 
       {kind !== "courses" &&
@@ -1418,7 +1297,10 @@ function LearningContentDetail({
           </h3>
 
           <Link
-            href={`/courses/${recommendedCourse.id}`}
+            href={
+              "/courses/" +
+              recommendedCourse.id
+            }
             className="mt-5 block rounded-2xl bg-slate-50 p-5 font-black text-[#071d3a] transition hover:bg-white hover:shadow-lg"
           >
 
@@ -1431,10 +1313,10 @@ function LearningContentDetail({
                 .translations?.[0]
                 ?.title ||
                 recommendedCourse.title ||
-                `COURS ${recommendedCourse.id.slice(
-                  0,
-                  8
-                )}`}
+                "COURS " +
+                  shortId(
+                    recommendedCourse.id
+                  )}
             </p>
 
             <p className="mt-2 text-sm text-slate-500">
@@ -1456,49 +1338,42 @@ function LearningContentDetail({
       <section className="rounded-[2rem] bg-white p-6 shadow-xl shadow-[#082f1f]/5">
 
         <h3 className="text-2xl font-black text-[#071d3a]">
-          {t(
-            settings.similarKey
-          )}
+          {t(settings.similarKey)}
         </h3>
 
         <div className="mt-5 grid gap-4 md:grid-cols-3">
 
-          {similar.map(
-            (item) => (
-              <Link
-                key={item.id}
-                href={`${settings.basePath}/${item.id}`}
-                className="rounded-2xl bg-slate-50 p-4 font-black text-[#071d3a]"
-              >
+          {similar.map((item) => (
+            <Link
+              key={item.id}
+              href={
+                settings.basePath +
+                "/" +
+                item.id
+              }
+              className="rounded-2xl bg-slate-50 p-4 font-black text-[#071d3a]"
+            >
 
-                <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">
-                  {item.content_type}
-                </span>
+              <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">
+                {item.content_type}
+              </span>
 
-                <p className="mt-2">
-                  {item.translations?.[0]
-                    ?.title ||
-                    item.title ||
-                    item.id.slice(
-                      0,
-                      8
-                    )}
-                </p>
+              <p className="mt-2">
+                {item.translations?.[0]
+                  ?.title ||
+                  item.title ||
+                  shortId(item.id)}
+              </p>
 
-              </Link>
-            )
-          )}
+            </Link>
+          ))}
 
         </div>
 
         {!similar.length ? (
           <EmptyState
-            title={t(
-              "content.noRelated"
-            )}
-            message={t(
-              "content.noRelated"
-            )}
+            title={t("content.noRelated")}
+            message={t("content.noRelated")}
           />
         ) : null}
 
@@ -1530,26 +1405,16 @@ function DownloadButton({
     useState(false);
 
   const [error, setError] =
-    useState<string | null>(
-      null
-    );
+    useState<string | null>(null);
 
   async function download() {
-
     /*
      * Non-Premium:
      * redirect to Premium.
-     *
-     * This applies to:
-     * - Cours
-     * - Exercices
-     * - Sujets
      */
 
     if (!isPremiumUser) {
-      router.push(
-        "/premium"
-      );
+      router.push("/premium");
       return;
     }
 
@@ -1557,7 +1422,6 @@ function DownloadButton({
     setError(null);
 
     try {
-
       await platformService.contents.download(
         content.id
       );
@@ -1565,21 +1429,22 @@ function DownloadButton({
       await downloadAuthenticatedFile(
         content
       );
-
     } catch (err) {
-
       setError(
         err instanceof ApiError
           ? err.message
           : "Download failed"
       );
-
     } finally {
-
       setLoading(false);
-
     }
   }
+
+  /*
+   * compact est conservé pour respecter
+   * l'API existante du composant.
+   */
+  void compact;
 
   return (
     <span className="inline-flex flex-col gap-1">
@@ -1588,21 +1453,15 @@ function DownloadButton({
         type="button"
         onClick={download}
         disabled={loading}
-        title={
-          label ||
-          "Télécharger"
-        }
-        aria-label={
-          label ||
-          "Télécharger"
-        }
-        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg disabled:opacity-60 sm:h-8 sm:w-8 ${
-          dark
+        title={label || "Télécharger"}
+        aria-label={label || "Télécharger"}
+        className={
+          "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg disabled:opacity-60 sm:h-8 sm:w-8 " +
+          (dark
             ? "bg-white/10 text-white"
-            : "bg-[#f6c445] text-[#071d3a]"
-        }`}
+            : "bg-[#f6c445] text-[#071d3a]")
+        }
       >
-
         <Download
           size={13}
           className={
@@ -1611,7 +1470,6 @@ function DownloadButton({
               : ""
           }
         />
-
       </button>
 
       {error ? (
@@ -1635,40 +1493,30 @@ function Select({
   options,
 }: {
   value: string;
-  onChange: (
-    value: string
-  ) => void;
+  onChange: (value: string) => void;
   label: string;
-  options: Array<
-    [string, string]
-  >;
+  options: Array<[string, string]>;
 }) {
   return (
     <select
       value={value}
-      onChange={(event) =>
-        onChange(
-          event.target.value
-        )
-      }
+      onChange={(event) => {
+        onChange(event.target.value);
+      }}
       className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold outline-none"
     >
-
       <option value="">
         {label}
       </option>
 
-      {options.map(
-        ([id, name]) => (
-          <option
-            key={`${label}-${id}`}
-            value={id}
-          >
-            {name}
-          </option>
-        )
-      )}
-
+      {options.map(([id, name]) => (
+        <option
+          key={label + "-" + id}
+          value={id}
+        >
+          {name}
+        </option>
+      ))}
     </select>
   );
 }
@@ -1686,7 +1534,6 @@ function Meta({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-
       <dt>
         {label}
       </dt>
@@ -1694,7 +1541,6 @@ function Meta({
       <dd className="text-right text-[#071d3a]">
         {value}
       </dd>
-
     </div>
   );
 }
@@ -1744,14 +1590,9 @@ function formatDate(
     return "-";
   }
 
-  const date =
-    new Date(value);
+  const date = new Date(value);
 
-  if (
-    Number.isNaN(
-      date.getTime()
-    )
-  ) {
+  if (Number.isNaN(date.getTime())) {
     return value;
   }
 
@@ -1786,13 +1627,11 @@ function readExamType(
   const source =
     content.tags || "";
 
-  const match =
-    source.match(
-      /(?:exam|examen|type)[:=]\s*([^,;]+)/i
-    );
+  const match = source.match(
+    /(?:exam|examen|type)[:=]\s*([^,;]+)/i
+  );
 
   return (
     match?.[1]?.trim() || ""
   );
 }
-```
