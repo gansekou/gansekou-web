@@ -37,7 +37,7 @@ import type {
 import type { User } from "@/types/user";
 
 /* =========================================================
-   TYPES
+   TYPE
 ========================================================= */
 
 type LearningKind = "courses" | "exercises" | "subjects";
@@ -107,8 +107,9 @@ export function LearningContentListPage({
     ] = await Promise.all([
       /*
        * IMPORTANT :
-       * byTypeAll permet de récupérer tous les contenus.
-       * Cela évite la limitation historique à 50 éléments.
+       * byTypeAll récupère tous les contenus.
+       * Cela permet également aux COURS de ne plus
+       * être limités à 50 éléments.
        */
       platformService.contents
         .byTypeAll(settings.type)
@@ -203,7 +204,7 @@ export function LearningContentDetailPage({
 }
 
 /* =========================================================
-   ADMIN LIST
+   ADMIN LIST PAGE
 ========================================================= */
 
 export function AdminLearningContentListPage({
@@ -239,7 +240,8 @@ export function AdminLearningContentListPage({
 
     return {
       contents: contents.filter(
-        (item) => item.content_type === settings.type
+        (item) =>
+          item.content_type === settings.type
       ),
       levels,
       subjects,
@@ -402,6 +404,10 @@ function LearningContentCatalog({
   const [levelId, setLevelId] = useState("");
   const [specialtyId, setSpecialtyId] = useState("");
 
+  /* =======================================================
+     MAP SUBJECTS
+  ======================================================= */
+
   const subjectById = useMemo(
     () =>
       new Map(
@@ -412,6 +418,10 @@ function LearningContentCatalog({
       ),
     [subjects]
   );
+
+  /* =======================================================
+     MAP LEVELS
+  ======================================================= */
 
   const levelById = useMemo(
     () =>
@@ -424,28 +434,41 @@ function LearningContentCatalog({
     [levels]
   );
 
+  /* =======================================================
+     FILTER
+  ======================================================= */
+
   const filtered = contents.filter((item) => {
+    /*
+     * Avoid nested template literals here.
+     * This also prevents the Turbopack parser issue
+     * that occurred in the previous version.
+     */
     const translationsText =
       item.translations
-        ?.map(
-          (translation) =>
-            `${translation.title || ""} ${
-              translation.description || ""
-            }`
+        ?.map((translation) =>
+          [
+            translation.title || "",
+            translation.description || "",
+          ].join(" ")
         )
         .join(" ") || "";
 
     const subjectName =
-      subjectById.get(item.subject_id)?.name_fr || "";
+      subjectById.get(
+        item.subject_id
+      )?.name_fr || "";
 
-    const searchText = `
-      ${item.title || ""}
-      ${item.description || ""}
-      ${item.tags || ""}
-      ${translationsText}
-      ${subjectName}
-      ${item.content_type || ""}
-    `.toLowerCase();
+    const searchText = [
+      item.title || "",
+      item.description || "",
+      item.tags || "",
+      translationsText,
+      subjectName,
+      item.content_type || "",
+    ]
+      .join(" ")
+      .toLowerCase();
 
     return (
       (!query ||
@@ -455,7 +478,9 @@ function LearningContentCatalog({
       (!subjectId ||
         item.subject_id === subjectId) &&
       (!levelId ||
-        item.level_ids?.includes(levelId)) &&
+        item.level_ids?.includes(
+          levelId
+        )) &&
       (!specialtyId ||
         item.specialty_ids?.includes(
           specialtyId
@@ -466,12 +491,13 @@ function LearningContentCatalog({
   return (
     <section className="grid gap-4">
 
-      {/* =====================================================
+      {/* ===================================================
           HEADER
-      ===================================================== */}
+      =================================================== */}
 
       <section className="rounded-[1.5rem] bg-[#071d3a] p-5 text-white shadow-xl shadow-[#071d3a]/15 sm:p-6">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#f6c445] sm:text-xs">
               {t(settings.listTitleKey)}
@@ -494,14 +520,16 @@ function LearningContentCatalog({
               {t(settings.addKey)}
             </Link>
           ) : null}
+
         </div>
       </section>
 
-      {/* =====================================================
+      {/* ===================================================
           FILTERS
-      ===================================================== */}
+      =================================================== */}
 
       <section className="rounded-[1.5rem] bg-white p-3 shadow-lg shadow-[#082f1f]/5 sm:p-4">
+
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
 
           {/* SEARCH */}
@@ -521,9 +549,13 @@ function LearningContentCatalog({
             <input
               value={query}
               onChange={(event) =>
-                setQuery(event.target.value)
+                setQuery(
+                  event.target.value
+                )
               }
-              placeholder={t("common.search")}
+              placeholder={t(
+                "common.search"
+              )}
               className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs font-bold text-[#071d3a] outline-none transition placeholder:text-slate-400 focus:border-[#0f5132] focus:bg-white focus:ring-2 focus:ring-[#0f5132]/10"
             />
           </label>
@@ -534,30 +566,38 @@ function LearningContentCatalog({
             value={subjectId}
             onChange={setSubjectId}
             label={t("common.subject")}
-            options={subjects.map((item) => [
-              item.id,
-              item.name_fr,
-            ])}
+            options={subjects.map(
+              (item) => [
+                item.id,
+                item.name_fr,
+              ]
+            )}
           />
 
-          {/* NON-STUDENT FILTERS */}
+          {/* LEVEL + SPECIALTY */}
 
           {user?.role !== "ELEVE" ? (
             <>
               <Select
                 value={levelId}
                 onChange={setLevelId}
-                label={t("common.level")}
-                options={levels.map((item) => [
-                  item.id,
-                  item.name_fr,
-                ])}
+                label={t(
+                  "common.level"
+                )}
+                options={levels.map(
+                  (item) => [
+                    item.id,
+                    item.name_fr,
+                  ]
+                )}
               />
 
               <Select
                 value={specialtyId}
                 onChange={setSpecialtyId}
-                label={t("subject.specialty")}
+                label={t(
+                  "subject.specialty"
+                )}
                 options={specialties.map(
                   (item) => [
                     item.id,
@@ -567,17 +607,20 @@ function LearningContentCatalog({
               />
             </>
           ) : null}
+
         </div>
       </section>
 
-      {/* =====================================================
-          CATALOG
-      ===================================================== */}
+      {/* ===================================================
+          EMPTY
+      =================================================== */}
 
       {!filtered.length ? (
         <EmptyState
           title={t(settings.emptyKey)}
-          message={t("state.emptyContent")}
+          message={t(
+            "state.emptyContent"
+          )}
         />
       ) : (
         <div
@@ -591,9 +634,16 @@ function LearningContentCatalog({
             2xl:grid-cols-6
           "
         >
+
+          {/* =================================================
+              CONTENT CARDS
+          ================================================= */}
+
           {filtered.map((item) => {
+
             const title =
-              item.translations?.[0]?.title ||
+              item.translations?.[0]
+                ?.title ||
               item.title ||
               `${item.content_type} ${item.id.slice(
                 0,
@@ -638,9 +688,9 @@ function LearningContentCatalog({
                 "
               >
 
-                {/* =================================================
+                {/* =========================================
                     IMAGE
-                ================================================= */}
+                ========================================= */}
 
                 {item.thumbnail_url ? (
                   <div className="relative mb-2 h-20 w-full overflow-hidden rounded-lg bg-slate-100 sm:h-24 lg:h-28">
@@ -660,7 +710,7 @@ function LearningContentCatalog({
                       className="object-cover transition duration-300 group-hover:scale-105"
                     />
 
-                    {/* PREMIUM */}
+                    {/* PREMIUM BADGE */}
 
                     {item.is_premium ? (
                       <span
@@ -674,6 +724,7 @@ function LearningContentCatalog({
                         />
                       </span>
                     ) : null}
+
                   </div>
                 ) : (
                   <div className="relative mb-2 flex h-20 items-center justify-center rounded-lg bg-slate-100 sm:h-24 lg:h-28">
@@ -695,12 +746,13 @@ function LearningContentCatalog({
                         />
                       </span>
                     ) : null}
+
                   </div>
                 )}
 
-                {/* =================================================
-                    TYPE + OFFLINE
-                ================================================= */}
+                {/* =========================================
+                    TYPE + DOWNLOAD AVAILABILITY
+                ========================================= */}
 
                 <div className="mb-1.5 flex items-center justify-between gap-1">
 
@@ -710,7 +762,9 @@ function LearningContentCatalog({
 
                   {item.is_available_offline ? (
                     <span
-                      title={t("content.offline")}
+                      title={t(
+                        "content.offline"
+                      )}
                       aria-label={t(
                         "content.offline"
                       )}
@@ -719,17 +773,20 @@ function LearningContentCatalog({
                       <Download size={10} />
                     </span>
                   ) : null}
+
                 </div>
 
-                {/* =================================================
+                {/* =========================================
                     TITLE
-                ================================================= */}
+                ========================================= */}
 
                 <h3 className="line-clamp-2 min-h-[2rem] text-[10px] font-black leading-4 text-[#082f1f] sm:text-[11px] sm:leading-4">
                   {title}
                 </h3>
 
-                {/* DESCRIPTION */}
+                {/* =========================================
+                    DESCRIPTION
+                ========================================= */}
 
                 <p className="mt-1 line-clamp-1 text-[8px] font-semibold leading-3.5 text-slate-400 sm:text-[9px]">
                   {item.translations?.[0]
@@ -738,11 +795,13 @@ function LearningContentCatalog({
                     ""}
                 </p>
 
-                {/* =================================================
+                {/* =========================================
                     METADATA
-                ================================================= */}
+                ========================================= */}
 
                 <div className="mt-2 space-y-1">
+
+                  {/* SUBJECT */}
 
                   <div
                     className="flex min-w-0 items-center gap-1 text-[8px] font-bold text-slate-500 sm:text-[9px]"
@@ -757,6 +816,8 @@ function LearningContentCatalog({
                       {subjectName}
                     </span>
                   </div>
+
+                  {/* LEVEL */}
 
                   <div
                     className="flex min-w-0 items-center gap-1 text-[8px] font-bold text-slate-500 sm:text-[9px]"
@@ -774,9 +835,9 @@ function LearningContentCatalog({
 
                 </div>
 
-                {/* =================================================
+                {/* =========================================
                     ACTIONS
-                ================================================= */}
+                ========================================= */}
 
                 <div className="mt-2 flex items-center gap-1">
 
@@ -869,7 +930,7 @@ function LearningContentCatalog({
 }
 
 /* =========================================================
-   DETAIL
+   DETAIL COMPONENT
 ========================================================= */
 
 function LearningContentDetail({
@@ -902,45 +963,74 @@ function LearningContentDetail({
   const { t } = useI18n(user);
   const router = useRouter();
 
-  const [detailData, setDetailData] = useState({
-    related: [] as Content[],
-    translations:
-      [] as {
-        title?: string;
-        description?: string;
-      }[],
-    levels: [] as Level[],
-    subjects: [] as Subject[],
-    specialties: [] as Specialty[],
-    courses: [] as Content[],
-    loading: true,
-  });
+  const [detailData, setDetailData] =
+    useState({
+      related: [] as Content[],
+
+      translations:
+        [] as {
+          title?: string;
+          description?: string;
+        }[],
+
+      levels: [] as Level[],
+
+      subjects: [] as Subject[],
+
+      specialties:
+        [] as Specialty[],
+
+      courses: [] as Content[],
+
+      loading: true,
+    });
+
+  /* =======================================================
+     MAP SUBJECTS
+  ======================================================= */
 
   const subjectById = useMemo(
     () =>
       new Map(
         detailData.subjects.map(
-          (item) => [item.id, item]
+          (item) => [
+            item.id,
+            item,
+          ]
         )
       ),
     [detailData.subjects]
   );
 
+  /* =======================================================
+     MAP LEVELS
+  ======================================================= */
+
   const levelById = useMemo(
     () =>
       new Map(
         detailData.levels.map(
-          (item) => [item.id, item]
+          (item) => [
+            item.id,
+            item,
+          ]
         )
       ),
     [detailData.levels]
   );
 
+  /* =======================================================
+     MAP SPECIALTIES
+  ======================================================= */
+
   const specialtyById = useMemo(
     () =>
       new Map(
         detailData.specialties.map(
-          (item) => [item.id, item]
+          (item) => [
+            item.id,
+            item,
+          ]
         )
       ),
     [detailData.specialties]
@@ -956,9 +1046,8 @@ function LearningContentDetail({
     }
 
     /*
-     * Premium access control.
-     * If student is not Premium, don't load
-     * additional protected content.
+     * Student without Premium:
+     * do not load protected detail data.
      */
 
     if (
@@ -976,7 +1065,8 @@ function LearningContentDetail({
         return;
       }
 
-      const contentId = content.id;
+      const contentId =
+        content.id;
 
       const [
         related,
@@ -986,6 +1076,7 @@ function LearningContentDetail({
         specialties,
         courses,
       ] = await Promise.all([
+
         platformService.contents
           .related(contentId)
           .catch(
@@ -1028,9 +1119,10 @@ function LearningContentDetail({
           ),
 
         /*
-         * All courses.
-         * Used for recommended courses on
-         * exercises and subjects.
+         * Tous les cours.
+         *
+         * Utilisés pour les cours recommandés
+         * sur les exercices et sujets.
          */
         platformService.contents
           .byTypeAll("COURS")
@@ -1069,12 +1161,17 @@ function LearningContentDetail({
 
   if (
     !content ||
-    content.content_type !== settings.type
+    content.content_type !==
+      settings.type
   ) {
     return (
       <EmptyState
-        title={t("content.notFound")}
-        message={t("content.notFound")}
+        title={t(
+          "content.notFound"
+        )}
+        message={t(
+          "content.notFound"
+        )}
       />
     );
   }
@@ -1089,11 +1186,12 @@ function LearningContentDetail({
     !user.is_premium
   ) {
     router.replace("/premium");
+
     return null;
   }
 
   /* =======================================================
-     CONTENT DATA
+     TITLE + DESCRIPTION
   ======================================================= */
 
   const translation =
@@ -1125,7 +1223,9 @@ function LearningContentDetail({
           content.subject_id &&
         item.level_ids?.some(
           (id) =>
-            content.level_ids?.includes(id)
+            content.level_ids?.includes(
+              id
+            )
         )
     );
 
@@ -1140,21 +1240,25 @@ function LearningContentDetail({
           content.subject_id &&
         item.level_ids?.some(
           (id) =>
-            content.level_ids?.includes(id)
+            content.level_ids?.includes(
+              id
+            )
         )
     );
 
   return (
     <section className="grid gap-5">
 
-      {/* =====================================================
+      {/* =================================================
           HEADER
-      ===================================================== */}
+      ================================================= */}
 
       <section className="rounded-[2rem] bg-[#071d3a] p-7 text-white shadow-2xl shadow-[#071d3a]/20">
 
         <p className="text-sm font-black uppercase tracking-[0.25em] text-[#f6c445]">
-          {t(settings.detailKey)}
+          {t(
+            settings.detailKey
+          )}
         </p>
 
         <h2 className="mt-3 text-4xl font-black tracking-tight">
@@ -1198,14 +1302,16 @@ function LearningContentDetail({
         </div>
       </section>
 
-      {/* =====================================================
-          INFO
-      ===================================================== */}
+      {/* =================================================
+          INFORMATION
+      ================================================= */}
 
       <section className="grid gap-4 md:grid-cols-4">
 
         <Info
-          label={t("common.subject")}
+          label={t(
+            "common.subject"
+          )}
           value={
             subjectById.get(
               content.subject_id
@@ -1214,7 +1320,9 @@ function LearningContentDetail({
         />
 
         <Info
-          label={t("common.level")}
+          label={t(
+            "common.level"
+          )}
           value={
             content.level_ids
               ?.map(
@@ -1228,7 +1336,9 @@ function LearningContentDetail({
         />
 
         <Info
-          label={t("subject.specialty")}
+          label={t(
+            "subject.specialty"
+          )}
           value={
             content.specialty_ids
               ?.map(
@@ -1244,9 +1354,13 @@ function LearningContentDetail({
 
         {kind === "subjects" ? (
           <Info
-            label={t("content.year")}
+            label={t(
+              "content.year"
+            )}
             value={
-              readYear(content) || "-"
+              readYear(
+                content
+              ) || "-"
             }
           />
         ) : null}
@@ -1265,30 +1379,33 @@ function LearningContentDetail({
         ) : null}
 
         <Info
-          label={t("content.offline")}
+          label={t(
+            "content.offline"
+          )}
           value={
             content.is_available_offline
               ? t("common.yes")
               : t("common.no")
           }
         />
+
       </section>
 
-      {/* =====================================================
+      {/* =================================================
           MEDIA
-      ===================================================== */}
+      ================================================= */}
 
       <ContentMediaViewer
         content={content}
         t={t}
       />
 
-      {/* =====================================================
+      {/* =================================================
           RECOMMENDED COURSE
-          
+
           IMPORTANT:
-          A course must NOT recommend itself.
-      ===================================================== */}
+          A COURSE does not recommend itself.
+      ================================================= */}
 
       {kind !== "courses" &&
       recommendedCourse ? (
@@ -1304,6 +1421,7 @@ function LearningContentDetail({
             href={`/courses/${recommendedCourse.id}`}
             className="mt-5 block rounded-2xl bg-slate-50 p-5 font-black text-[#071d3a] transition hover:bg-white hover:shadow-lg"
           >
+
             <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">
               COURS
             </span>
@@ -1326,43 +1444,50 @@ function LearningContentDetail({
                 recommendedCourse.description ||
                 recommendedCourse.status}
             </p>
+
           </Link>
         </section>
       ) : null}
 
-      {/* =====================================================
-          SIMILAR
-      ===================================================== */}
+      {/* =================================================
+          SIMILAR CONTENT
+      ================================================= */}
 
       <section className="rounded-[2rem] bg-white p-6 shadow-xl shadow-[#082f1f]/5">
 
         <h3 className="text-2xl font-black text-[#071d3a]">
-          {t(settings.similarKey)}
+          {t(
+            settings.similarKey
+          )}
         </h3>
 
         <div className="mt-5 grid gap-4 md:grid-cols-3">
 
-          {similar.map((item) => (
-            <Link
-              key={item.id}
-              href={`${settings.basePath}/${item.id}`}
-              className="rounded-2xl bg-slate-50 p-4 font-black text-[#071d3a]"
-            >
-              <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">
-                {item.content_type}
-              </span>
+          {similar.map(
+            (item) => (
+              <Link
+                key={item.id}
+                href={`${settings.basePath}/${item.id}`}
+                className="rounded-2xl bg-slate-50 p-4 font-black text-[#071d3a]"
+              >
 
-              <p className="mt-2">
-                {item.translations?.[0]
-                  ?.title ||
-                  item.title ||
-                  item.id.slice(
-                    0,
-                    8
-                  )}
-              </p>
-            </Link>
-          ))}
+                <span className="text-xs uppercase tracking-[0.14em] text-[#0f5f3a]">
+                  {item.content_type}
+                </span>
+
+                <p className="mt-2">
+                  {item.translations?.[0]
+                    ?.title ||
+                    item.title ||
+                    item.id.slice(
+                      0,
+                      8
+                    )}
+                </p>
+
+              </Link>
+            )
+          )}
 
         </div>
 
@@ -1405,20 +1530,26 @@ function DownloadButton({
     useState(false);
 
   const [error, setError] =
-    useState<string | null>(null);
+    useState<string | null>(
+      null
+    );
 
   async function download() {
 
     /*
-     * Non-Premium user:
+     * Non-Premium:
      * redirect to Premium.
      *
-     * This applies to ALL content types,
-     * including COURS.
+     * This applies to:
+     * - Cours
+     * - Exercices
+     * - Sujets
      */
 
     if (!isPremiumUser) {
-      router.push("/premium");
+      router.push(
+        "/premium"
+      );
       return;
     }
 
@@ -1458,10 +1589,12 @@ function DownloadButton({
         onClick={download}
         disabled={loading}
         title={
-          label || "Télécharger"
+          label ||
+          "Télécharger"
         }
         aria-label={
-          label || "Télécharger"
+          label ||
+          "Télécharger"
         }
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg disabled:opacity-60 sm:h-8 sm:w-8 ${
           dark
@@ -1469,6 +1602,7 @@ function DownloadButton({
             : "bg-[#f6c445] text-[#071d3a]"
         }`}
       >
+
         <Download
           size={13}
           className={
@@ -1477,6 +1611,7 @@ function DownloadButton({
               : ""
           }
         />
+
       </button>
 
       {error ? (
@@ -1518,6 +1653,7 @@ function Select({
       }
       className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold outline-none"
     >
+
       <option value="">
         {label}
       </option>
@@ -1532,6 +1668,7 @@ function Select({
           </option>
         )
       )}
+
     </select>
   );
 }
@@ -1549,11 +1686,15 @@ function Meta({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt>{label}</dt>
+
+      <dt>
+        {label}
+      </dt>
 
       <dd className="text-right text-[#071d3a]">
         {value}
       </dd>
+
     </div>
   );
 }
@@ -1603,7 +1744,8 @@ function formatDate(
     return "-";
   }
 
-  const date = new Date(value);
+  const date =
+    new Date(value);
 
   if (
     Number.isNaN(
@@ -1626,11 +1768,10 @@ function formatDate(
 function readYear(
   content: Content
 ) {
-  const source = `${
-    content.tags || ""
-  } ${
-    content.title || ""
-  }`;
+  const source = [
+    content.tags || "",
+    content.title || "",
+  ].join(" ");
 
   return (
     source.match(
@@ -1645,9 +1786,10 @@ function readExamType(
   const source =
     content.tags || "";
 
-  const match = source.match(
-    /(?:exam|examen|type)[:=]\s*([^,;]+)/i
-  );
+  const match =
+    source.match(
+      /(?:exam|examen|type)[:=]\s*([^,;]+)/i
+    );
 
   return (
     match?.[1]?.trim() || ""
