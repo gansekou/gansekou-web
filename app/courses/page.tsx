@@ -1,16 +1,9 @@
-import { LearningContentDetailPage } from "@/components/content/LearningContentPages";
+import { LearningContentListPage } from "@/components/content/LearningContentPages";
 
-export default async function CourseDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
+export const revalidate = 60;
 
+export default function CoursesPage() {
   return (
-    <LearningContentDetailPage
-      kind="courses"
-      id={id}
-    />
+    <LearningContentListPage kind="courses" />
   );
 }
