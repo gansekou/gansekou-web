@@ -11,66 +11,47 @@ type MathTextProps = {
 };
 
 /* ------------------------------------------------------------------ */
-/* 1. Normalisation du pseudo-LaTeX / Unicode vers du LaTeX valide     */
+/* 1. Symboles Unicode → LaTeX                                         */
 /* ------------------------------------------------------------------ */
 
 const SUPERSCRIPTS: Record<string, string> = {
-  "⁰": "0",
-  "¹": "1",
-  "²": "2",
-  "³": "3",
-  "⁴": "4",
-  "⁵": "5",
-  "⁶": "6",
-  "⁷": "7",
-  "⁸": "8",
-  "⁹": "9",
+  "⁰": "0", "¹": "1", "²": "2", "³": "3", "⁴": "4",
+  "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9",
 };
 
-/**
- * Convertit un texte contenant des notations mathématiques « humaines »
- * (√, π, ², 4/5, …) en LaTeX compréhensible par KaTeX.
- *
- * ⚠️ Important : on n'applique cette fonction QUE sur du contenu qui
- * n'est PAS déjà du LaTeX (pas de `\` déjà présent), sinon on risque
- * de casser les commandes existantes.
- */
 function normalizeMathText(value: string): string {
   let text = value.trim();
 
-  // 1. Racines carrées Unicode : √3, √(x+1), √x
+  // Racines carrées Unicode
   text = text.replace(/√\s*\(([^()]*)\)/g, "\\sqrt{$1}");
   text = text.replace(/√\s*([0-9]+(?:[.,][0-9]+)?)/g, "\\sqrt{$1}");
   text = text.replace(/√\s*([a-zA-Z][a-zA-Z0-9]*)/g, "\\sqrt{$1}");
 
-  // 2. Fractions entre parenthèses : (a+b)/(c+d)
+  // Fractions entre parenthèses : (a+b)/(c+d)
   text = text.replace(
     /\(([^()]+)\)\s*\/\s*\(([^()]+)\)/g,
     "\\frac{$1}{$2}"
   );
 
-  // 3. Fractions simples : 4/5, -4/5, 3,5/2
-  //    On évite les URLs (pas de `/` entouré de lettres).
+  // Fractions numériques simples : 4/5, -3/2
   text = text.replace(
     /(^|[\s=(+\-*×])(-?\d+(?:[.,]\d+)?)\s*\/\s*(\d+(?:[.,]\d+)?)(?=$|[\s),+\-*×])/g,
-    (_match, prefix, num, den) => `${prefix}\\frac{${num}}{${den}}`
+    (_m, prefix, num, den) => `${prefix}\\frac{${num}}{${den}}`
   );
 
-  // 4. Puissances Unicode : x² -> x^{2}
+  // Puissances Unicode : x² -> x^{2}
   text = text.replace(
     /([a-zA-Z0-9)])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g,
     (_m, base: string, power: string) => {
-      const converted = [...power]
-        .map((c) => SUPERSCRIPTS[c] ?? c)
-        .join("");
+      const converted = [...power].map((c) => SUPERSCRIPTS[c] ?? c).join("");
       return `${base}^{${converted}}`;
     }
   );
 
-  // 5. Puissances parenthésées : x^(2) -> x^{2}
+  // Puissances parenthésées : x^(2) -> x^{2}
   text = text.replace(/([a-zA-Z0-9)])\^\(([^()]*)\)/g, "$1^{$2}");
 
-  // 6. Symboles mathématiques courants
+  // Symboles mathématiques
   text = text
     .replace(/π/g, "\\pi ")
     .replace(/∞/g, "\\infty ")
@@ -84,55 +65,70 @@ function normalizeMathText(value: string): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* 2. Détection : le texte contient-il des maths ?                     */
+/* 2. Détection d'une expression mathématique « autonome »             */
 /* ------------------------------------------------------------------ */
 
 /**
- * Détection volontairement conservatrice : on ne veut PAS traiter
- * `mon_fichier` ou `snake_case` comme des maths.
+ * Vrai si la chaîne ENTIÈRE est une expression mathématique
+ * (et non un texte contenant des maths).
  */
-function containsMathSyntax(value: string): boolean {
-  // Déjà du LaTeX explicite
-  if (/\\[a-zA-Z]+/.test(value)) return true;
+function isPureMath(value: string): boolean {
+  const v = value.trim();
+  if (!v) return false;
 
-  // Symboles Unicode mathématiques non ambigus
-  if (/[√π∞≤≥≠±]/.test(value)) return true;
+  // Si contient déjà du LaTeX explicite
+  if (/\\[a-zA-Z]+/.test(v)) return true;
 
-  // Exposants Unicode
-  if (/[⁰¹²³⁴⁵⁶⁷⁸⁹]/.test(value)) return true;
+  // Caractères autorisés dans une expression pure
+  // (lettres, chiffres, opérateurs, parenthèses, espaces, symboles)
+  const allowed = /^[a-zA-Z0-9\s+\-*/^_=().,{}[\]|<>≤≥≠±×÷√π∞∑∏∫°'′″:;!?]+$/;
+  if (!allowed.test(v)) return false;
 
-  // Fraction numérique isolée : 4/5, -3/2, 3,5/2
-  if (/(^|[\s=(])-?\d+(?:[.,]\d+)?\s*\/\s*\d+(?:[.,]\d+)?($|[\s)])/.test(value)) {
-    return true;
-  }
+  // Doit contenir au moins un signe « mathématique » distinctif
+  const hasMathSignal =
+    /[+\-*/^_=√π∞≤≥≠±×÷]/.test(v) ||   // opérateur
+    /\([^)]*[a-zA-Z][^)]*\)/.test(v) || // parenthèses avec lettres
+    /\d/.test(v);                       // au moins un chiffre
 
-  // Puissance explicite : x^2, x^{2}, x^(2)
-  if (/[a-zA-Z0-9)]\s*\^\s*[\(\{\d a-zA-Z]/.test(value)) return true;
-
-  // Indice explicite : x_1, x_{n}
-  if (/[a-zA-Z]\s*_\s*[\(\{\d a-zA-Z]/.test(value)) return true;
-
-  return false;
+  return hasMathSignal;
 }
 
 /* ------------------------------------------------------------------ */
-/* 3. Découpage texte / segments $...$                                 */
+/* 3. Découpage automatique d'un texte en segments texte / math        */
 /* ------------------------------------------------------------------ */
 
 type Segment =
   | { type: "text"; value: string }
   | { type: "math"; value: string; display: boolean };
 
-function splitTextAndMath(value: string): Segment[] {
+/**
+ * Découpe un texte comme :
+ *   "On pose z = (2 - i)/(1 + 2i). Quelle est ..."
+ * en :
+ *   [text: "On pose ", math: "z = (2 - i)/(1 + 2i)", text: ". Quelle est ..."]
+ *
+ * Stratégie : on repère les « runs » de caractères mathématiques
+ * (lettres/chiffres/opérateurs/parenthèses) et on garde ceux qui
+ * contiennent un signal mathématique explicite.
+ */
+function splitPlainTextAndMath(value: string): Segment[] {
   const result: Segment[] = [];
-
-  // Supporte $...$ (inline) et $$...$$ (display)
-  const regex = /\$\$([^$]+)\$\$|\$([^$]+)\$/g;
+  // Capture un run de caractères potentiellement mathématiques,
+  // en s'arrêtant avant la ponctuation finale de phrase (. ? !)
+  const regex =
+    /((?:[a-zA-Z]\s*=\s*)?[a-zA-Z0-9]+\s*(?:[+\-*/^=]\s*[a-zA-Z0-9()+\-*/^.\s]*[a-zA-Z0-9)])+)/g;
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
   while ((match = regex.exec(value)) !== null) {
+    const candidate = match[1];
+
+    // Ignore les faux positifs (mots isolés)
+    if (!/[+\-*/^=()]/.test(candidate) || candidate.length < 3) {
+      continue;
+    }
+
     if (match.index > lastIndex) {
       result.push({
         type: "text",
@@ -140,64 +136,91 @@ function splitTextAndMath(value: string): Segment[] {
       });
     }
 
-    const isDisplay = match[1] !== undefined;
-    const math = isDisplay ? match[1] : match[2];
-
     result.push({
       type: "math",
-      value: math,
-      display: isDisplay,
+      value: candidate.trim(),
+      display: false,
     });
 
     lastIndex = regex.lastIndex;
   }
 
   if (lastIndex < value.length) {
-    result.push({
-      type: "text",
-      value: value.slice(lastIndex),
-    });
+    result.push({ type: "text", value: value.slice(lastIndex) });
   }
 
   return result;
 }
 
 /* ------------------------------------------------------------------ */
-/* 4. Rendu sûr d'un segment math                                      */
+/* 4. Découpage $...$ / $$...$$                                        */
 /* ------------------------------------------------------------------ */
 
-function renderMath(
-  math: string,
-  display: boolean,
-  key: number
-): ReactNode {
-  // Si c'est déjà du LaTeX (contient `\`), on ne normalise pas.
-  // Sinon, on applique la normalisation Unicode → LaTeX.
-  const normalized = /\\[a-zA-Z]+/.test(math)
-    ? math
-    : normalizeMathText(math);
+function splitDollarMath(value: string): Segment[] {
+  const result: Segment[] = [];
+  const regex = /\$\$([^$]+)\$\$|\$([^$]+)\$/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
 
-  const commonProps = {
-    math: normalized,
-    errorColor: "#dc2626",
-    renderError: (error: Error) => (
-      <span
-        title={error.message}
-        style={{ color: "#dc2626", fontFamily: "monospace" }}
-      >
-        {math}
-      </span>
-    ),
-  } as const;
-
-  if (display) {
-    return <BlockMath key={key} {...commonProps} />;
+  while ((match = regex.exec(value)) !== null) {
+    if (match.index > lastIndex) {
+      result.push({ type: "text", value: value.slice(lastIndex, match.index) });
+    }
+    const isDisplay = match[1] !== undefined;
+    result.push({
+      type: "math",
+      value: isDisplay ? match[1] : match[2],
+      display: isDisplay,
+    });
+    lastIndex = regex.lastIndex;
   }
-  return <InlineMath key={key} {...commonProps} />;
+
+  if (lastIndex < value.length) {
+    result.push({ type: "text", value: value.slice(lastIndex) });
+  }
+
+  return result;
 }
 
 /* ------------------------------------------------------------------ */
-/* 5. Composant principal                                              */
+/* 5. Rendu d'un segment math                                          */
+/* ------------------------------------------------------------------ */
+
+function renderMath(math: string, display: boolean, key: number): ReactNode {
+  const isLatex = /\\[a-zA-Z]+/.test(math);
+  const normalized = isLatex ? math : normalizeMathText(math);
+
+  const errorFallback = (error: Error) => (
+    <span
+      title={error.message}
+      style={{ color: "#dc2626", fontFamily: "monospace" }}
+    >
+      {math}
+    </span>
+  );
+
+  if (display) {
+    return (
+      <BlockMath
+        key={key}
+        math={normalized}
+        errorColor="#dc2626"
+        renderError={errorFallback}
+      />
+    );
+  }
+  return (
+    <InlineMath
+      key={key}
+      math={normalized}
+      errorColor="#dc2626"
+      renderError={errorFallback}
+    />
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* 6. Composant principal                                              */
 /* ------------------------------------------------------------------ */
 
 export function MathText({
@@ -205,46 +228,40 @@ export function MathText({
   block = false,
   className = "",
 }: MathTextProps) {
-  if (content === null || content === undefined) {
-    return null;
-  }
+  if (content === null || content === undefined) return null;
 
   const value = String(content);
 
-  // Cas 1 : contenu avec des segments $...$ explicites
+  // Cas A : contenu avec $...$ explicite
   if (value.includes("$")) {
-    const parts = splitTextAndMath(value);
-
+    const parts = splitDollarMath(value);
     return (
       <span className={className}>
-        {parts.map((part, index) => {
-          if (part.type === "math") {
-            return renderMath(part.value, part.display || block, index);
-          }
-          return <span key={index}>{part.value}</span>;
-        })}
+        {parts.map((part, i) =>
+          part.type === "math" ? (
+            renderMath(part.value, part.display || block, i)
+          ) : (
+            <span key={i}>{part.value}</span>
+          )
+        )}
       </span>
     );
   }
 
-  // Cas 2 : expression mathématique détectée automatiquement
-  if (containsMathSyntax(value)) {
+  // Cas B : contenu pur math
+  if (isPureMath(value)) {
     const math = normalizeMathText(value);
-
     if (block) {
       return (
         <div className={className}>
           <BlockMath
             math={math}
             errorColor="#dc2626"
-            renderError={(error) => (
-              <span style={{ color: "#dc2626" }}>{value}</span>
-            )}
+            renderError={() => <span style={{ color: "#dc2626" }}>{value}</span>}
           />
         </div>
       );
     }
-
     return (
       <span className={className}>
         <InlineMath
@@ -256,8 +273,25 @@ export function MathText({
     );
   }
 
-  // Cas 3 : texte normal
-  return <span className={className}>{value}</span>;
+  // Cas C : texte mixte → on découpe automatiquement
+  const parts = splitPlainTextAndMath(value);
+
+  // Aucun segment math trouvé → texte brut
+  if (parts.every((p) => p.type === "text")) {
+    return <span className={className}>{value}</span>;
+  }
+
+  return (
+    <span className={className}>
+      {parts.map((part, i) =>
+        part.type === "math" ? (
+          renderMath(part.value, block, i)
+        ) : (
+          <span key={i}>{part.value}</span>
+        )
+      )}
+    </span>
+  );
 }
 
 export default MathText;
