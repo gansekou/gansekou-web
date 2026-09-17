@@ -14,6 +14,7 @@ import { quizService } from "@/services/quiz.service";
 import type { Level, Subject } from "@/types/education";
 import type { Quiz } from "@/types/quiz";
 import type { User } from "@/types/user";
+import MathText from "@/components/math/MathText";
 
 export function QuizDetailPage({
   user,
@@ -280,7 +281,10 @@ export function QuizDetailPage({
                 className="rounded-2xl bg-slate-50 p-4"
               >
                 <p className="font-black text-[#071d3a]">
-                  {index + 1}. {question.question_text}
+                  <div className="font-black text-[#071d3a]">
+                    <span className="mr-1">{index + 1}.</span>
+                    <MathText content={question.question_text} />
+                  </div>
                 </p>
 
                 <div className="mt-3 grid gap-2 md:grid-cols-2">
@@ -289,7 +293,7 @@ export function QuizDetailPage({
                       key={choice.id}
                       className="rounded-xl bg-white px-3 py-2 text-sm font-bold text-slate-500"
                     >
-                      {choice.choice_text}
+                      <MathText content={choice.choice_text} />
                     </span>
                   ))}
                 </div>
