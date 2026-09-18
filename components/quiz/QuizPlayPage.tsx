@@ -37,7 +37,6 @@ import type {
 } from "@/types/quiz";
 
 import type { User } from "@/types/user";
-import { MathText } from "@/components/math/MathText";
 
 export function QuizPlayPage({
   user,
@@ -49,204 +48,10 @@ export function QuizPlayPage({
   const { language, t } = useI18n(user);
   const router = useRouter();
 
-  /*
-   * ============================================================
-   * LANGUE
-   * ============================================================
-   */
-
-  const fr = language === "FR";
-
-  /*
-   * ============================================================
-   * LIBELLES
-   * ============================================================
-   */
-
   const labels = useMemo(
-    () => ({
-      loading: fr
-        ? "Chargement du quiz..."
-        : "Loading quiz...",
-
-      loadError: fr
-        ? "Chargement impossible."
-        : "Unable to load the quiz.",
-
-      notFound: fr
-        ? "Quiz introuvable"
-        : "Quiz not found",
-
-      notFoundHelp: fr
-        ? "Aucun quiz n'a été trouvé."
-        : "No quiz was found.",
-
-      notAllowed: fr
-        ? "Accès non autorisé"
-        : "Access not allowed",
-
-      notAllowedHelp: fr
-        ? "Vous n'avez pas accès à ce quiz."
-        : "You do not have access to this quiz.",
-
-      noQuestions: fr
-        ? "Questions indisponibles"
-        : "Questions unavailable",
-
-      noQuestionsHelp: fr
-        ? "Ce quiz ne contient actuellement aucune question."
-        : "This quiz currently contains no questions.",
-
-      noDescription: fr
-        ? "Aucune description."
-        : "No description.",
-
-      starting: fr
-        ? "Démarrage..."
-        : "Starting...",
-
-      startError: fr
-        ? "Impossible de démarrer le quiz."
-        : "Unable to start the quiz.",
-
-      submitting: fr
-        ? "Soumission..."
-        : "Submitting...",
-
-      submitError: fr
-        ? "Impossible de soumettre le quiz."
-        : "Unable to submit the quiz.",
-
-      confirmFinish: fr
-        ? "Voulez-vous vraiment terminer et soumettre ce quiz ?"
-        : "Do you really want to finish and submit this quiz?",
-
-      autoSubmit: fr
-        ? "Le temps est écoulé. Le quiz va être soumis automatiquement."
-        : "Time is up. The quiz will be submitted automatically.",
-
-      previous: fr
-        ? "Précédente"
-        : "Previous",
-
-      next: fr
-        ? "Suivante"
-        : "Next",
-
-      back: fr
-        ? "Retour au détail du quiz"
-        : "Back to quiz details",
-
-      question: fr
-        ? "Question"
-        : "Question",
-
-      questions: fr
-        ? "Questions"
-        : "Questions",
-
-      answered: fr
-        ? "répondues"
-        : "answered",
-
-      duration: fr
-        ? "Durée"
-        : "Duration",
-
-      requiredScore: fr
-        ? "Score requis"
-        : "Required score",
-
-      mode: fr
-        ? "Mode"
-        : "Mode",
-
-      streak: fr
-        ? "Série"
-        : "Streak",
-
-      answers: fr
-        ? "Réponses"
-        : "Answers",
-
-      remaining: fr
-        ? "Temps restant"
-        : "Time remaining",
-
-      timeExpired: fr
-        ? "Temps écoulé"
-        : "Time expired",
-
-      noTimeLimit: fr
-        ? "Sans limite"
-        : "No limit",
-
-      indexOf: fr
-        ? "sur"
-        : "of",
-
-      hint: fr
-        ? "Indice"
-        : "Hint",
-
-      explanation: fr
-        ? "Explication"
-        : "Explanation",
-
-      currentQuestion: fr
-        ? "Question actuelle"
-        : "Current question",
-
-      completedQuestion: fr
-        ? "Question répondue"
-        : "Answered question",
-
-      unansweredQuestion: fr
-        ? "Question non répondue"
-        : "Unanswered question",
-
-      training: fr
-        ? "Mode entraînement"
-        : "Training mode",
-
-      exam: fr
-        ? "Mode examen"
-        : "Exam mode",
-
-      speed: fr
-        ? "Mode rapidité"
-        : "Speed mode",
-
-      standard: fr
-        ? "Mode standard"
-        : "Standard mode",
-
-      startNow: fr
-        ? "Démarrer maintenant"
-        : "Start now",
-
-      finish: fr
-        ? "Terminer le quiz"
-        : "Finish quiz",
-
-      cancel: fr
-        ? "Annuler"
-        : "Cancel",
-
-      confirm: fr
-        ? "Confirmer"
-        : "Confirm",
-
-      min: "min",
-    }),
-    [fr]
+    () => pageLabels(language),
+    [language]
   );
-
-  /*
-   * ============================================================
-   * ETAT
-   * ============================================================
-   */
 
   const [quiz, setQuiz] =
     useState<Quiz | null>(null);
@@ -260,7 +65,7 @@ export function QuizPlayPage({
   const [started, setStarted] =
     useState(false);
 
-  const [currentIndex, setCurrentIndex] =
+  const [index, setIndex] =
     useState(0);
 
   const [elapsed, setElapsed] =
@@ -269,10 +74,10 @@ export function QuizPlayPage({
   const [loading, setLoading] =
     useState(true);
 
-  const [starting, setStarting] =
+  const [submitting, setSubmitting] =
     useState(false);
 
-  const [submitting, setSubmitting] =
+  const [starting, setStarting] =
     useState(false);
 
   const [status, setStatus] =
@@ -299,81 +104,27 @@ export function QuizPlayPage({
       "correct" | "wrong" | null
     >(null);
 
-  /*
-   * ============================================================
-   * REPONSES DIFFEREES
-   * ============================================================
-   */
-
   const deferredAnswers =
     useDeferredValue(answers);
-
-  /*
-   * ============================================================
-   * CLE DE SAUVEGARDE LOCALE
-   * ============================================================
-   */
 
   const draftKey =
     `gansekou_quiz_answers_${quizId}`;
 
-  /*
-   * ============================================================
-   * DUREE
-   *
-   * IMPORTANT :
-   * Quiz utilise estimated_duration_minutes.
-   * ============================================================
-   */
-
-  const totalSeconds = useMemo(() => {
-    if (!quiz) {
-      return 600;
-    }
-
-    const rawDuration =
-      Number(
-        quiz.estimated_duration_minutes
-      );
-
-    if (
-      !Number.isFinite(rawDuration) ||
-      rawDuration <= 0
-    ) {
-      return 600;
-    }
-
-    return Math.round(
-      rawDuration * 60
-    );
-  }, [quiz]);
-
-  /*
-   * ============================================================
-   * DUREE EFFECTIVE SELON LE MODE
-   * ============================================================
-   */
+  const totalSeconds =
+    (quiz?.estimated_duration_minutes || 10) *
+    60;
 
   const effectiveTotalSeconds =
-    useMemo(() => {
-      if (mode !== "SPEED") {
-        return totalSeconds;
-      }
-
-      return Math.max(
-        60,
-        Math.floor(
-          totalSeconds * 0.55
+    mode === "SPEED"
+      ? Math.max(
+          60,
+          Math.floor(totalSeconds * 0.55)
         )
-      );
-    }, [
-      mode,
-      totalSeconds,
-    ]);
+      : totalSeconds;
 
   /*
    * ============================================================
-   * CHARGEMENT
+   * CHARGEMENT DU QUIZ
    * ============================================================
    */
 
@@ -381,59 +132,41 @@ export function QuizPlayPage({
     let cancelled = false;
 
     async function load() {
-      setLoading(true);
-      setError(null);
-
       try {
         const quizData =
           await quizService.getById(
             quizId
           );
 
-        if (cancelled) {
-          return;
-        }
+        if (!cancelled) {
+          setQuiz(quizData);
 
-        setQuiz(quizData);
-
-        const saved =
-          window.localStorage.getItem(
-            draftKey
-          );
-
-        if (saved) {
-          try {
-            const parsed =
-              JSON.parse(
-                saved
-              ) as Record<
-                string,
-                string
-              >;
-
-            if (
-              parsed &&
-              typeof parsed ===
-                "object"
-            ) {
-              setAnswers(
-                parsed
-              );
-            }
-          } catch {
-            window.localStorage.removeItem(
+          const saved =
+            window.localStorage.getItem(
               draftKey
             );
+
+          if (saved) {
+            try {
+              setAnswers(
+                JSON.parse(saved) as Record<
+                  string,
+                  string
+                >
+              );
+            } catch {
+              window.localStorage.removeItem(
+                draftKey
+              );
+            }
           }
         }
       } catch (loadError) {
         if (!cancelled) {
           setError(
-            loadError instanceof ApiError
+            loadError instanceof Error
               ? loadError.message
-              : loadError instanceof Error
-                ? loadError.message
-                : labels.loadError
+              : labels.loadError
           );
         }
       } finally {
@@ -443,7 +176,7 @@ export function QuizPlayPage({
       }
     }
 
-    void load();
+    load();
 
     return () => {
       cancelled = true;
@@ -456,30 +189,21 @@ export function QuizPlayPage({
 
   /*
    * ============================================================
-   * SAUVEGARDE AUTOMATIQUE
+   * SAUVEGARDE AUTOMATIQUE DES REPONSES
    * ============================================================
    */
 
   useEffect(() => {
     const task =
       window.setTimeout(() => {
-        try {
-          window.localStorage.setItem(
-            draftKey,
-            JSON.stringify(
-              deferredAnswers
-            )
-          );
-        } catch {
-          // Le stockage local peut être indisponible.
-        }
+        window.localStorage.setItem(
+          draftKey,
+          JSON.stringify(deferredAnswers)
+        );
       }, 180);
 
-    return () => {
-      window.clearTimeout(
-        task
-      );
-    };
+    return () =>
+      window.clearTimeout(task);
   }, [
     deferredAnswers,
     draftKey,
@@ -492,26 +216,19 @@ export function QuizPlayPage({
    */
 
   useEffect(() => {
-    if (
-      !started ||
-      submitting
-    ) {
+    if (!started || submitting) {
       return;
     }
 
     const interval =
       window.setInterval(() => {
         setElapsed(
-          (value) =>
-            value + 1
+          (value) => value + 1
         );
       }, 1000);
 
-    return () => {
-      window.clearInterval(
-        interval
-      );
-    };
+    return () =>
+      window.clearInterval(interval);
   }, [
     started,
     submitting,
@@ -519,70 +236,45 @@ export function QuizPlayPage({
 
   /*
    * ============================================================
-   * DEMARRER UNE TENTATIVE
+   * DEMARRER
    * ============================================================
    */
 
-  const start = useCallback(
-    async () => {
-      if (
-        !quiz ||
-        starting ||
-        submitting
-      ) {
-        return;
-      }
+  async function start() {
+    if (!quiz || starting) {
+      return;
+    }
 
-      setStarting(true);
-      setStatus(
-        labels.starting
+    setStarting(true);
+    setStatus(labels.starting);
+
+    try {
+      const attempt =
+        await quizService.start(
+          quiz.id
+        );
+
+      setAttemptId(
+        attempt.attempt_id
       );
 
-      try {
-        /*
-         * IMPORTANT :
-         * La création de la tentative se fait
-         * avec quizService.start().
-         */
-        const attempt =
-          await quizService.start(
-            quiz.id
-          );
+      setStarted(true);
+      setElapsed(0);
+      setStatus(null);
 
-        setAttemptId(
-          attempt.attempt_id
-        );
-
-        setStarted(true);
-        setElapsed(0);
-        setCurrentIndex(0);
-        setFeedback({});
-        setVisualFeedback(null);
-        setStatus(null);
-
-        try {
-          await document.documentElement.requestFullscreen?.();
-        } catch {
-          // Le plein écran peut être refusé par le navigateur.
-        }
-      } catch (startError) {
-        setStatus(
-          startError instanceof ApiError
-            ? startError.message
-            : labels.startError
-        );
-      } finally {
-        setStarting(false);
-      }
-    },
-    [
-      labels.startError,
-      labels.starting,
-      quiz,
-      starting,
-      submitting,
-    ]
-  );
+      await document.documentElement
+        .requestFullscreen?.()
+        .catch(() => undefined);
+    } catch (startError) {
+      setStatus(
+        startError instanceof ApiError
+          ? startError.message
+          : labels.startError
+      );
+    } finally {
+      setStarting(false);
+    }
+  }
 
   /*
    * ============================================================
@@ -591,41 +283,25 @@ export function QuizPlayPage({
    */
 
   const finish = useCallback(
-    async (
-      skipConfirm = false
-    ) => {
-      if (
-        !quiz ||
-        !attemptId ||
-        submitting
-      ) {
+    async (skipConfirm = false) => {
+      if (!quiz || !attemptId) {
         return;
       }
 
-      if (!skipConfirm) {
-        const confirmed =
-          window.confirm(
-            labels.confirmFinish
-          );
+      const confirmed =
+        skipConfirm ||
+        window.confirm(
+          labels.confirmFinish
+        );
 
-        if (!confirmed) {
-          return;
-        }
+      if (!confirmed) {
+        return;
       }
 
       setSubmitting(true);
-      setStatus(
-        skipConfirm
-          ? labels.autoSubmit
-          : labels.submitting
-      );
+      setStatus(labels.submitting);
 
       try {
-        /*
-         * IMPORTANT :
-         * Ton quizService utilise submit()
-         * avec quiz.id + attemptId + answers.
-         */
         const result =
           await quizService.submit(
             quiz.id,
@@ -633,23 +309,9 @@ export function QuizPlayPage({
             answers
           );
 
-        try {
-          window.localStorage.removeItem(
-            draftKey
-          );
-        } catch {
-          // Rien à faire si localStorage est indisponible.
-        }
-
-        try {
-          if (
-            document.fullscreenElement
-          ) {
-            await document.exitFullscreen?.();
-          }
-        } catch {
-          // Rien à faire si la sortie du plein écran échoue.
-        }
+        window.localStorage.removeItem(
+          draftKey
+        );
 
         router.push(
           `/quizzes/${quiz.id}/result?attempt=${result.attempt_id}`
@@ -668,48 +330,35 @@ export function QuizPlayPage({
       answers,
       attemptId,
       draftKey,
-      labels.autoSubmit,
       labels.confirmFinish,
       labels.submitError,
       labels.submitting,
       quiz,
       router,
-      submitting,
     ]
   );
 
   /*
    * ============================================================
-   * EXPIRATION
+   * EXPIRATION DU TEMPS
    * ============================================================
    */
 
   useEffect(() => {
     if (
-      !started ||
-      !attemptId ||
-      submitting
+      started &&
+      attemptId &&
+      elapsed >= effectiveTotalSeconds &&
+      !submitting
     ) {
-      return;
+      const task =
+        window.setTimeout(() => {
+          finish(true);
+        }, 0);
+
+      return () =>
+        window.clearTimeout(task);
     }
-
-    if (
-      elapsed <
-      effectiveTotalSeconds
-    ) {
-      return;
-    }
-
-    const task =
-      window.setTimeout(() => {
-        void finish(true);
-      }, 0);
-
-    return () => {
-      window.clearTimeout(
-        task
-      );
-    };
   }, [
     attemptId,
     effectiveTotalSeconds,
@@ -721,107 +370,123 @@ export function QuizPlayPage({
 
   /*
    * ============================================================
-   * QUESTIONS
+   * CHOIX D'UNE REPONSE
    * ============================================================
    */
 
-  const questions =
-    useMemo<QuizQuestion[]>(
-      () => {
-        if (!quiz) {
-          return [];
+  const chooseAnswer = useCallback(
+    (
+      questionId: string,
+      choiceId: string,
+      isCorrect?: boolean
+    ) => {
+      setAnswers((current) => ({
+        ...current,
+        [questionId]: choiceId,
+      }));
+
+      if (
+        mode === "TRAINING" &&
+        isCorrect !== undefined
+      ) {
+        const nextFeedback =
+          isCorrect
+            ? "correct"
+            : "wrong";
+
+        setFeedback((current) => ({
+          ...current,
+          [questionId]:
+            nextFeedback,
+        }));
+
+        setVisualFeedback(
+          nextFeedback
+        );
+
+        if (!isCorrect) {
+          navigator.vibrate?.(60);
         }
 
-        return Array.isArray(
-          quiz.questions
-        )
-          ? quiz.questions
-          : [];
-      },
-      [quiz]
+        window.setTimeout(
+          () =>
+            setVisualFeedback(null),
+          520
+        );
+      }
+    },
+    [mode]
+  );
+
+  /*
+   * ============================================================
+   * ETATS
+   * ============================================================
+   */
+
+  if (loading) {
+    return (
+      <LoadingState
+        label={labels.loading}
+      />
     );
+  }
 
-  /*
-   * ============================================================
-   * INDEX DE QUESTION SECURISE
-   * ============================================================
-   */
+  if (error) {
+    return (
+      <ErrorState
+        message={error}
+      />
+    );
+  }
 
-  const safeIndex =
-    questions.length > 0
-      ? Math.min(
-          Math.max(
-            currentIndex,
-            0
-          ),
-          questions.length - 1
-        )
-      : 0;
+  if (!quiz) {
+    return (
+      <ErrorState
+        title={labels.notFound}
+        message={labels.notFoundHelp}
+      />
+    );
+  }
 
-  /*
-   * ============================================================
-   * QUESTION COURANTE
-   * ============================================================
-   */
+  if (!canPlayQuiz(user, quiz)) {
+    return (
+      <ErrorState
+        title={labels.notAllowed}
+        message={labels.notAllowedHelp}
+      />
+    );
+  }
+
+  const questions =
+    quiz.questions || [];
+
+  if (!questions.length) {
+    return (
+      <ErrorState
+        title={labels.noQuestions}
+        message={
+          labels.noQuestionsHelp
+        }
+      />
+    );
+  }
 
   const question =
-    questions[safeIndex] ?? null;
-
-  /*
-   * ============================================================
-   * CHOIX DE LA QUESTION
-   * ============================================================
-   */
+    questions[index] as QuizQuestion;
 
   const choices =
-    question?.choices ?? [];
-
-  /*
-   * ============================================================
-   * REPONSES
-   * ============================================================
-   */
-
-  const answeredCount =
-    useMemo(() => {
-      return questions.reduce(
-        (count, currentQuestion) => {
-          const id =
-            String(
-              currentQuestion.id
-            );
-
-          return answers[id]
-            ? count + 1
-            : count;
-        },
-        0
-      );
-    }, [
-      answers,
-      questions,
-    ]);
-
-  /*
-   * ============================================================
-   * PROGRESSION
-   * ============================================================
-   */
+    question.choices || [];
 
   const progress =
-    questions.length > 0
-      ? Math.round(
-          ((safeIndex + 1) /
-            questions.length) *
-            100
-        )
-      : 0;
+    Math.round(
+      ((index + 1) /
+        questions.length) *
+        100
+    );
 
-  /*
-   * ============================================================
-   * TEMPS RESTANT
-   * ============================================================
-   */
+  const answeredCount =
+    Object.keys(answers).length;
 
   const effectiveRemaining =
     Math.max(
@@ -830,315 +495,11 @@ export function QuizPlayPage({
         elapsed
     );
 
-  /*
-   * ============================================================
-   * SERIE
-   * ============================================================
-   */
-
   const liveStreak =
-    Object.values(
-      feedback
-    ).filter(
+    Object.values(feedback).filter(
       (value) =>
         value === "correct"
     ).length;
-
-  /*
-   * ============================================================
-   * CHOISIR UNE REPONSE
-   * ============================================================
-   */
-
-  const chooseAnswer =
-    useCallback(
-      (
-        questionId: string,
-        choiceId: string,
-        isCorrect?: boolean
-      ) => {
-        if (
-          !started ||
-          submitting
-        ) {
-          return;
-        }
-
-        setAnswers(
-          (current) => ({
-            ...current,
-            [questionId]:
-              choiceId,
-          })
-        );
-
-        /*
-         * En mode entraînement,
-         * on affiche immédiatement
-         * le résultat du choix.
-         */
-        if (
-          mode ===
-            "TRAINING" &&
-          isCorrect !==
-            undefined
-        ) {
-          const nextFeedback =
-            isCorrect
-              ? "correct"
-              : "wrong";
-
-          setFeedback(
-            (current) => ({
-              ...current,
-              [questionId]:
-                nextFeedback,
-            })
-          );
-
-          setVisualFeedback(
-            nextFeedback
-          );
-
-          if (
-            !isCorrect
-          ) {
-            try {
-              navigator.vibrate?.(
-                60
-              );
-            } catch {
-              // Vibration non disponible.
-            }
-          }
-
-          window.setTimeout(
-            () => {
-              setVisualFeedback(
-                null
-              );
-            },
-            520
-          );
-        }
-      },
-      [
-        mode,
-        started,
-        submitting,
-      ]
-    );
-
-  /*
-   * ============================================================
-   * NAVIGATION PRECEDENTE
-   * ============================================================
-   */
-
-  const goPrevious =
-    useCallback(() => {
-      setCurrentIndex(
-        (value) =>
-          Math.max(
-            0,
-            value - 1
-          )
-      );
-    }, []);
-
-  /*
-   * ============================================================
-   * NAVIGATION SUIVANTE
-   * ============================================================
-   */
-
-  const goNext =
-    useCallback(() => {
-      if (
-        questions.length ===
-        0
-      ) {
-        return;
-      }
-
-      setCurrentIndex(
-        (value) =>
-          Math.min(
-            questions.length -
-              1,
-            value + 1
-          )
-      );
-    }, [
-      questions.length,
-    ]);
-
-  /*
-   * ============================================================
-   * NAVIGATION DIRECTE
-   * ============================================================
-   */
-
-  const goToQuestion =
-    useCallback(
-      (targetIndex: number) => {
-        if (
-          targetIndex < 0 ||
-          targetIndex >=
-            questions.length
-        ) {
-          return;
-        }
-
-        setCurrentIndex(
-          targetIndex
-        );
-      },
-      [questions.length]
-    );
-
-  /*
-   * ============================================================
-   * ETAT CHARGEMENT
-   * ============================================================
-   */
-
-  if (loading) {
-    return (
-      <LoadingState
-        label={
-          labels.loading
-        }
-      />
-    );
-  }
-
-  /*
-   * ============================================================
-   * ETAT ERREUR
-   * ============================================================
-   */
-
-  if (error) {
-    return (
-      <ErrorState
-        title={
-          labels.loadError
-        }
-        message={error}
-      />
-    );
-  }
-
-  /*
-   * ============================================================
-   * QUIZ ABSENT
-   * ============================================================
-   */
-
-  if (!quiz) {
-    return (
-      <ErrorState
-        title={
-          labels.notFound
-        }
-        message={
-          labels.notFoundHelp
-        }
-      />
-    );
-  }
-
-  /*
-   * ============================================================
-   * ACCES
-   * ============================================================
-   */
-
-  if (
-    !canPlayQuiz(
-      user,
-      quiz
-    )
-  ) {
-    return (
-      <ErrorState
-        title={
-          labels.notAllowed
-        }
-        message={
-          labels.notAllowedHelp
-        }
-      />
-    );
-  }
-
-  /*
-   * ============================================================
-   * QUESTIONS ABSENTES
-   * ============================================================
-   */
-
-  if (
-    !questions.length
-  ) {
-    return (
-      <ErrorState
-        title={
-          labels.noQuestions
-        }
-        message={
-          labels.noQuestionsHelp
-        }
-      />
-    );
-  }
-
-  /*
-   * ============================================================
-   * QUESTION ABSENTE
-   * ============================================================
-   */
-
-  if (!question) {
-    return (
-      <ErrorState
-        title={
-          labels.noQuestions
-        }
-        message={
-          labels.noQuestionsHelp
-        }
-      />
-    );
-  }
-
-  /*
-   * ============================================================
-   * REPONSE SELECTIONNEE
-   * ============================================================
-   */
-
-  const questionId =
-    String(
-      question.id
-    );
-
-  const selectedChoiceId =
-    answers[
-      questionId
-    ];
-
-  const currentFeedback =
-    feedback[
-      questionId
-    ];
-
-  /*
-   * ============================================================
-   * RENDU
-   * ============================================================
-   */
 
   return (
     <div
@@ -1180,9 +541,7 @@ export function QuizPlayPage({
               sm:tracking-[0.18em]
             "
           >
-            {t(
-              "quiz.startQuiz"
-            )}
+            {t("quiz.startQuiz")}
           </p>
 
           <h1
@@ -1196,9 +555,7 @@ export function QuizPlayPage({
               md:text-5xl
             "
           >
-            {
-              quiz.title
-            }
+            {quiz.title}
           </h1>
 
           <p
@@ -1214,10 +571,8 @@ export function QuizPlayPage({
               sm:leading-7
             "
           >
-            {
-              quiz.description ||
-              labels.noDescription
-            }
+            {quiz.description ||
+              labels.noDescription}
           </p>
 
           <div
@@ -1230,30 +585,28 @@ export function QuizPlayPage({
             "
           >
             <IntroStat
-              label={
-                labels.questions
-              }
+              label={t(
+                "quiz.questions"
+              )}
               value={String(
                 questions.length
               )}
             />
 
             <IntroStat
-              label={
-                labels.duration
-              }
+              label={t(
+                "quiz.estimatedDuration"
+              )}
               value={`${
                 quiz.estimated_duration_minutes ||
                 10
-              } ${
-                labels.min
-              }`}
+              } min`}
             />
 
             <IntroStat
-              label={
-                labels.requiredScore
-              }
+              label={t(
+                "quiz.passingScore"
+              )}
               value={`${quiz.passing_score}%`}
             />
           </div>
@@ -1282,9 +635,7 @@ export function QuizPlayPage({
                   key={`quiz-mode-${item}-${modeIndex}`}
                   type="button"
                   onClick={() =>
-                    setMode(
-                      item
-                    )
+                    setMode(item)
                   }
                   className={`
                     min-h-12
@@ -1297,32 +648,25 @@ export function QuizPlayPage({
                     transition
                     sm:p-4
                     ${
-                      mode ===
-                      item
+                      mode === item
                         ? "border-[#f6c445] bg-white text-[#071d3a]"
                         : "border-white/15 bg-white/10 text-white hover:bg-white/15"
                     }
                   `}
                 >
-                  {item ===
-                  "TRAINING"
-                    ? labels.training
-                    : item ===
-                        "EXAM"
-                      ? labels.exam
-                      : labels.speed}
+                  {
+                    labels.modes[
+                      item
+                    ]
+                  }
                 </button>
               )
             )}
           </div>
 
           <LoadingButton
-            onClick={
-              start
-            }
-            loading={
-              starting
-            }
+            onClick={start}
+            loading={starting}
             loadingLabel={
               labels.starting
             }
@@ -1343,14 +687,14 @@ export function QuizPlayPage({
               />
             )}
 
-            {labels.startNow}
+            {t("quiz.startQuiz")}
           </LoadingButton>
         </section>
       ) : (
         <>
           {/*
            * ======================================================
-           * BARRE DE CONTROLE
+           * BARRE DE CONTROLE COMPACTE
            * ======================================================
            */}
 
@@ -1409,12 +753,8 @@ export function QuizPlayPage({
                       sm:text-sm
                     "
                   >
-                    {safeIndex +
-                      1}
-                    /
-                    {
-                      questions.length
-                    }
+                    {index + 1}/
+                    {questions.length}
                   </span>
 
                   <span
@@ -1474,9 +814,7 @@ export function QuizPlayPage({
                   sm:py-2
                   sm:text-sm
                 "
-                title={
-                  labels.streak
-                }
+                title={labels.streak}
               >
                 <Flame
                   size={14}
@@ -1484,15 +822,10 @@ export function QuizPlayPage({
                 />
 
                 <span className="hidden sm:inline">
-                  {
-                    labels.streak
-                  }
-                  :
+                  {labels.streak}:
                 </span>
 
-                {
-                  liveStreak
-                }
+                {liveStreak}
               </span>
 
               {/* REPONSES */}
@@ -1519,18 +852,13 @@ export function QuizPlayPage({
                   labels.answers
                 }
               >
-                <CheckCircle2
+                <Clock3
                   size={14}
                   className="shrink-0"
                 />
 
-                {
-                  answeredCount
-                }
-                /
-                {
-                  questions.length
-                }
+                {answeredCount}/
+                {questions.length}
               </span>
 
               {/* MINUTEUR */}
@@ -1576,38 +904,28 @@ export function QuizPlayPage({
 
           {/*
            * ======================================================
-           * QUESTION ACTIVE
+           * QUESTION
            * ======================================================
            */}
 
           <ActiveQuestion
-            question={
-              question
-            }
-            choices={
-              choices
-            }
+            question={question}
+            choices={choices}
             selectedChoiceId={
-              selectedChoiceId
+              answers[question.id]
             }
             feedback={
-              currentFeedback
+              feedback[
+                question.id
+              ]
             }
-            mode={
-              mode
-            }
+            mode={mode}
             visualFeedback={
               visualFeedback
             }
             onChoose={
               chooseAnswer
             }
-            labels={{
-              hint:
-                labels.hint,
-              explanation:
-                labels.explanation,
-            }}
           />
 
           {/*
@@ -1631,11 +949,16 @@ export function QuizPlayPage({
             <LoadingButton
               type="button"
               disabled={
-                safeIndex ===
-                0
+                index === 0
               }
-              onClick={
-                goPrevious
+              onClick={() =>
+                setIndex(
+                  (value) =>
+                    Math.max(
+                      0,
+                      value - 1
+                    )
+                )
               }
               variant="primary"
               className="
@@ -1648,9 +971,7 @@ export function QuizPlayPage({
                 size={18}
               />
 
-              {
-                labels.previous
-              }
+              {labels.previous}
             </LoadingButton>
 
             <div
@@ -1664,13 +985,20 @@ export function QuizPlayPage({
                 sm:gap-3
               "
             >
-              {safeIndex <
+              {index <
               questions.length -
                 1 ? (
                 <LoadingButton
                   type="button"
-                  onClick={
-                    goNext
+                  onClick={() =>
+                    setIndex(
+                      (value) =>
+                        Math.min(
+                          questions.length -
+                            1,
+                          value + 1
+                        )
+                    )
                   }
                   variant="secondary"
                   className="
@@ -1682,9 +1010,7 @@ export function QuizPlayPage({
                     sm:w-auto
                   "
                 >
-                  {
-                    labels.next
-                  }
+                  {labels.next}
 
                   <ArrowRight
                     size={18}
@@ -1703,7 +1029,7 @@ export function QuizPlayPage({
                     labels.submitting
                   }
                   onClick={() =>
-                    void finish()
+                    finish()
                   }
                   variant="secondary"
                   className="
@@ -1715,142 +1041,19 @@ export function QuizPlayPage({
                     sm:w-auto
                   "
                 >
-                  {
-                    labels.finish
-                  }
+                  {t(
+                    "quiz.finishQuiz"
+                  )}
                 </LoadingButton>
               )}
             </div>
           </div>
-
-          {/*
-           * ======================================================
-           * NAVIGATION DES QUESTIONS
-           * ======================================================
-           */}
-
-          <section
-            className="
-              min-w-0
-              rounded-2xl
-              border
-              border-slate-200
-              bg-white
-              p-4
-              shadow-sm
-              sm:p-5
-            "
-          >
-            <div
-              className="
-                mb-3
-                flex
-                items-center
-                justify-between
-                gap-3
-              "
-            >
-              <h2
-                className="
-                  text-sm
-                  font-black
-                  text-[#071d3a]
-                "
-              >
-                {
-                  labels.questions
-                }
-              </h2>
-
-              <span
-                className="
-                  text-xs
-                  font-bold
-                  text-slate-400
-                "
-              >
-                {
-                  answeredCount
-                }
-                /
-                {
-                  questions.length
-                }
-              </span>
-            </div>
-
-            <div
-              className="
-                grid
-                grid-cols-8
-                gap-2
-                sm:grid-cols-10
-                md:grid-cols-12
-              "
-            >
-              {questions.map(
-                (
-                  currentQuestion,
-                  questionIndex
-                ) => {
-                  const id =
-                    String(
-                      currentQuestion.id
-                    );
-
-                  const answered =
-                    Boolean(
-                      answers[id]
-                    );
-
-                  const active =
-                    questionIndex ===
-                    safeIndex;
-
-                  return (
-                    <button
-                      key={`quiz-navigation-${id}-${questionIndex}`}
-                      type="button"
-                      onClick={() =>
-                        goToQuestion(
-                          questionIndex
-                        )
-                      }
-                      className={`
-                        flex
-                        aspect-square
-                        items-center
-                        justify-center
-                        rounded-lg
-                        border
-                        text-xs
-                        font-black
-                        transition
-                        ${
-                          active
-                            ? "border-[#0f5f3a] bg-[#0f5f3a] text-white"
-                            : answered
-                              ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                              : "border-slate-200 bg-white text-slate-500 hover:border-[#f6c445] hover:bg-[#fffaf0]"
-                        }
-                      `}
-                    >
-                      {
-                        questionIndex +
-                          1
-                      }
-                    </button>
-                  );
-                }
-              )}
-            </div>
-          </section>
         </>
       )}
 
       {/*
        * ==========================================================
-       * STATUS
+       * MESSAGE
        * ==========================================================
        */}
 
@@ -1877,12 +1080,6 @@ export function QuizPlayPage({
           {status}
         </p>
       )}
-
-      {/*
-       * ==========================================================
-       * RETOUR
-       * ==========================================================
-       */}
 
       <Link
         href={`/quizzes/${quiz.id}`}
@@ -1914,7 +1111,6 @@ const ActiveQuestion = memo(
     mode,
     visualFeedback,
     onChoose,
-    labels,
   }: {
     question: QuizQuestion;
     choices: NonNullable<
@@ -1937,13 +1133,10 @@ const ActiveQuestion = memo(
       choiceId: string,
       isCorrect?: boolean
     ) => void;
-    labels: {
-      hint: string;
-      explanation: string;
-    };
   }) {
     return (
       <section
+        key={`quiz-active-question-${question.id}`}
         className={`
           ds-card
           min-w-0
@@ -1956,7 +1149,7 @@ const ActiveQuestion = memo(
             "correct"
               ? "ring-4 ring-[#0f5f3a]/20"
               : visualFeedback ===
-                  "wrong"
+                "wrong"
                 ? "animate-[quiz-shake_420ms_ease] ring-4 ring-red-200"
                 : "premium-fade-in"
           }
@@ -1974,12 +1167,10 @@ const ActiveQuestion = memo(
             sm:tracking-[0.16em]
           "
         >
-          {
-            question.question_type
-          }
+          {question.question_type}
         </p>
 
-        <div
+        <h1
           className="
             mt-3
             break-words
@@ -1991,39 +1182,8 @@ const ActiveQuestion = memo(
             sm:leading-9
           "
         >
-          <MathText>
-            {
-              question.question_text
-            }
-          </MathText>
-        </div>
-
-        {question.image_url && (
-          <div
-            className="
-              mt-5
-              overflow-hidden
-              rounded-2xl
-              border
-              bg-slate-50
-              p-2
-              sm:mt-6
-            "
-          >
-            <img
-              src={
-                question.image_url
-              }
-              alt=""
-              className="
-                mx-auto
-                max-h-[420px]
-                max-w-full
-                object-contain
-              "
-            />
-          </div>
-        )}
+          {question.question_text}
+        </h1>
 
         <div
           className="
@@ -2050,21 +1210,13 @@ const ActiveQuestion = memo(
                 selected &&
                 feedback;
 
-              const letter =
-                String.fromCharCode(
-                  65 +
-                    choiceIndex
-                );
-
               return (
                 <button
                   key={`quiz-choice-${question.id}-${choice.id}-${choiceIndex}`}
                   type="button"
                   onClick={() =>
                     onChoose(
-                      String(
-                        question.id
-                      ),
+                      question.id,
                       choice.id,
                       choice.is_correct
                     )
@@ -2101,46 +1253,18 @@ const ActiveQuestion = memo(
                       flex
                       min-w-0
                       items-center
+                      justify-between
                       gap-3
                     "
                   >
                     <span
-                      className={`
-                        flex
-                        h-9
-                        w-9
-                        shrink-0
-                        items-center
-                        justify-center
-                        rounded-xl
-                        border
-                        text-sm
-                        font-black
-                        ${
-                          selected
-                            ? "border-[#0f5f3a] bg-[#0f5f3a] text-white"
-                            : "border-slate-200 bg-slate-50 text-slate-600"
-                        }
-                      `}
-                    >
-                      {
-                        letter
-                      }
-                    </span>
-
-                    <span
                       className="
                         min-w-0
-                        flex-1
                         break-words
-                        leading-6
+                        leading-5
                       "
                     >
-                      <MathText>
-                        {
-                          choice.choice_text
-                        }
-                      </MathText>
+                      {choice.choice_text}
                     </span>
 
                     {reveal ===
@@ -2185,52 +1309,9 @@ const ActiveQuestion = memo(
                 sm:p-4
               "
             >
-              <p className="mb-1 font-black">
-                {
-                  labels.explanation
-                }
-              </p>
-
-              <MathText>
-                {
-                  question.explanation
-                }
-              </MathText>
+              {question.explanation}
             </div>
           )}
-
-        {question.hint && (
-          <div
-            className="
-              mt-4
-              min-w-0
-              overflow-hidden
-              rounded-2xl
-              border
-              border-amber-200
-              bg-amber-50
-              p-3.5
-              text-sm
-              font-bold
-              leading-6
-              text-amber-900
-              sm:mt-5
-              sm:p-4
-            "
-          >
-            <p className="mb-1 font-black">
-              {
-                labels.hint
-              }
-            </p>
-
-            <MathText>
-              {
-                question.hint
-              }
-            </MathText>
-          </div>
-        )}
       </section>
     );
   }
@@ -2238,7 +1319,7 @@ const ActiveQuestion = memo(
 
 /*
  * ================================================================
- * STATISTIQUE INTRO
+ * STAT INTRO
  * ================================================================
  */
 
@@ -2271,9 +1352,7 @@ function IntroStat({
           sm:tracking-[0.14em]
         "
       >
-        {
-          label
-        }
+        {label}
       </p>
 
       <p
@@ -2286,9 +1365,7 @@ function IntroStat({
           sm:text-2xl
         "
       >
-        {
-          value
-        }
+        {value}
       </p>
     </div>
   );
@@ -2317,19 +1394,116 @@ function formatTime(
   const rest =
     safeSeconds % 60;
 
-  return `${String(
-    minutes
-  ).padStart(
-    2,
-    "0"
-  )}:${String(
+  return `${minutes}:${String(
     rest
-  ).padStart(
-    2,
-    "0"
-  )}`;
+  ).padStart(2, "0")}`;
 }
 
-export default memo(
-  QuizPlayPage
-);
+/*
+ * ================================================================
+ * LABELS
+ * ================================================================
+ */
+
+function pageLabels(
+  language: string
+) {
+  const fr =
+    language !== "EN";
+
+  return {
+    loading: fr
+      ? "Preparation du quiz..."
+      : "Preparing quiz...",
+
+    loadError: fr
+      ? "Chargement impossible."
+      : "Unable to load.",
+
+    notFound: fr
+      ? "Quiz introuvable"
+      : "Quiz not found",
+
+    notFoundHelp: fr
+      ? "Aucun quiz n'a ete retourne."
+      : "No quiz was returned.",
+
+    notAllowed: fr
+      ? "Action non autorisee"
+      : "Action not allowed",
+
+    notAllowedHelp: fr
+      ? "Votre role ne permet pas de passer ce quiz."
+      : "Your role cannot play this quiz.",
+
+    noQuestions: fr
+      ? "Questions indisponibles"
+      : "Questions unavailable",
+
+    noQuestionsHelp: fr
+      ? "Ajoutez des questions avant de lancer cette evaluation."
+      : "Add questions before starting this assessment.",
+
+    noDescription: fr
+      ? "Aucune description."
+      : "No description.",
+
+    starting: fr
+      ? "Demarrage..."
+      : "Starting...",
+
+    startError: fr
+      ? "Demarrage impossible."
+      : "Unable to start.",
+
+    submitting: fr
+      ? "Soumission..."
+      : "Submitting...",
+
+    submitError: fr
+      ? "Soumission impossible. Verifiez votre connexion puis reessayez."
+      : "Unable to submit. Check your connection and retry.",
+
+    confirmFinish: fr
+      ? "Terminer et soumettre ce quiz ?"
+      : "Finish and submit this quiz?",
+
+    streak: fr
+      ? "Serie"
+      : "Streak",
+
+    answers: fr
+      ? "Réponses"
+      : "Answers",
+
+    remaining: fr
+      ? "Temps restant"
+      : "Time remaining",
+
+    previous: fr
+      ? "Precedent"
+      : "Previous",
+
+    next: fr
+      ? "Suivant"
+      : "Next",
+
+    back: fr
+      ? "Retour au detail du quiz"
+      : "Back to quiz detail",
+
+    modes: {
+      TRAINING: fr
+        ? "Mode entraînement"
+        : "Training mode",
+
+      EXAM: fr
+        ? "Mode examen"
+        : "Exam mode",
+
+      SPEED: fr
+        ? "Mode rapidité"
+        : "Speed mode",
+    },
+  };
+}
