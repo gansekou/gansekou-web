@@ -1,3 +1,4 @@
+```tsx
 "use client";
 
 import Link from "next/link";
@@ -48,6 +49,8 @@ export function QuizPlayPage({
 }) {
   const { language, t } = useI18n(user);
   const router = useRouter();
+
+  const fr = language === "FR";
 
   const labels = useMemo(
     () => ({
@@ -103,10 +106,8 @@ export function QuizPlayPage({
         ? "Mode rapidité"
         : "Speed mode",
     }),
-    [language]
+    [fr]
   );
-
-  const fr = language === "fr";
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
@@ -974,3 +975,4 @@ export function QuizPlayPage({
 }
 
 export default memo(QuizPlayPage);
+```
