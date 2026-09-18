@@ -31,11 +31,7 @@ import { ApiError } from "@/lib/api";
 import { canPlayQuiz } from "@/lib/permissions";
 import { quizService } from "@/services/quiz.service";
 
-import type {
-  Quiz,
-  QuizQuestion,
-} from "@/types/quiz";
-
+import type { Quiz, QuizQuestion } from "@/types/quiz";
 import type { User } from "@/types/user";
 import { MathText } from "@/components/math/MathText";
 
@@ -46,7 +42,7 @@ export function QuizPlayPage({
   user: User;
   quizId: string;
 }) {
-  const { language, t } = useI18n(user);
+  const { language } = useI18n(user);
   const router = useRouter();
 
   const fr = language === "FR";
@@ -57,21 +53,15 @@ export function QuizPlayPage({
       error: fr
         ? "Impossible de charger ce quiz."
         : "Unable to load this quiz.",
-      retry: fr ? "Réessayer" : "Retry",
       back: fr ? "Retour aux quiz" : "Back to quizzes",
-      start: fr ? "Commencer le quiz" : "Start quiz",
       submit: fr ? "Terminer le quiz" : "Submit quiz",
       next: fr ? "Question suivante" : "Next question",
       previous: fr ? "Question précédente" : "Previous question",
       unanswered: fr ? "Question non répondue" : "Unanswered question",
       answered: fr ? "Réponse enregistrée" : "Answer saved",
-      timeRemaining: fr ? "Temps restant" : "Time remaining",
       noTimeLimit: fr ? "Sans limite de temps" : "No time limit",
       question: fr ? "Question" : "Question",
       of: fr ? "sur" : "of",
-      score: fr ? "Score" : "Score",
-      correct: fr ? "Correct" : "Correct",
-      incorrect: fr ? "Incorrect" : "Incorrect",
       confirmSubmit: fr
         ? "Voulez-vous vraiment terminer le quiz ?"
         : "Do you really want to submit the quiz?",
@@ -87,12 +77,8 @@ export function QuizPlayPage({
       submitError: fr
         ? "Une erreur est survenue lors de la soumission du quiz."
         : "An error occurred while submitting the quiz.",
-      seconds: fr ? "secondes" : "seconds",
-      minute: fr ? "min" : "min",
-      explanation: fr ? "Explication" : "Explanation",
-      points: fr ? "points" : "points",
+      minute: "min",
       requiredScore: fr ? "Score requis" : "Required score",
-      difficulty: fr ? "Difficulté" : "Difficulty",
       duration: fr ? "Durée" : "Duration",
       instructions: fr ? "Instructions" : "Instructions",
       startNow: fr ? "Démarrer maintenant" : "Start now",
@@ -168,16 +154,19 @@ export function QuizPlayPage({
       return null;
     }
 
-    const duration =
-      quiz.estimated_duration ??
-      quiz.duration ??
-      null;
+    const duration = quiz.duration;
 
-    if (!duration || duration <= 0) {
+    if (duration === null || duration === undefined) {
       return null;
     }
 
-    return Math.round(Number(duration) * 60);
+    const numericDuration = Number(duration);
+
+    if (!Number.isFinite(numericDuration) || numericDuration <= 0) {
+      return null;
+    }
+
+    return Math.round(numericDuration * 60);
   }, [quiz]);
 
   const answeredCount = useMemo(() => {
@@ -208,7 +197,7 @@ export function QuizPlayPage({
   }, []);
 
   const startQuiz = useCallback(() => {
-    if (!quiz || !hasAccess) {
+    if (!quiz || !hasAccess || questions.length === 0) {
       return;
     }
 
@@ -216,13 +205,14 @@ export function QuizPlayPage({
     setCurrentIndex(0);
     setAnswers({});
     setSubmitError(null);
+    setShowSubmitConfirm(false);
 
     if (durationSeconds !== null) {
       setRemainingSeconds(durationSeconds);
     } else {
       setRemainingSeconds(null);
     }
-  }, [durationSeconds, hasAccess, quiz]);
+  }, [durationSeconds, hasAccess, questions.length, quiz]);
 
   const submitQuiz = useCallback(async () => {
     if (!quiz || submitting) {
@@ -311,6 +301,10 @@ export function QuizPlayPage({
   );
 
   const goNext = useCallback(() => {
+    if (questions.length === 0) {
+      return;
+    }
+
     if (currentIndex >= questions.length - 1) {
       setShowSubmitConfirm(true);
       return;
@@ -338,7 +332,7 @@ export function QuizPlayPage({
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
+      <div className="flex min-h-[60vh] items-center justify-center">
         <LoadingState label={labels.loading} />
       </div>
     );
@@ -458,9 +452,10 @@ export function QuizPlayPage({
               <div className="flex items-center gap-2 text-muted-foreground">
                 <CheckCircle2 className="h-4 w-4" />
                 <span className="text-xs font-medium">
-                  {fr ? "Questions" : "Questions"}
+                  Questions
                 </span>
               </div>
+
               <p className="mt-2 text-2xl font-bold">
                 {questions.length}
               </p>
@@ -473,6 +468,7 @@ export function QuizPlayPage({
                   {labels.duration}
                 </span>
               </div>
+
               <p className="mt-2 text-2xl font-bold">
                 {durationSeconds !== null
                   ? `${Math.ceil(durationSeconds / 60)} ${labels.minute}`
@@ -487,6 +483,7 @@ export function QuizPlayPage({
                   {labels.requiredScore}
                 </span>
               </div>
+
               <p className="mt-2 text-2xl font-bold">
                 {quiz.required_score ?? 0}%
               </p>
@@ -499,6 +496,7 @@ export function QuizPlayPage({
                   {labels.mode}
                 </span>
               </div>
+
               <p className="mt-2 text-lg font-bold">
                 {quiz.mode === "SPEED"
                   ? labels.speed
@@ -805,7 +803,7 @@ export function QuizPlayPage({
             <div className="sticky top-24 rounded-2xl border bg-card p-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold">
-                  {fr ? "Questions" : "Questions"}
+                  Questions
                 </h2>
 
                 <span className="text-xs text-muted-foreground">
