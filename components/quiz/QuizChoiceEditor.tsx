@@ -5,6 +5,7 @@ import type {
   QuizChoiceCreatePayload,
   QuizQuestionType,
 } from "@/types/quiz";
+import { MathText } from "@/components/math/MathText";
 
 type EditableChoice = QuizChoiceCreatePayload & {
   id?: string;
@@ -140,32 +141,43 @@ export function QuizChoiceEditor({
             </div>
 
             {/* ==================================================
-                TEXTE DE LA PROPOSITION
+                TEXTE DE LA PROPOSITION + APERÇU MATHÉMATIQUE
             ================================================== */}
-            <input
-              value={choice.choice_text}
-              disabled={
-                questionType === "TRUE_FALSE"
-              }
-              onChange={(event) =>
-                setChoice(index, {
-                  choice_text:
-                    event.target.value,
-                })
-              }
-              className="
-                min-h-11 w-full
-                rounded-xl
-                border border-slate-200
-                px-3
-                text-sm font-bold
-                outline-none
-                focus:border-[#0f5f3a]
-                disabled:bg-slate-100
-                disabled:text-slate-500
-              "
-              placeholder={`${labels.answer} ${letter}`}
-            />
+            <div className="min-w-0">
+              <input
+                value={choice.choice_text}
+                disabled={questionType === "TRUE_FALSE"}
+                onChange={(event) =>
+                  setChoice(index, {
+                    choice_text: event.target.value,
+                  })
+                }
+                className="
+                  min-h-11 w-full
+                  rounded-xl
+                  border border-slate-200
+                  px-3
+                  text-sm font-bold
+                  outline-none
+                  focus:border-[#0f5f3a]
+                  disabled:bg-slate-100
+                  disabled:text-slate-500
+                "
+                placeholder={`${labels.answer} ${letter}`}
+              />
+            
+              {choice.choice_text.trim() && (
+                <div className="mt-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
+                  <div className="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                    Aperçu
+                  </div>
+            
+                  <div className="text-sm leading-6 text-slate-800">
+                    <MathText content={choice.choice_text} />
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* ==================================================
                 BONNE RÉPONSE
