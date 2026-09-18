@@ -113,26 +113,53 @@ type Segment =
  */
 function splitPlainTextAndMath(value: string): Segment[] {
   const result: Segment[] = [];
-  // Capture un run de caractères potentiellement mathématiques,
-  // en s'arrêtant avant la ponctuation finale de phrase (. ? !)
+
+  /*
+   * On détecte uniquement des expressions qui ont
+   * une structure mathématique claire.
+   *
+   * Exemples :
+   *   z = (2-i)/(1+2i)
+   *   x + 3 = 7
+   *   f(x) = x² + 1
+   *   a + ib
+   *   √(x+1)
+   *
+   * IMPORTANT :
+   * on s'arrête avant la ponctuation d'une phrase.
+   */
+
   const regex =
-    /((?:[a-zA-Z]\s*=\s*)?[a-zA-Z0-9]+\s*(?:[+\-*/^=]\s*[a-zA-Z0-9()+\-*/^.\s]*[a-zA-Z0-9)])+)/g;
+    /(?:[a-zA-Z]\s*=\s*)?(?:[a-zA-Z0-9]+|\([^()\n]+\)|√\s*(?:\([^()\n]+\)|[a-zA-Z0-9]+))(?:\s*(?:[+\-−*/^=≤≥≠×÷])\s*(?:[a-zA-Z0-9]+|\([^()\n]+\)|√\s*(?:\([^()\n]+\)|[a-zA-Z0-9]+)))+(?=(?:[.,;:!?]|\s|$))/g;
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
-  while ((match = regex.exec(value)) !== null) {
-    const candidate = match[1];
+  while (
+    (match = regex.exec(value)) !== null
+  ) {
+    const candidate = match[0];
 
-    // Ignore les faux positifs (mots isolés)
-    if (!/[+\-*/^=()]/.test(candidate) || candidate.length < 3) {
+    /*
+     * Protection contre les faux positifs.
+     */
+    if (
+      candidate.trim().length < 2 ||
+      !/[+\-−*/^=≤≥≠×÷√]/.test(candidate)
+    ) {
       continue;
     }
 
+    /*
+     * Texte situé avant le segment mathématique.
+     */
     if (match.index > lastIndex) {
       result.push({
         type: "text",
-        value: value.slice(lastIndex, match.index),
+        value: value.slice(
+          lastIndex,
+          match.index
+        ),
       });
     }
 
@@ -145,13 +172,18 @@ function splitPlainTextAndMath(value: string): Segment[] {
     lastIndex = regex.lastIndex;
   }
 
+  /*
+   * Texte restant.
+   */
   if (lastIndex < value.length) {
-    result.push({ type: "text", value: value.slice(lastIndex) });
+    result.push({
+      type: "text",
+      value: value.slice(lastIndex),
+    });
   }
 
   return result;
 }
-
 /* ------------------------------------------------------------------ */
 /* 4. Découpage $...$ / $$...$$                                        */
 /* ------------------------------------------------------------------ */
