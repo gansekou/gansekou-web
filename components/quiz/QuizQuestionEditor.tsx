@@ -3,6 +3,7 @@
 import { Trash2 } from "lucide-react";
 import { QuizChoiceEditor } from "@/components/quiz/QuizChoiceEditor";
 import type { QuizChoiceCreatePayload, QuizQuestionType } from "@/types/quiz";
+import { MathText } from "@/components/math/MathText";
 
 export type EditableQuizChoice = QuizChoiceCreatePayload & { id?: string };
 
@@ -62,18 +63,56 @@ export function QuizQuestionEditor({ question, labels, onChange, onRemove }: Pro
     <article className="rounded-[1.25rem] border border-slate-200 bg-slate-50 p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start">
         <div className="flex-1 space-y-3">
-          <textarea
-            value={question.question_text}
-            onChange={(event) => onChange({ ...question, question_text: event.target.value })}
-            className="min-h-24 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold outline-none focus:border-[#0f5f3a]"
-            placeholder={labels.question}
-          />
-          <textarea
-            value={question.explanation || ""}
-            onChange={(event) => onChange({ ...question, explanation: event.target.value })}
-            className="min-h-20 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold outline-none focus:border-[#0f5f3a]"
-            placeholder={labels.correction}
-          />
+          <div>
+            <textarea
+              value={question.question_text}
+              onChange={(event) =>
+                onChange({
+                  ...question,
+                  question_text: event.target.value,
+                })
+              }
+              className="min-h-24 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold outline-none focus:border-[#0f5f3a]"
+              placeholder={labels.question}
+            />
+          
+            {question.question_text.trim() && (
+              <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                  Aperçu mathématique
+                </div>
+          
+                <div className="text-sm leading-7 text-slate-800">
+                  <MathText content={question.question_text} />
+                </div>
+              </div>
+            )}
+          </div>
+          <div>
+            <textarea
+              value={question.explanation || ""}
+              onChange={(event) =>
+                onChange({
+                  ...question,
+                  explanation: event.target.value,
+                })
+              }
+              className="min-h-20 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm font-bold outline-none focus:border-[#0f5f3a]"
+              placeholder={labels.correction}
+            />
+          
+            {question.explanation?.trim() && (
+              <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="mb-2 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                  Aperçu de la correction
+                </div>
+          
+                <div className="text-sm leading-7 text-slate-800">
+                  <MathText content={question.explanation} />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         <button
           type="button"
