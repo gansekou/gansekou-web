@@ -1198,17 +1198,19 @@ function resolveOneCorrectIndex(
    WORD / HTML
 ============================================================ */
 
-function normalizeWordText(
-  input: string
-): string {
+function normalizeWordText(input: string): string {
   return input
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
     .replace(/\u00a0/g, " ")
     .replace(/\u202f/g, " ")
+    .replace(/\u2007/g, " ")
     .replace(/\u200b/g, "")
     .replace(/\uFEFF/g, "")
+    // Plusieurs espaces horizontaux deviennent un seul espace,
+    // mais les espaces entre les mots sont toujours conservés.
     .replace(/[ \t]+/g, " ")
+    // Maximum deux lignes vides consécutives.
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
@@ -1272,18 +1274,18 @@ function dataUrlToFile(
   }
 }
 
-function htmlToText(
-  html: string
-): string {
+function htmlToText(html: string): string {
   if (!html) {
     return "";
   }
 
   if (typeof DOMParser === "undefined") {
-    return html.replace(
-      /<[^>]+>/g,
-      " "
-    );
+    return html
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p>/gi, "\n")
+      .replace(/<\/div>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/gi, " ");
   }
 
   const doc = new DOMParser().parseFromString(
@@ -1292,41 +1294,44 @@ function htmlToText(
   );
 
   /*
-   * Les images servent uniquement
-   * de séparateurs dans l'analyse texte.
+   * Les images sont remplacées par un marqueur.
    */
-  doc.querySelectorAll("img").forEach(
-    (img) => {
-      img.replaceWith(
-        doc.createTextNode("\n[IMAGE]\n")
+  doc.querySelectorAll("img").forEach((img) => {
+    img.replaceWith(
+      doc.createTextNode("\n[IMAGE]\n")
+    );
+  });
+
+  /*
+   * Les éléments structurants deviennent des retours
+   * à la ligne.
+   */
+  doc.querySelectorAll(
+    "br, p, div, li, tr, h1, h2, h3, h4, h5, h6"
+  ).forEach((element) => {
+    if (element.tagName === "BR") {
+      element.replaceWith(
+        doc.createTextNode("\n")
+      );
+    } else {
+      element.insertAdjacentText(
+        "afterend",
+        "\n"
       );
     }
-  );
+  });
 
-  doc
-    .querySelectorAll(
-      "p, div, li, br, tr"
-    )
-    .forEach((element) => {
-      if (element.tagName === "BR") {
-        element.replaceWith(
-          doc.createTextNode("\n")
-        );
-      } else {
-        element.insertAdjacentText(
-          "afterend",
-          "\n"
-        );
-      }
-    });
+  /*
+   * textContent est utilisé plutôt que innerText.
+   *
+   * Cela évite que le navigateur réinterprète
+   * les espaces selon le rendu visuel du HTML.
+   */
+  const text =
+    doc.body.textContent || "";
 
-  return (
-    doc.body.innerText ||
-    doc.body.textContent ||
-    ""
-  );
+  return normalizeWordText(text);
 }
-
 /* ============================================================
    SÉPARATION SANS NUMÉROS
 ============================================================ */
