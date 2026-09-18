@@ -128,7 +128,7 @@ export function QuizPlayPage({
     setError(null);
 
     try {
-      const data = await quizService.getQuizById(quizId);
+      const data = await quizService.getById(quizId);
       setQuiz(data);
     } catch (err) {
       if (err instanceof ApiError) {
