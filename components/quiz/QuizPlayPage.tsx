@@ -1,3 +1,4 @@
+```tsx
 "use client";
 
 import Link from "next/link";
@@ -37,6 +38,7 @@ import type {
 } from "@/types/quiz";
 
 import type { User } from "@/types/user";
+import { MathText } from "@/components/math/MathText";
 
 export function QuizPlayPage({
   user,
@@ -189,17 +191,22 @@ export function QuizPlayPage({
 
   /*
    * ============================================================
-   * SAUVEGARDE AUTOMATIQUE DES REPONSES
+   * SAUVEGARDE AUTOMATIQUE
    * ============================================================
    */
 
   useEffect(() => {
     const task =
       window.setTimeout(() => {
-        window.localStorage.setItem(
-          draftKey,
-          JSON.stringify(deferredAnswers)
-        );
+        try {
+          window.localStorage.setItem(
+            draftKey,
+            JSON.stringify(deferredAnswers)
+          );
+        } catch {
+          // Le quiz continue même si localStorage
+          // est indisponible ou plein.
+        }
       }, 180);
 
     return () =>
@@ -262,9 +269,27 @@ export function QuizPlayPage({
       setElapsed(0);
       setStatus(null);
 
-      await document.documentElement
-        .requestFullscreen?.()
-        .catch(() => undefined);
+      /*
+       * IMPORTANT :
+       * On ne force plus le plein écran sur mobile.
+       *
+       * Le Fullscreen API peut modifier le viewport
+       * de façon différente selon Chrome Android,
+       * Samsung Internet et certains navigateurs intégrés.
+       *
+       * On le conserve uniquement pour les écrans
+       * suffisamment larges.
+       */
+      if (
+        typeof window !== "undefined" &&
+        window.matchMedia(
+          "(min-width: 768px)"
+        ).matches
+      ) {
+        await document.documentElement
+          .requestFullscreen?.()
+          .catch(() => undefined);
+      }
     } catch (startError) {
       setStatus(
         startError instanceof ApiError
@@ -309,9 +334,13 @@ export function QuizPlayPage({
             answers
           );
 
-        window.localStorage.removeItem(
-          draftKey
-        );
+        try {
+          window.localStorage.removeItem(
+            draftKey
+          );
+        } catch {
+          // Ignorer une éventuelle erreur localStorage.
+        }
 
         router.push(
           `/quizzes/${quiz.id}/result?attempt=${result.attempt_id}`
@@ -340,7 +369,7 @@ export function QuizPlayPage({
 
   /*
    * ============================================================
-   * EXPIRATION DU TEMPS
+   * EXPIRATION
    * ============================================================
    */
 
@@ -404,7 +433,10 @@ export function QuizPlayPage({
           nextFeedback
         );
 
-        if (!isCorrect) {
+        if (
+          !isCorrect &&
+          typeof navigator !== "undefined"
+        ) {
           navigator.vibrate?.(60);
         }
 
@@ -472,15 +504,20 @@ export function QuizPlayPage({
     );
   }
 
+  const safeIndex = Math.min(
+    index,
+    questions.length - 1
+  );
+
   const question =
-    questions[index] as QuizQuestion;
+    questions[safeIndex] as QuizQuestion;
 
   const choices =
     question.choices || [];
 
   const progress =
     Math.round(
-      ((index + 1) /
+      ((safeIndex + 1) /
         questions.length) *
         100
     );
@@ -506,7 +543,10 @@ export function QuizPlayPage({
       className="
         grid
         min-w-0
+        w-full
+        max-w-full
         gap-4
+        overflow-x-clip
         sm:gap-6
       "
     >
@@ -521,11 +561,13 @@ export function QuizPlayPage({
           className="
             premium-surface
             min-w-0
+            w-full
+            max-w-full
             overflow-hidden
-            rounded-[1.5rem]
+            rounded-[1.25rem]
             p-4
             text-white
-            sm:rounded-[1.75rem]
+            sm:rounded-[1.5rem]
             sm:p-6
           "
         >
@@ -535,7 +577,7 @@ export function QuizPlayPage({
               text-xs
               font-black
               uppercase
-              tracking-[0.14em]
+              tracking-[0.12em]
               text-[#f6c445]
               sm:text-sm
               sm:tracking-[0.18em]
@@ -548,9 +590,9 @@ export function QuizPlayPage({
             className="
               mt-3
               break-words
-              text-2xl
+              text-[clamp(1.45rem,6vw,2.25rem)]
               font-black
-              leading-tight
+              leading-[1.12]
               sm:text-3xl
               md:text-5xl
             "
@@ -558,7 +600,7 @@ export function QuizPlayPage({
             {quiz.title}
           </h1>
 
-          <p
+          <div
             className="
               mt-3
               max-w-3xl
@@ -573,15 +615,17 @@ export function QuizPlayPage({
           >
             {quiz.description ||
               labels.noDescription}
-          </p>
+          </div>
 
           <div
             className="
               mt-5
               grid
-              gap-3
+              grid-cols-1
+              gap-2.5
               sm:mt-6
-              md:grid-cols-3
+              sm:grid-cols-3
+              sm:gap-3
             "
           >
             <IntroStat
@@ -615,9 +659,10 @@ export function QuizPlayPage({
             className="
               mt-5
               grid
+              grid-cols-1
               gap-2
               sm:mt-6
-              md:grid-cols-3
+              sm:grid-cols-3
             "
           >
             {(
@@ -639,6 +684,7 @@ export function QuizPlayPage({
                   }
                   className={`
                     min-h-12
+                    w-full
                     rounded-2xl
                     border
                     p-3
@@ -646,6 +692,7 @@ export function QuizPlayPage({
                     text-sm
                     font-black
                     transition
+                    active:scale-[0.99]
                     sm:p-4
                     ${
                       mode === item
@@ -673,12 +720,15 @@ export function QuizPlayPage({
             variant="secondary"
             className="
               mt-5
+              min-h-12
               w-full
+              rounded-2xl
               bg-[#f6c445]
               text-[#071d3a]
               hover:bg-[#e7b52c]
               sm:mt-6
               sm:w-auto
+              sm:rounded-full
             "
           >
             {!starting && (
@@ -694,27 +744,38 @@ export function QuizPlayPage({
         <>
           {/*
            * ======================================================
-           * BARRE DE CONTROLE COMPACTE
+           * BARRE DE CONTROLE MOBILE-FIRST
            * ======================================================
+           *
+           * Mobile :
+           *   ligne 1 = question + pourcentage
+           *   ligne 2 = série + réponses + minuteur
+           *
+           * Desktop :
+           *   progression à gauche
+           *   statistiques à droite
            */}
 
           <section
             className="
               sticky
-              top-16
+              top-2
               z-20
               min-w-0
+              w-full
+              max-w-full
               overflow-hidden
               rounded-2xl
               border
               border-slate-200
-              bg-white/95
+              bg-white/96
               px-3
-              py-2
+              py-2.5
               shadow-md
               shadow-[#071d3a]/8
               backdrop-blur-xl
-              sm:top-24
+              supports-[backdrop-filter]:bg-white/90
+              sm:top-4
               sm:rounded-[1.25rem]
               sm:px-4
               sm:py-3
@@ -724,8 +785,11 @@ export function QuizPlayPage({
               className="
                 flex
                 min-w-0
-                items-center
+                flex-col
                 gap-2
+                sm:flex-row
+                sm:items-center
+                sm:gap-3
               "
             >
               {/* PROGRESSION */}
@@ -739,6 +803,7 @@ export function QuizPlayPage({
                 <div
                   className="
                     flex
+                    min-w-0
                     items-center
                     justify-between
                     gap-2
@@ -753,12 +818,13 @@ export function QuizPlayPage({
                       sm:text-sm
                     "
                   >
-                    {index + 1}/
+                    {safeIndex + 1}/
                     {questions.length}
                   </span>
 
                   <span
                     className="
+                      shrink-0
                       text-[10px]
                       font-black
                       text-slate-400
@@ -773,6 +839,7 @@ export function QuizPlayPage({
                   className="
                     mt-1
                     h-1.5
+                    w-full
                     overflow-hidden
                     rounded-full
                     bg-slate-100
@@ -785,7 +852,8 @@ export function QuizPlayPage({
                       h-full
                       rounded-full
                       bg-[#f6c445]
-                      transition-all
+                      transition-[width]
+                      duration-300
                     "
                     style={{
                       width: `${progress}%`,
@@ -794,110 +862,129 @@ export function QuizPlayPage({
                 </div>
               </div>
 
-              {/* SERIE */}
-
-              <span
-                className="
-                  inline-flex
-                  shrink-0
-                  items-center
-                  gap-1
-                  rounded-full
-                  bg-[#fff7df]
-                  px-2
-                  py-1.5
-                  text-xs
-                  font-black
-                  text-[#071d3a]
-                  sm:gap-1.5
-                  sm:px-3
-                  sm:py-2
-                  sm:text-sm
-                "
-                title={labels.streak}
-              >
-                <Flame
-                  size={14}
-                  className="shrink-0"
-                />
-
-                <span className="hidden sm:inline">
-                  {labels.streak}:
-                </span>
-
-                {liveStreak}
-              </span>
-
-              {/* REPONSES */}
-
-              <span
-                className="
-                  inline-flex
-                  shrink-0
-                  items-center
-                  gap-1
-                  rounded-full
-                  bg-slate-100
-                  px-2
-                  py-1.5
-                  text-xs
-                  font-black
-                  text-[#071d3a]
-                  sm:gap-1.5
-                  sm:px-3
-                  sm:py-2
-                  sm:text-sm
-                "
-                title={
-                  labels.answers
-                }
-              >
-                <Clock3
-                  size={14}
-                  className="shrink-0"
-                />
-
-                {answeredCount}/
-                {questions.length}
-              </span>
-
-              {/* MINUTEUR */}
+              {/* STATISTIQUES + MINUTEUR */}
 
               <div
-                className={`
-                  inline-flex
-                  shrink-0
+                className="
+                  flex
+                  min-w-0
                   items-center
-                  gap-1
-                  rounded-full
-                  px-2.5
-                  py-1.5
-                  text-sm
-                  font-black
-                  tabular-nums
-                  sm:gap-1.5
-                  sm:px-3
-                  sm:py-2
-                  sm:text-base
-                  ${
-                    effectiveRemaining <
-                    60
-                      ? "bg-red-50 text-red-600"
-                      : "bg-[#e8f5ee] text-[#0f5f3a]"
-                  }
-                `}
-                title={
-                  labels.remaining
-                }
+                  justify-between
+                  gap-1.5
+                  sm:justify-end
+                  sm:gap-2
+                "
               >
-                <Timer
-                  size={15}
-                  className="shrink-0"
-                />
+                {/* SERIE */}
 
-                {formatTime(
-                  effectiveRemaining
-                )}
+                <span
+                  className="
+                    inline-flex
+                    min-w-0
+                    shrink
+                    items-center
+                    justify-center
+                    gap-1
+                    rounded-full
+                    bg-[#fff7df]
+                    px-2
+                    py-1.5
+                    text-xs
+                    font-black
+                    text-[#071d3a]
+                    sm:gap-1.5
+                    sm:px-3
+                    sm:py-2
+                    sm:text-sm
+                  "
+                  title={labels.streak}
+                >
+                  <Flame
+                    size={14}
+                    className="shrink-0"
+                  />
+
+                  <span className="hidden sm:inline">
+                    {labels.streak}:
+                  </span>
+
+                  {liveStreak}
+                </span>
+
+                {/* REPONSES */}
+
+                <span
+                  className="
+                    inline-flex
+                    min-w-0
+                    shrink
+                    items-center
+                    justify-center
+                    gap-1
+                    rounded-full
+                    bg-slate-100
+                    px-2
+                    py-1.5
+                    text-xs
+                    font-black
+                    text-[#071d3a]
+                    sm:gap-1.5
+                    sm:px-3
+                    sm:py-2
+                    sm:text-sm
+                  "
+                  title={labels.answers}
+                >
+                  <Clock3
+                    size={14}
+                    className="shrink-0"
+                  />
+
+                  {answeredCount}/
+                  {questions.length}
+                </span>
+
+                {/* MINUTEUR */}
+
+                <div
+                  className={`
+                    inline-flex
+                    shrink-0
+                    items-center
+                    justify-center
+                    gap-1
+                    rounded-full
+                    px-2.5
+                    py-1.5
+                    text-sm
+                    font-black
+                    tabular-nums
+                    sm:gap-1.5
+                    sm:px-3
+                    sm:py-2
+                    sm:text-base
+                    ${
+                      effectiveRemaining <
+                      60
+                        ? "bg-red-50 text-red-600"
+                        : "bg-[#e8f5ee] text-[#0f5f3a]"
+                    }
+                  `}
+                  title={
+                    labels.remaining
+                  }
+                >
+                  <Timer
+                    size={15}
+                    className="shrink-0"
+                  />
+
+                  <span>
+                    {formatTime(
+                      effectiveRemaining
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           </section>
@@ -939,7 +1026,7 @@ export function QuizPlayPage({
               flex
               min-w-0
               flex-col
-              gap-2
+              gap-2.5
               sm:gap-3
               md:flex-row
               md:items-center
@@ -949,7 +1036,7 @@ export function QuizPlayPage({
             <LoadingButton
               type="button"
               disabled={
-                index === 0
+                safeIndex === 0
               }
               onClick={() =>
                 setIndex(
@@ -962,9 +1049,11 @@ export function QuizPlayPage({
               }
               variant="primary"
               className="
+                min-h-12
                 w-full
-                rounded-full
+                rounded-2xl
                 sm:w-auto
+                sm:rounded-full
               "
             >
               <ArrowLeft
@@ -983,9 +1072,10 @@ export function QuizPlayPage({
                 sm:flex-row
                 sm:flex-wrap
                 sm:gap-3
+                md:justify-end
               "
             >
-              {index <
+              {safeIndex <
               questions.length -
                 1 ? (
                 <LoadingButton
@@ -1002,12 +1092,14 @@ export function QuizPlayPage({
                   }
                   variant="secondary"
                   className="
+                    min-h-12
                     w-full
-                    rounded-full
+                    rounded-2xl
                     bg-[#f6c445]
                     text-[#071d3a]
                     hover:bg-[#e7b52c]
                     sm:w-auto
+                    sm:rounded-full
                   "
                 >
                   {labels.next}
@@ -1033,12 +1125,14 @@ export function QuizPlayPage({
                   }
                   variant="secondary"
                   className="
+                    min-h-12
                     w-full
-                    rounded-full
+                    rounded-2xl
                     bg-[#f6c445]
                     text-[#071d3a]
                     hover:bg-[#e7b52c]
                     sm:w-auto
+                    sm:rounded-full
                   "
                 >
                   {t(
@@ -1061,6 +1155,7 @@ export function QuizPlayPage({
         <p
           className="
             min-w-0
+            max-w-full
             break-words
             rounded-2xl
             bg-slate-100
@@ -1085,6 +1180,8 @@ export function QuizPlayPage({
         href={`/quizzes/${quiz.id}`}
         className="
           w-fit
+          max-w-full
+          break-words
           text-sm
           font-black
           text-[#0f5f3a]
@@ -1140,9 +1237,12 @@ const ActiveQuestion = memo(
         className={`
           ds-card
           min-w-0
+          w-full
+          max-w-full
           overflow-hidden
-          rounded-[1.5rem]
+          rounded-[1.25rem]
           p-4
+          sm:rounded-[1.5rem]
           sm:p-6
           ${
             visualFeedback ===
@@ -1158,10 +1258,10 @@ const ActiveQuestion = memo(
         <p
           className="
             break-words
-            text-[11px]
+            text-[10px]
             font-black
             uppercase
-            tracking-[0.14em]
+            tracking-[0.12em]
             text-slate-500
             sm:text-xs
             sm:tracking-[0.16em]
@@ -1170,26 +1270,53 @@ const ActiveQuestion = memo(
           {question.question_type}
         </p>
 
-        <h1
+        {/*
+         * QUESTION
+         *
+         * MathText est utilisé ici afin que les expressions
+         * mathématiques puissent être rendues correctement.
+         */}
+        <div
           className="
             mt-3
-            break-words
-            text-xl
-            font-black
-            leading-7
-            text-[#071d3a]
-            sm:text-2xl
-            sm:leading-9
+            min-w-0
+            max-w-full
+            overflow-x-auto
+            overscroll-x-contain
+            sm:mt-4
           "
         >
-          {question.question_text}
-        </h1>
+          <div
+            className="
+              min-w-0
+              max-w-full
+              break-words
+              text-xl
+              font-black
+              leading-7
+              text-[#071d3a]
+              sm:text-2xl
+              sm:leading-9
+            "
+          >
+            <MathText
+              content={
+                question.question_text
+              }
+            />
+          </div>
+        </div>
+
+        {/*
+         * REPONSES
+         */}
 
         <div
           className="
             mt-5
             grid
             min-w-0
+            max-w-full
             gap-2.5
             sm:mt-6
             sm:gap-3
@@ -1225,6 +1352,8 @@ const ActiveQuestion = memo(
                     native-press
                     min-h-14
                     min-w-0
+                    w-full
+                    max-w-full
                     overflow-hidden
                     rounded-2xl
                     border
@@ -1233,6 +1362,7 @@ const ActiveQuestion = memo(
                     text-sm
                     font-black
                     transition
+                    active:scale-[0.995]
                     sm:min-h-16
                     sm:p-4
                     ${
@@ -1252,26 +1382,42 @@ const ActiveQuestion = memo(
                     className="
                       flex
                       min-w-0
-                      items-center
+                      max-w-full
+                      items-start
                       justify-between
                       gap-3
                     "
                   >
+                    {/*
+                     * Texte / formule de la réponse.
+                     *
+                     * La zone peut défiler horizontalement si
+                     * une formule est exceptionnellement longue,
+                     * sans provoquer de débordement de toute la page.
+                     */}
                     <span
                       className="
                         min-w-0
+                        max-w-full
+                        flex-1
+                        overflow-x-auto
+                        overscroll-x-contain
                         break-words
                         leading-5
                       "
                     >
-                      {choice.choice_text}
+                      <MathText
+                        content={
+                          choice.choice_text
+                        }
+                      />
                     </span>
 
                     {reveal ===
                       "correct" && (
                       <CheckCircle2
                         size={20}
-                        className="shrink-0"
+                        className="mt-0.5 shrink-0"
                       />
                     )}
 
@@ -1279,7 +1425,7 @@ const ActiveQuestion = memo(
                       "wrong" && (
                       <XCircle
                         size={20}
-                        className="shrink-0"
+                        className="mt-0.5 shrink-0"
                       />
                     )}
                   </span>
@@ -1289,6 +1435,10 @@ const ActiveQuestion = memo(
           )}
         </div>
 
+        {/*
+         * EXPLICATION
+         */}
+
         {mode ===
           "TRAINING" &&
           feedback &&
@@ -1297,6 +1447,7 @@ const ActiveQuestion = memo(
               className="
                 mt-4
                 min-w-0
+                max-w-full
                 overflow-hidden
                 rounded-2xl
                 bg-[#fff7df]
@@ -1309,7 +1460,20 @@ const ActiveQuestion = memo(
                 sm:p-4
               "
             >
-              {question.explanation}
+              <div
+                className="
+                  min-w-0
+                  max-w-full
+                  overflow-x-auto
+                  overscroll-x-contain
+                "
+              >
+                <MathText
+                  content={
+                    question.explanation
+                  }
+                />
+              </div>
             </div>
           )}
       </section>
@@ -1334,6 +1498,7 @@ function IntroStat({
     <div
       className="
         min-w-0
+        w-full
         rounded-2xl
         bg-white/10
         p-3
@@ -1413,7 +1578,7 @@ function pageLabels(
 
   return {
     loading: fr
-      ? "Preparation du quiz..."
+      ? "Préparation du quiz..."
       : "Preparing quiz...",
 
     loadError: fr
@@ -1425,15 +1590,15 @@ function pageLabels(
       : "Quiz not found",
 
     notFoundHelp: fr
-      ? "Aucun quiz n'a ete retourne."
+      ? "Aucun quiz n'a été retourné."
       : "No quiz was returned.",
 
     notAllowed: fr
-      ? "Action non autorisee"
+      ? "Action non autorisée"
       : "Action not allowed",
 
     notAllowedHelp: fr
-      ? "Votre role ne permet pas de passer ce quiz."
+      ? "Votre rôle ne permet pas de passer ce quiz."
       : "Your role cannot play this quiz.",
 
     noQuestions: fr
@@ -1441,7 +1606,7 @@ function pageLabels(
       : "Questions unavailable",
 
     noQuestionsHelp: fr
-      ? "Ajoutez des questions avant de lancer cette evaluation."
+      ? "Ajoutez des questions avant de lancer cette évaluation."
       : "Add questions before starting this assessment.",
 
     noDescription: fr
@@ -1449,11 +1614,11 @@ function pageLabels(
       : "No description.",
 
     starting: fr
-      ? "Demarrage..."
+      ? "Démarrage..."
       : "Starting...",
 
     startError: fr
-      ? "Demarrage impossible."
+      ? "Démarrage impossible."
       : "Unable to start.",
 
     submitting: fr
@@ -1461,7 +1626,7 @@ function pageLabels(
       : "Submitting...",
 
     submitError: fr
-      ? "Soumission impossible. Verifiez votre connexion puis reessayez."
+      ? "Soumission impossible. Vérifiez votre connexion puis réessayez."
       : "Unable to submit. Check your connection and retry.",
 
     confirmFinish: fr
@@ -1469,7 +1634,7 @@ function pageLabels(
       : "Finish and submit this quiz?",
 
     streak: fr
-      ? "Serie"
+      ? "Série"
       : "Streak",
 
     answers: fr
@@ -1481,7 +1646,7 @@ function pageLabels(
       : "Time remaining",
 
     previous: fr
-      ? "Precedent"
+      ? "Précédent"
       : "Previous",
 
     next: fr
@@ -1489,7 +1654,7 @@ function pageLabels(
       : "Next",
 
     back: fr
-      ? "Retour au detail du quiz"
+      ? "Retour au détail du quiz"
       : "Back to quiz detail",
 
     modes: {
@@ -1507,3 +1672,4 @@ function pageLabels(
     },
   };
 }
+```
