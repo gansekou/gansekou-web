@@ -26,6 +26,7 @@ import {
   LoadingState,
 } from "@/components/app/StateViews";
 import { LoadingButton } from "@/components/ui/LoadingButton";
+import MathText from "@/components/math/MathText";
 import { useI18n } from "@/hooks/useI18n";
 import { ApiError } from "@/lib/api";
 import { canPlayQuiz } from "@/lib/permissions";
@@ -1173,6 +1174,7 @@ const ActiveQuestion = memo(
         <h1
           className="
             mt-3
+            min-w-0
             break-words
             text-xl
             font-black
@@ -1182,7 +1184,9 @@ const ActiveQuestion = memo(
             sm:leading-9
           "
         >
-          {question.question_text}
+          <MathText
+            content={question.question_text}
+          />
         </h1>
 
         <div
@@ -1264,7 +1268,9 @@ const ActiveQuestion = memo(
                         leading-5
                       "
                     >
-                      {choice.choice_text}
+                      <MathText
+                        content={choice.choice_text}
+                      />
                     </span>
 
                     {reveal ===
@@ -1289,8 +1295,7 @@ const ActiveQuestion = memo(
           )}
         </div>
 
-        {mode ===
-          "TRAINING" &&
+        {mode === "TRAINING" &&
           feedback &&
           question.explanation && (
             <div
@@ -1309,7 +1314,9 @@ const ActiveQuestion = memo(
                 sm:p-4
               "
             >
-              {question.explanation}
+              <MathText
+                content={question.explanation}
+              />
             </div>
           )}
       </section>
