@@ -1,4 +1,3 @@
-```tsx
 "use client";
 
 import Link from "next/link";
@@ -102,9 +101,7 @@ export function QuizPlayPage({
       mode: fr ? "Mode" : "Mode",
       standard: fr ? "Mode standard" : "Standard mode",
       exam: fr ? "Mode examen" : "Exam mode",
-      speed: fr
-        ? "Mode rapidité"
-        : "Speed mode",
+      speed: fr ? "Mode rapidité" : "Speed mode",
     }),
     [fr]
   );
@@ -975,4 +972,3 @@ export function QuizPlayPage({
 }
 
 export default memo(QuizPlayPage);
-```
