@@ -28,30 +28,30 @@ function normalizeMathText(value: string): string {
   text = text.replace(/√\s*([a-zA-Z][a-zA-Z0-9]*)/g, "\\sqrt{$1}");
 
   // Fractions entre parenthèses : (a+b)/(c+d)
-text = text.replace(
-  /\(([^()]+)\)\s*\/\s*\(([^()]+)\)/g,
-  "\\frac{$1}{$2}"
-);
-
-// Fractions avec numérateur entre parenthèses : (x+1)/2
-text = text.replace(
-  /\(([^()]+)\)\s*\/\s*([a-zA-Z0-9]+)/g,
-  "\\frac{$1}{$2}"
-);
-
-// Fractions avec dénominateur entre parenthèses : x/(x+1)
-text = text.replace(
-  /([a-zA-Z0-9]+)\s*\/\s*\(([^()]+)\)/g,
-  "\\frac{$1}{$2}"
-);
-
-// Fractions simples : 4/5, x/2, a/b, 3x/4
-text = text.replace(
-  /(^|[\s=(+\-*])(-?(?:\d+(?:[.,]\d+)?|[a-zA-Z](?:[a-zA-Z0-9]*)))\s*\/\s*(\d+(?:[.,]\d+)?|[a-zA-Z](?:[a-zA-Z0-9]*))(?=$|[\s),.+\-*=])/g,
-  (_match, prefix, numerator, denominator) => {
-    return `${prefix}\\frac{${numerator}}{${denominator}}`;
-  }
-);
+  text = text.replace(
+    /\(([^()]+)\)\s*\/\s*\(([^()]+)\)/g,
+    "\\frac{$1}{$2}"
+  );
+  
+  // Fractions avec numérateur entre parenthèses : (x+1)/2
+  text = text.replace(
+    /\(([^()]+)\)\s*\/\s*([a-zA-Z0-9]+)/g,
+    "\\frac{$1}{$2}"
+  );
+  
+  // Fractions avec dénominateur entre parenthèses : x/(x+1)
+  text = text.replace(
+    /([a-zA-Z0-9]+)\s*\/\s*\(([^()]+)\)/g,
+    "\\frac{$1}{$2}"
+  );
+  
+  // Fractions simples : 4/5, x/2, a/b, 3x/4
+  text = text.replace(
+    /(^|[\s=(+\-*])(-?(?:\d+(?:[.,]\d+)?|[a-zA-Z](?:[a-zA-Z0-9]*)))\s*\/\s*(\d+(?:[.,]\d+)?|[a-zA-Z](?:[a-zA-Z0-9]*))(?=$|[\s),.+\-*=])/g,
+    (_match, prefix, numerator, denominator) => {
+      return `${prefix}\\frac{${numerator}}{${denominator}}`;
+    }
+  );
 
   // Puissances Unicode : x² -> x^{2}
   text = text.replace(
