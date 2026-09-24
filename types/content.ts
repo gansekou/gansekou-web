@@ -1,5 +1,13 @@
 export type ContentType = "COURS" | "EXERCICE" | "SUJET";
 
+export type ContentFormat =
+  | "TEXT"
+  | "PDF"
+  | "AUDIO"
+  | "VIDEO"
+  | "IMAGE"
+  | "EXTERNAL";
+
 export type ContentStatus =
   | "PENDING"
   | "APPROVED"
@@ -27,6 +35,9 @@ export type Content = {
   translations?: ContentTranslation[];
 
   content_type: ContentType | string;
+
+  content_format?: ContentFormat | string;
+  content_details?: string | null;
 
   file_url?: string | null;
   thumbnail_url?: string | null;
@@ -78,6 +89,9 @@ export type ContentCreatePayload = {
   related_content_ids?: string[];
 
   content_type: string;
+
+  content_format?: ContentFormat | string;
+  content_details?: string | null;
 
   file_url?: string | null;
   thumbnail_url?: string | null;
