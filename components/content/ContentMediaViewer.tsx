@@ -5,10 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/app/StateViews";
 import { PremiumSkeleton } from "@/components/ui/PremiumSkeleton";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
 import {
   getContentKind,
   getContentStreamUrl,
@@ -16,6 +12,7 @@ import {
 } from "@/lib/content-media";
 import type { Content } from "@/types/content";
 import { PdfViewer } from "@/components/content/PdfViewer";
+import { ContentTextViewer } from "@/components/content/ContentTextViewer";
 
 export function ContentMediaViewer({
   content,
@@ -107,7 +104,9 @@ export function ContentMediaViewer({
   }
 
   if (content.content_format === "TEXT") {
-    if (!content.content_details?.trim()) {
+    const textContent = content.content_details?.trim() || "";
+  
+    if (!textContent) {
       return (
         <EmptyState
           title="Contenu textuel vide"
@@ -122,19 +121,15 @@ export function ContentMediaViewer({
           <p className="font-black text-[#071d3a]">
             Contenu pédagogique
           </p>
+  
           <p className="text-sm font-bold text-slate-500">
             TEXTE · {content.content_type}
           </p>
         </div>
   
-        <article className="prose prose-slate max-w-none p-6 leading-8 md:p-10">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-          >
-            {content.content_details}
-          </ReactMarkdown>
-        </article>
+        <div className="p-3 sm:p-5 md:p-8">
+          <ContentTextViewer content={textContent} />
+        </div>
       </section>
     );
   }
