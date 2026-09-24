@@ -156,9 +156,20 @@ export function ContentEditor({
     if (
       !form.subject_id ||
       form.level_ids.length === 0 ||
-      !form.content_type
+      !form.content_type ||
+      !form.content_format
     ) {
       setError(t("content.validation"));
+      return;
+    }
+    
+    if (
+      form.content_format === "TEXT" &&
+      !form.content_details.trim()
+    ) {
+      setError(
+        "Veuillez saisir le contenu textuel avant de continuer."
+      );
       return;
     }
 
@@ -166,13 +177,18 @@ export function ContentEditor({
     try {
       let fileUrl = form.file_url || null;
       let thumbnailUrl = form.thumbnail_url || null;
-      if (file) {
+      if (
+        file &&
+        form.content_format !== "TEXT" &&
+        form.content_format !== "EXTERNAL"
+      ) {
         const upload =
-          form.content_type === "VIDEO"
+          form.content_format === "VIDEO"
             ? await platformService.uploads.contentVideo(file)
-            : form.content_type === "AUDIO"
+            : form.content_format === "AUDIO"
               ? await platformService.uploads.contentAudio(file)
               : await platformService.uploads.contentFile(file);
+      
         fileUrl = upload.file_url;
       }
       if (thumbnail) thumbnailUrl = (await platformService.uploads.contentThumbnail(thumbnail)).file_url;
@@ -466,7 +482,22 @@ export function ContentEditor({
         </Field>
       )}
       <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <UploadField label={t("content.mainFile")} file={file} onChange={setFile} accept={form.content_type === "VIDEO" ? "video/*" : form.content_type === "AUDIO" ? "audio/*" : undefined} />
+        <UploadField
+          label={t("content.mainFile")}
+          file={file}
+          onChange={setFile}
+          accept={
+            form.content_format === "VIDEO"
+              ? "video/*"
+              : form.content_format === "AUDIO"
+                ? "audio/*"
+                : form.content_format === "IMAGE"
+                  ? "image/*"
+                  : form.content_format === "PDF"
+                    ? "application/pdf"
+                    : undefined
+          }
+        />
         <UploadField label={t("content.thumbnail")} file={thumbnail} onChange={setThumbnail} accept="image/*" />
       </div>
       <div className="mt-5 flex flex-wrap gap-4">
