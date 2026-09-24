@@ -11,7 +11,7 @@ type MathTextProps = {
 };
 
 /* ------------------------------------------------------------------ */
-/* 0. Utilitaires                                                      */
+/* 1. Symboles Unicode → LaTeX                                         */
 /* ------------------------------------------------------------------ */
 
 const SUPERSCRIPTS: Record<string, string> = {
@@ -19,227 +19,82 @@ const SUPERSCRIPTS: Record<string, string> = {
   "⁵": "5", "⁶": "6", "⁷": "7", "⁸": "8", "⁹": "9",
 };
 
-/** Retire les accents pour tester des mots-clés sans faux négatifs. */
-function stripAccents(value: string): string {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-/** Vrai si le caractère peut appartenir à une expression mathématique. */
-function isMathChar(c: string): boolean {
-  return /[a-zA-Z0-9+\-*/^_=().,√≤≥≠±×÷{}\s²³⁴⁵⁶⁷⁸⁹⁰¹]/.test(c);
-}
-
-/* ------------------------------------------------------------------ */
-/* 1. Conversion des fractions (parenthèses imbriquées gérées)         */
-/* ------------------------------------------------------------------ */
-
-/**
- * Convertit `num / den` en `\frac{num}{den}` en gérant :
- *   - les parenthèses imbriquées
- *   - les numérateurs/dénominateurs simples (lettres/chiffres)
- *   - les espaces autour du `/`
- *
- * On parcourt le texte de gauche à droite ; à chaque `/` rencontré,
- * on remonte pour trouver le début du numérateur, puis on descend
- * pour trouver la fin du dénominateur, en suivant la profondeur
- * des parenthèses.
- */
-function convertFractions(input: string): string {
-  let result = "";
-  let i = 0;
-
-  while (i < input.length) {
-    // Cherche le prochain '/'
-    const slash = input.indexOf("/", i);
-
-    if (slash === -1) {
-      result += input.slice(i);
-      break;
-    }
-
-    // ---------- Numérateur ----------
-    let numStart = slash - 1;
-    // recule sur les espaces
-    while (numStart >= 0 && input[numStart] === " ") numStart--;
-
-    if (numStart < 0) {
-      // pas de numérateur → on garde le '/' tel quel
-      result += input.slice(i, slash + 1);
-      i = slash + 1;
-      continue;
-    }
-
-    if (input[numStart] === ")") {
-      // parenthèses : on remonte en suivant la profondeur
-      let depth = 1;
-      numStart--;
-      while (numStart >= 0 && depth > 0) {
-        if (input[numStart] === ")") depth++;
-        else if (input[numStart] === "(") depth--;
-        numStart--;
-      }
-      numStart++; // on était allé un cran trop loin
-      if (input[numStart] !== "(") {
-        // parenthèse non équilibrée → on abandonne cette conversion
-        result += input.slice(i, slash + 1);
-        i = slash + 1;
-        continue;
-      }
-    } else {
-      // run simple de lettres/chiffres
-      while (numStart >= 0 && /[a-zA-Z0-9]/.test(input[numStart])) numStart--;
-      numStart++;
-      // rien trouvé → on garde le '/'
-      if (numStart === slash) {
-        result += input.slice(i, slash + 1);
-        i = slash + 1;
-        continue;
-      }
-    }
-
-    // ---------- Dénominateur ----------
-    let denStart = slash + 1;
-    while (denStart < input.length && input[denStart] === " ") denStart++;
-
-    if (denStart >= input.length) {
-      result += input.slice(i, slash + 1);
-      i = slash + 1;
-      continue;
-    }
-
-    let denEnd = denStart;
-
-    if (input[denStart] === "(") {
-      let depth = 1;
-      denEnd++;
-      while (denEnd < input.length && depth > 0) {
-        if (input[denEnd] === "(") depth++;
-        else if (input[denEnd] === ")") depth--;
-        denEnd++;
-      }
-      denEnd--; // on était allé un cran trop loin
-      if (input[denEnd] !== ")") {
-        // parenthèse non équilibrée → on abandonne
-        result += input.slice(i, slash + 1);
-        i = slash + 1;
-        continue;
-      }
-    } else {
-      while (denEnd < input.length && /[a-zA-Z0-9]/.test(input[denEnd])) {
-        denEnd++;
-      }
-      denEnd--; // dernier caractère valide
-      if (denEnd < denStart) {
-        result += input.slice(i, slash + 1);
-        i = slash + 1;
-        continue;
-      }
-    }
-
-    const numerator = input.slice(numStart, slash).trim();
-    const denominator = input.slice(denStart, denEnd + 1).trim();
-
-    // Sécurité : ni vide ni identique à la chaîne entière
-    if (!numerator || !denominator) {
-      result += input.slice(i, slash + 1);
-      i = slash + 1;
-      continue;
-    }
-
-    result += input.slice(i, numStart);
-    result += `\\frac{${numerator}}{${denominator}}`;
-    i = denEnd + 1;
-  }
-
-  return result;
-}
-
-/* ------------------------------------------------------------------ */
-/* 2. Normalisation d'un texte contenant des maths en LaTeX            */
-/* ------------------------------------------------------------------ */
-
 function normalizeMathText(value: string): string {
   let text = value.trim();
 
-  // ---------- 1. Signes Unicode ----------
-  text = text
-    .replace(/−/g, "-")
-    .replace(/–/g, "-")
-    .replace(/—/g, "-")
-    .replace(/·/g, "\\cdot ")
-    .replace(/×/g, "\\times ")
-    .replace(/≤/g, "\\leq ")
-    .replace(/≥/g, "\\geq ")
-    .replace(/≠/g, "\\neq ")
-    .replace(/±/g, "\\pm ")
-    .replace(/π/g, "\\pi ")
-    .replace(/∞/g, "\\infty ");
+  // Racines carrées Unicode
+  text = text.replace(/√\s*\(([^()]*)\)/g, "\\sqrt{$1}");
+  text = text.replace(/√\s*([0-9]+(?:[.,][0-9]+)?)/g, "\\sqrt{$1}");
+  text = text.replace(/√\s*([a-zA-Z][a-zA-Z0-9]*)/g, "\\sqrt{$1}");
 
-  // ---------- 2. Puissances Unicode : x² → x^{2} ----------
+  // Fractions entre parenthèses : (a+b)/(c+d)
+  text = text.replace(
+    /\(([^()]+)\)\s*\/\s*\(([^()]+)\)/g,
+    "\\frac{$1}{$2}"
+  );
+
+  // Fractions numériques simples : 4/5, -3/2
+  text = text.replace(
+    /(^|[\s=(+\-*×])(-?\d+(?:[.,]\d+)?)\s*\/\s*(\d+(?:[.,]\d+)?)(?=$|[\s),+\-*×])/g,
+    (_m, prefix, num, den) => `${prefix}\\frac{${num}}{${den}}`
+  );
+
+  // Puissances Unicode : x² -> x^{2}
   text = text.replace(
     /([a-zA-Z0-9)])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g,
     (_m, base: string, power: string) => {
-      const converted = [...power]
-        .map((c) => SUPERSCRIPTS[c] ?? c)
-        .join("");
+      const converted = [...power].map((c) => SUPERSCRIPTS[c] ?? c).join("");
       return `${base}^{${converted}}`;
     }
   );
 
-  // ---------- 3. Puissances parenthésées : x^(2) → x^{2} ----------
+  // Puissances parenthésées : x^(2) -> x^{2}
   text = text.replace(/([a-zA-Z0-9)])\^\(([^()]*)\)/g, "$1^{$2}");
 
-  // ---------- 4. Fractions (parenthèses imbriquées gérées) ----------
-  text = convertFractions(text);
-
-  // ---------- 5. Racines carrées (après les puissances/fractions) ----------
-  // √(...) — on autorise un niveau d'imbrication simple
-  text = text.replace(/√\s*\(([^()]*(?:\([^()]*\)[^()]*)*)\)/g, "\\sqrt{$1}");
-  text = text.replace(/√\s*([0-9]+(?:[.,][0-9]+)?)/g, "\\sqrt{$1}");
-  text = text.replace(/√\s*([a-zA-Z][a-zA-Z0-9]*)/g, "\\sqrt{$1}");
+  // Symboles mathématiques
+  text = text
+    .replace(/π/g, "\\pi ")
+    .replace(/∞/g, "\\infty ")
+    .replace(/≤/g, "\\leq ")
+    .replace(/≥/g, "\\geq ")
+    .replace(/≠/g, "\\neq ")
+    .replace(/±/g, "\\pm ")
+    .replace(/×/g, "\\times ");
 
   return text;
 }
 
 /* ------------------------------------------------------------------ */
-/* 3. Détection d'une expression purement mathématique                 */
+/* 2. Détection d'une expression mathématique « autonome »             */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Vrai si la chaîne ENTIÈRE est une expression mathématique
+ * (et non un texte contenant des maths).
+ */
 function isPureMath(value: string): boolean {
   const v = value.trim();
   if (!v) return false;
 
-  const unaccented = stripAccents(v);
-
-  // Mots-clés typiques du français → ce n'est pas une formule pure
-  if (
-    /\b(?:le|la|les|un|une|des|dans|avec|est|soit|on|calcule|determiner|resoudre|montrer|verifier|donner|exprimer|suivant|pour|tout|appartient|intervalle|solution|solutions|equation|inequation|fonction|nombre|valeurs)\b/i.test(
-      unaccented
-    )
-  ) {
-    return false;
-  }
-
-  // LaTeX explicite
+  // Si contient déjà du LaTeX explicite
   if (/\\[a-zA-Z]+/.test(v)) return true;
 
-  // Signal mathématique explicite
+  // Caractères autorisés dans une expression pure
+  // (lettres, chiffres, opérateurs, parenthèses, espaces, symboles)
+  const allowed = /^[a-zA-Z0-9\s+\-*/^_=().,{}[\]|<>≤≥≠±×÷√π∞∑∏∫°'′″:;!?]+$/;
+  if (!allowed.test(v)) return false;
+
+  // Doit contenir au moins un signe « mathématique » distinctif
   const hasMathSignal =
-    /[+\-*/^_=√π∞≤≥≠±×÷]/.test(v) ||
-    /\([^)]*[a-zA-Z][^)]*\)/.test(v) ||
-    /[⁰¹²³⁴⁵⁶⁷⁸⁹]/.test(v);
+    /[+\-*/^_=√π∞≤≥≠±×÷]/.test(v) ||   // opérateur
+    /\([^)]*[a-zA-Z][^)]*\)/.test(v) || // parenthèses avec lettres
+    /\d/.test(v);                       // au moins un chiffre
 
-  if (!hasMathSignal) return false;
-
-  // Seuls caractères autorisés
-  const allowed =
-    /^[a-zA-Z0-9\s+\-*/^_=().,{}[\]|<>≤≥≠±×÷√π∞∑∏∫°'′″²³⁴⁵⁶⁷⁸⁹⁰¹]+$/;
-
-  return allowed.test(v);
+  return hasMathSignal;
 }
 
 /* ------------------------------------------------------------------ */
-/* 4. Segmentation d'un texte mixte (tokenizer manuel)                 */
+/* 3. Découpage automatique d'un texte en segments texte / math        */
 /* ------------------------------------------------------------------ */
 
 type Segment =
@@ -247,74 +102,90 @@ type Segment =
   | { type: "math"; value: string; display: boolean };
 
 /**
- * Découpe un texte en segments texte / math en suivant la profondeur
- * des parenthèses, au lieu d'une regex récursive (non supportée en JS).
+ * Découpe un texte comme :
+ *   "On pose z = (2 - i)/(1 + 2i). Quelle est ..."
+ * en :
+ *   [text: "On pose ", math: "z = (2 - i)/(1 + 2i)", text: ". Quelle est ..."]
+ *
+ * Stratégie : on repère les « runs » de caractères mathématiques
+ * (lettres/chiffres/opérateurs/parenthèses) et on garde ceux qui
+ * contiennent un signal mathématique explicite.
  */
 function splitPlainTextAndMath(value: string): Segment[] {
-  const segments: Segment[] = [];
-  let i = 0;
-  let buffer = "";
-  let inMath = false;
+  const result: Segment[] = [];
 
-  const flush = () => {
-    if (!buffer) return;
-    const trimmed = buffer.trim();
+  /*
+   * On détecte uniquement des expressions qui ont
+   * une structure mathématique claire.
+   *
+   * Exemples :
+   *   z = (2-i)/(1+2i)
+   *   x + 3 = 7
+   *   f(x) = x² + 1
+   *   a + ib
+   *   √(x+1)
+   *
+   * IMPORTANT :
+   * on s'arrête avant la ponctuation d'une phrase.
+   */
+
+  const regex =
+    /(?:[a-zA-Z]\s*=\s*)?(?:[a-zA-Z0-9]+|\([^()\n]+\)|√\s*(?:\([^()\n]+\)|[a-zA-Z0-9]+))(?:\s*(?:[+\-−*/^=≤≥≠×÷])\s*(?:[a-zA-Z0-9]+|\([^()\n]+\)|√\s*(?:\([^()\n]+\)|[a-zA-Z0-9]+)))+(?=(?:[.,;:!?]|\s|$))/g;
+
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while (
+    (match = regex.exec(value)) !== null
+  ) {
+    const candidate = match[0];
+
+    /*
+     * Protection contre les faux positifs.
+     */
     if (
-      inMath &&
-      trimmed.length >= 2 &&
-      /[+\-*/^=≤≥≠×÷√²³⁴⁵⁶⁷⁸⁹]/.test(trimmed)
+      candidate.trim().length < 2 ||
+      !/[+\-−*/^=≤≥≠×÷√]/.test(candidate)
     ) {
-      segments.push({ type: "math", value: trimmed, display: false });
-    } else {
-      segments.push({ type: "text", value: buffer });
-    }
-    buffer = "";
-  };
-
-  while (i < value.length) {
-    const c = value[i];
-
-    if (!inMath) {
-      // Peut-on démarrer un run math ?
-      if (/[a-zA-Z(√]/.test(c)) {
-        // Fenêtre de 80 char pour vérifier la présence d'un opérateur
-        const window = value.slice(i, i + 80);
-        if (/[+\-*/^=≤≥≠×÷√²³⁴⁵⁶⁷⁸⁹]/.test(window)) {
-          // On s'assure qu'on n'est pas au milieu d'un mot
-          const prev = i > 0 ? value[i - 1] : " ";
-          if (/[\s(,;:[{]/.test(prev) || i === 0) {
-            flush();
-            inMath = true;
-            buffer += c;
-            i++;
-            continue;
-          }
-        }
-      }
-    } else {
-      // Fin du run math ?
-      if (!isMathChar(c)) {
-        // On tolère un espace s'il est suivi d'un caractère math
-        inMath = false;
-        flush();
-        buffer += c;
-        i++;
-        continue;
-      }
-      buffer += c;
-      i++;
       continue;
     }
 
-    buffer += c;
-    i++;
-  }
-  flush();
-  return segments;
-}
+    /*
+     * Texte situé avant le segment mathématique.
+     */
+    if (match.index > lastIndex) {
+      result.push({
+        type: "text",
+        value: value.slice(
+          lastIndex,
+          match.index
+        ),
+      });
+    }
 
+    result.push({
+      type: "math",
+      value: candidate.trim(),
+      display: false,
+    });
+
+    lastIndex = regex.lastIndex;
+  }
+
+  /*
+   * Texte restant.
+   */
+  if (lastIndex < value.length) {
+    result.push({
+      type: "text",
+      value: value.slice(lastIndex),
+    });
+  }
+
+  return result;
+}
 /* ------------------------------------------------------------------ */
-/* 5. Découpage $...$ / $$...$$                                        */
+/* 4. Découpage $...$ / $$...$$                                        */
 /* ------------------------------------------------------------------ */
 
 function splitDollarMath(value: string): Segment[] {
@@ -325,10 +196,7 @@ function splitDollarMath(value: string): Segment[] {
 
   while ((match = regex.exec(value)) !== null) {
     if (match.index > lastIndex) {
-      result.push({
-        type: "text",
-        value: value.slice(lastIndex, match.index),
-      });
+      result.push({ type: "text", value: value.slice(lastIndex, match.index) });
     }
     const isDisplay = match[1] !== undefined;
     result.push({
@@ -347,7 +215,7 @@ function splitDollarMath(value: string): Segment[] {
 }
 
 /* ------------------------------------------------------------------ */
-/* 6. Rendu d'un segment math                                          */
+/* 5. Rendu d'un segment math                                          */
 /* ------------------------------------------------------------------ */
 
 function renderMath(math: string, display: boolean, key: number): ReactNode {
@@ -384,7 +252,7 @@ function renderMath(math: string, display: boolean, key: number): ReactNode {
 }
 
 /* ------------------------------------------------------------------ */
-/* 7. Composant principal                                              */
+/* 6. Composant principal                                              */
 /* ------------------------------------------------------------------ */
 
 export function MathText({
@@ -396,7 +264,7 @@ export function MathText({
 
   const value = String(content);
 
-  // --- Cas A : contenu balisé avec $...$ ou $$...$$ ---
+  // Cas A : contenu avec $...$ explicite
   if (value.includes("$")) {
     const parts = splitDollarMath(value);
     return (
@@ -412,7 +280,7 @@ export function MathText({
     );
   }
 
-  // --- Cas B : expression purement mathématique ---
+  // Cas B : contenu pur math
   if (isPureMath(value)) {
     const math = normalizeMathText(value);
     if (block) {
@@ -421,9 +289,7 @@ export function MathText({
           <BlockMath
             math={math}
             errorColor="#dc2626"
-            renderError={() => (
-              <span style={{ color: "#dc2626" }}>{value}</span>
-            )}
+            renderError={() => <span style={{ color: "#dc2626" }}>{value}</span>}
           />
         </div>
       );
@@ -439,9 +305,10 @@ export function MathText({
     );
   }
 
-  // --- Cas C : texte mixte → segmentation automatique ---
+  // Cas C : texte mixte → on découpe automatiquement
   const parts = splitPlainTextAndMath(value);
 
+  // Aucun segment math trouvé → texte brut
   if (parts.every((p) => p.type === "text")) {
     return <span className={className}>{value}</span>;
   }
