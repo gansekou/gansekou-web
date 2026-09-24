@@ -22,44 +22,115 @@ const SUPERSCRIPTS: Record<string, string> = {
 function normalizeMathText(value: string): string {
   let text = value.trim();
 
-  // Racines carrées Unicode
-  text = text.replace(/√\s*\(([^()]*)\)/g, "\\sqrt{$1}");
-  text = text.replace(/√\s*([0-9]+(?:[.,][0-9]+)?)/g, "\\sqrt{$1}");
-  text = text.replace(/√\s*([a-zA-Z][a-zA-Z0-9]*)/g, "\\sqrt{$1}");
+  // ---------------------------------------------------------------
+  // 1. Normalisation des signes Unicode
+  // ---------------------------------------------------------------
 
-  // Fractions entre parenthèses : (a+b)/(c+d)
+  text = text
+    .replace(/−/g, "-")
+    .replace(/–/g, "-")
+    .replace(/—/g, "-")
+    .replace(/·/g, "\\cdot ")
+    .replace(/×/g, "\\times ")
+    .replace(/≤/g, "\\leq ")
+    .replace(/≥/g, "\\geq ")
+    .replace(/≠/g, "\\neq ")
+    .replace(/±/g, "\\pm ")
+    .replace(/π/g, "\\pi ")
+    .replace(/∞/g, "\\infty ");
+
+  // ---------------------------------------------------------------
+  // 2. Racines carrées Unicode
+  // ---------------------------------------------------------------
+
+  text = text.replace(
+    /√\s*\(([^()]*)\)/g,
+    "\\sqrt{$1}"
+  );
+
+  text = text.replace(
+    /√\s*([0-9]+(?:[.,][0-9]+)?)/g,
+    "\\sqrt{$1}"
+  );
+
+  text = text.replace(
+    /√\s*([a-zA-Z][a-zA-Z0-9]*)/g,
+    "\\sqrt{$1}"
+  );
+
+  // ---------------------------------------------------------------
+  // 3. Fractions avec parenthèses
+  // Exemples :
+  // (a+b)/(c+d)
+  // (x+1)/(x-2)
+  // ---------------------------------------------------------------
+
   text = text.replace(
     /\(([^()]+)\)\s*\/\s*\(([^()]+)\)/g,
     "\\frac{$1}{$2}"
   );
 
-  // Fractions numériques simples : 4/5, -3/2
+  // ---------------------------------------------------------------
+  // 4. Fractions avec un numérateur entre parenthèses
+  // Exemples :
+  // (x+1)/2
+  // (a-b)/c
+  // ---------------------------------------------------------------
+
   text = text.replace(
-    /(^|[\s=(+\-*×])(-?\d+(?:[.,]\d+)?)\s*\/\s*(\d+(?:[.,]\d+)?)(?=$|[\s),+\-*×])/g,
-    (_m, prefix, num, den) => `${prefix}\\frac{${num}}{${den}}`
+    /\(([^()]+)\)\s*\/\s*([a-zA-Z0-9]+)/g,
+    "\\frac{$1}{$2}"
   );
 
-  // Puissances Unicode : x² -> x^{2}
+  // ---------------------------------------------------------------
+  // 5. Fractions avec un dénominateur entre parenthèses
+  // Exemples :
+  // x/(a+b)
+  // 2/(x-1)
+  // ---------------------------------------------------------------
+
+  text = text.replace(
+    /([a-zA-Z0-9]+)\s*\/\s*\(([^()]+)\)/g,
+    "\\frac{$1}{$2}"
+  );
+
+  // ---------------------------------------------------------------
+  // 6. Fractions simples avec lettres ou nombres
+  // Exemples :
+  // 1/2, x/2, a/b, 3x/4
+  // ---------------------------------------------------------------
+
+  text = text.replace(
+    /(^|[\s=(+\-*])(-?(?:\d+(?:[.,]\d+)?|[a-zA-Z](?:[a-zA-Z0-9]*)))\s*\/\s*(\d+(?:[.,]\d+)?|[a-zA-Z](?:[a-zA-Z0-9]*))(?=$|[\s),.+\-*=])/g,
+    (_match, prefix, numerator, denominator) => {
+      return `${prefix}\\frac{${numerator}}{${denominator}}`;
+    }
+  );
+
+  // ---------------------------------------------------------------
+  // 7. Puissances Unicode
+  // ---------------------------------------------------------------
+
   text = text.replace(
     /([a-zA-Z0-9)])([⁰¹²³⁴⁵⁶⁷⁸⁹]+)/g,
-    (_m, base: string, power: string) => {
-      const converted = [...power].map((c) => SUPERSCRIPTS[c] ?? c).join("");
+    (_match, base: string, power: string) => {
+      const converted = [...power]
+        .map((character) => SUPERSCRIPTS[character] ?? character)
+        .join("");
+
       return `${base}^{${converted}}`;
     }
   );
 
-  // Puissances parenthésées : x^(2) -> x^{2}
-  text = text.replace(/([a-zA-Z0-9)])\^\(([^()]*)\)/g, "$1^{$2}");
+  // ---------------------------------------------------------------
+  // 8. Puissances entre parenthèses
+  // Exemple : x^(2) → x^{2}
+  // ---------------------------------------------------------------
 
-  // Symboles mathématiques
-  text = text
-    .replace(/π/g, "\\pi ")
-    .replace(/∞/g, "\\infty ")
-    .replace(/≤/g, "\\leq ")
-    .replace(/≥/g, "\\geq ")
-    .replace(/≠/g, "\\neq ")
-    .replace(/±/g, "\\pm ")
-    .replace(/×/g, "\\times ");
+  text = text.replace(
+    /([a-zA-Z0-9)])\^\(([^()]*)\)/g,
+    "$1^{$2}"
+  );
 
   return text;
 }
@@ -130,7 +201,7 @@ function splitPlainTextAndMath(value: string): Segment[] {
    */
 
   const regex =
-    /(?:[a-zA-Z]\s*=\s*)?(?:[a-zA-Z0-9]+|\([^()\n]+\)|√\s*(?:\([^()\n]+\)|[a-zA-Z0-9]+))(?:\s*(?:[+\-−*/^=≤≥≠×÷])\s*(?:[a-zA-Z0-9]+|\([^()\n]+\)|√\s*(?:\([^()\n]+\)|[a-zA-Z0-9]+)))+(?=(?:[.,;:!?]|\s|$))/g;
+  /(?:[a-zA-Z]\s*=\s*)?(?:\\sqrt\s*\{[^{}]+\}|√\s*(?:\([^()\n]+\)|[a-zA-Z0-9]+)|[a-zA-Z0-9]+|\([^()\n]+\))(?:\s*(?:[+\-−*/^=≤≥≠×÷])\s*(?:\\sqrt\s*\{[^{}]+\}|√\s*(?:\([^()\n]+\)|[a-zA-Z0-9]+)|[a-zA-Z0-9]+|\([^()\n]+\)))+(?=(?:[.,;:!?]|\s|$))/g;
 
   let lastIndex = 0;
   let match: RegExpExecArray | null;
