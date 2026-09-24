@@ -28,16 +28,30 @@ function normalizeMathText(value: string): string {
   text = text.replace(/√\s*([a-zA-Z][a-zA-Z0-9]*)/g, "\\sqrt{$1}");
 
   // Fractions entre parenthèses : (a+b)/(c+d)
-  text = text.replace(
-    /\(([^()]+)\)\s*\/\s*\(([^()]+)\)/g,
-    "\\frac{$1}{$2}"
-  );
+text = text.replace(
+  /\(([^()]+)\)\s*\/\s*\(([^()]+)\)/g,
+  "\\frac{$1}{$2}"
+);
 
-  // Fractions numériques simples : 4/5, -3/2
-  text = text.replace(
-    /(^|[\s=(+\-*×])(-?\d+(?:[.,]\d+)?)\s*\/\s*(\d+(?:[.,]\d+)?)(?=$|[\s),+\-*×])/g,
-    (_m, prefix, num, den) => `${prefix}\\frac{${num}}{${den}}`
-  );
+// Fractions avec numérateur entre parenthèses : (x+1)/2
+text = text.replace(
+  /\(([^()]+)\)\s*\/\s*([a-zA-Z0-9]+)/g,
+  "\\frac{$1}{$2}"
+);
+
+// Fractions avec dénominateur entre parenthèses : x/(x+1)
+text = text.replace(
+  /([a-zA-Z0-9]+)\s*\/\s*\(([^()]+)\)/g,
+  "\\frac{$1}{$2}"
+);
+
+// Fractions simples : 4/5, x/2, a/b, 3x/4
+text = text.replace(
+  /(^|[\s=(+\-*])(-?(?:\d+(?:[.,]\d+)?|[a-zA-Z](?:[a-zA-Z0-9]*)))\s*\/\s*(\d+(?:[.,]\d+)?|[a-zA-Z](?:[a-zA-Z0-9]*))(?=$|[\s),.+\-*=])/g,
+  (_match, prefix, numerator, denominator) => {
+    return `${prefix}\\frac{${numerator}}{${denominator}}`;
+  }
+);
 
   // Puissances Unicode : x² -> x^{2}
   text = text.replace(
@@ -218,14 +232,22 @@ function splitDollarMath(value: string): Segment[] {
 /* 5. Rendu d'un segment math                                          */
 /* ------------------------------------------------------------------ */
 
-function renderMath(math: string, display: boolean, key: number): ReactNode {
-  const isLatex = /\\[a-zA-Z]+/.test(math);
-  const normalized = isLatex ? math : normalizeMathText(math);
+function renderMath(
+  math: string,
+  display: boolean,
+  key: number
+): ReactNode {
+  // Toujours normaliser, même si l'expression contient déjà du LaTeX.
+  // Exemple : \sqrt{2}/3 → \sqrt{2}/3, puis conversion contrôlée.
+  const normalized = normalizeMathText(math);
 
   const errorFallback = (error: Error) => (
     <span
       title={error.message}
-      style={{ color: "#dc2626", fontFamily: "monospace" }}
+      style={{
+        color: "#dc2626",
+        fontFamily: "monospace",
+      }}
     >
       {math}
     </span>
@@ -241,6 +263,7 @@ function renderMath(math: string, display: boolean, key: number): ReactNode {
       />
     );
   }
+
   return (
     <InlineMath
       key={key}
