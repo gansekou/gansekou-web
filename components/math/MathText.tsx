@@ -145,23 +145,41 @@ function normalizeMathText(value: string): string {
  */
 function isPureMath(value: string): boolean {
   const v = value.trim();
+
   if (!v) return false;
 
-  // Si contient déjà du LaTeX explicite
-  if (/\\[a-zA-Z]+/.test(v)) return true;
+  // Une phrase contenant des mots ne doit jamais
+  // être traitée comme une formule mathématique complète.
+  if (/[À-ÿ]/.test(v)) return false;
 
-  // Caractères autorisés dans une expression pure
-  // (lettres, chiffres, opérateurs, parenthèses, espaces, symboles)
-  const allowed = /^[a-zA-Z0-9\s+\-*/^_=().,{}[\]|<>≤≥≠±×÷√π∞∑∏∫°'′″:;!?]+$/;
-  if (!allowed.test(v)) return false;
+  if (/\b(?:le|la|les|un|une|des|dans|avec|est|soit|on|calcule|déterminer|résoudre)\b/i.test(v)) {
+    return false;
+  }
 
-  // Doit contenir au moins un signe « mathématique » distinctif
+  // Si la chaîne contient des espaces entre plusieurs mots,
+  // elle doit rester du texte.
+  if (/\s+[a-zA-Z]{2,}\s+/.test(` ${v} `)) {
+    return false;
+  }
+
+  // LaTeX explicite
+  if (/\\[a-zA-Z]+/.test(v)) {
+    return true;
+  }
+
+  // Une expression doit contenir au moins un opérateur
+  // ou une structure mathématique identifiable.
   const hasMathSignal =
-    /[+\-*/^_=√π∞≤≥≠±×÷]/.test(v) ||   // opérateur
-    /\([^)]*[a-zA-Z][^)]*\)/.test(v) || // parenthèses avec lettres
-    /\d/.test(v);                       // au moins un chiffre
+    /[+\-*/^_=√π∞≤≥≠±×÷]/.test(v) ||
+    /\([^)]*[a-zA-Z][^)]*\)/.test(v);
 
-  return hasMathSignal;
+  if (!hasMathSignal) return false;
+
+  // Vérification des caractères autorisés
+  const allowed =
+    /^[a-zA-Z0-9\s+\-*/^_=().,{}[\]|<>≤≥≠±×÷√π∞∑∏∫°'′″]+$/;
+
+  return allowed.test(v);
 }
 
 /* ------------------------------------------------------------------ */
