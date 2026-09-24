@@ -23,6 +23,11 @@ import {
   downloadAuthenticatedFile,
   getContentMainUrl,
 } from "@/lib/content-media";
+
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { isAdminRole, isStudentRole } from "@/lib/permissions";
 import { useRouter } from "next/navigation";
 import { platformService } from "@/services/platform.service";
@@ -1145,6 +1150,24 @@ function LearningContentDetail({
           }
         />
       </section>
+
+      {content.content_details?.trim() &&
+        content.content_format !== "TEXT" ? (
+        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-xl shadow-[#082f1f]/5 md:p-8">
+          <h3 className="mb-4 text-2xl font-black text-[#071d3a]">
+            Présentation du contenu
+          </h3>
+      
+          <article className="prose prose-slate max-w-none leading-8">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+            >
+              {content.content_details}
+            </ReactMarkdown>
+          </article>
+        </section>
+      ) : null}
 
       <ContentMediaViewer
         content={content}
