@@ -5,6 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/app/StateViews";
 import { PremiumSkeleton } from "@/components/ui/PremiumSkeleton";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import {
   getContentKind,
   getContentStreamUrl,
@@ -102,8 +106,46 @@ export function ContentMediaViewer({
     window.localStorage.setItem(noteKey, value);
   }
 
+  if (content.content_format === "TEXT") {
+    if (!content.content_details?.trim()) {
+      return (
+        <EmptyState
+          title="Contenu textuel vide"
+          message="Aucun détail textuel n'a été renseigné pour ce contenu."
+        />
+      );
+    }
+  
+    return (
+      <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-xl shadow-[#082f1f]/5">
+        <div className="border-b border-slate-100 bg-slate-50 px-5 py-4">
+          <p className="font-black text-[#071d3a]">
+            Contenu pédagogique
+          </p>
+          <p className="text-sm font-bold text-slate-500">
+            TEXTE · {content.content_type}
+          </p>
+        </div>
+  
+        <article className="prose prose-slate max-w-none p-6 leading-8 md:p-10">
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, remarkMath]}
+            rehypePlugins={[rehypeKatex]}
+          >
+            {content.content_details}
+          </ReactMarkdown>
+        </article>
+      </section>
+    );
+  }
+  
   if (kind === "none" || !streamUrl) {
-    return <EmptyState title={t("content.noMainFile")} message={t("content.noMainFile")} />;
+    return (
+      <EmptyState
+        title={t("content.noMainFile")}
+        message={t("content.noMainFile")}
+      />
+    );
   }
 
   return (
