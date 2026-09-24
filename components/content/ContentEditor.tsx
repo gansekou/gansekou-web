@@ -8,7 +8,7 @@ import { useEffect } from "react";
 import { ApiError } from "@/lib/api";
 import { canCreateContent, canEditContent, isAdminRole } from "@/lib/permissions";
 import { platformService } from "@/services/platform.service";
-import type { Content } from "@/types/content";
+import type { Content, ContentFormat } from "@/types/content";
 import type { Level, Specialty, Subject } from "@/types/platform";
 import type { User } from "@/types/user";
 
@@ -66,6 +66,12 @@ export function ContentEditor({
       lockedType ||
       content?.content_type ||
       defaultType,
+
+    content_format:
+      content?.content_format || "PDF",
+    
+    content_details:
+      content?.content_details || "",
   
     file_url: content?.file_url || "",
     thumbnail_url: content?.thumbnail_url || "",
@@ -184,6 +190,11 @@ export function ContentEditor({
       
         content_type:
           lockedType || form.content_type,
+
+        content_format: form.content_format,
+
+        content_details:
+          form.content_details.trim() || null,
       
         file_url: fileUrl,
       
@@ -256,6 +267,26 @@ export function ContentEditor({
             <select value={form.content_type} onChange={(event) => setForm((current) => ({ ...current, content_type: event.target.value }))} className={inputClass}>{["COURS", "EXERCICE", "SUJET"].map((type, index) => <option key={`content-type-${type}-${index}`}>{type}</option>)}</select>
           )}
         </Field>
+        <Field label="Format du contenu">
+          <select
+            value={form.content_format}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                content_format: event.target.value as ContentFormat,
+              }))
+            }
+            className={inputClass}
+          >
+            <option value="TEXT">Texte</option>
+            <option value="PDF">PDF</option>
+            <option value="VIDEO">Vidéo</option>
+            <option value="AUDIO">Audio</option>
+            <option value="IMAGE">Image</option>
+            <option value="EXTERNAL">Lien externe</option>
+          </select>
+        </Field>
+        
         <Field label={t("common.level")}>
           <div className="max-h-48 space-y-2 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4">
             {levels.map((level) => {
@@ -355,6 +386,23 @@ export function ContentEditor({
         <Field label={t("content.tags")}><input value={form.tags} onChange={(event) => setForm((current) => ({ ...current, tags: event.target.value }))} className={inputClass} /></Field>
         {isAdminRole(user) && <Field label={t("common.status")}><select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))} className={inputClass}><option value="PENDING">{t("content.pendingReview")}</option><option value="APPROVED">{t("content.published")}</option><option value="ARCHIVED">{t("content.archived")}</option></select></Field>}
       </div>
+      <Field label="Détails du contenu (facultatif)">
+        <textarea
+          value={form.content_details}
+          onChange={(event) =>
+            setForm((current) => ({
+              ...current,
+              content_details: event.target.value,
+            }))
+          }
+          placeholder="Saisissez les explications, le cours ou les informations complémentaires..."
+          className={`${inputClass} min-h-40`}
+        />
+        <p className="text-xs font-medium text-slate-500">
+          Ce champ est facultatif. Vous pouvez le laisser vide,
+          notamment pour les contenus PDF, vidéo ou audio.
+        </p>
+      </Field>
       <Field label={t("content.description")}><textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className={`${inputClass} min-h-32`} /></Field>
       {form.subject_id && form.level_ids.length > 0 && (
       <Field label="Contenus liés (optionnel)">
