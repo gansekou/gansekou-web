@@ -27,6 +27,10 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   "https://api.gansekou.com/api/v1";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  "https://gansekou.com";
+
 async function getPublicContent(
   id: string
 ): Promise<PublicSeoContent | null> {
@@ -44,17 +48,13 @@ async function getPublicContent(
   }
 
   if (!response.ok) {
-    throw new Error(
-      `Erreur API SEO : ${response.status}`
-    );
+    throw new Error(`Erreur API SEO : ${response.status}`);
   }
 
   return response.json();
 }
 
-function getContentTypeLabel(
-  contentType: string
-): string {
+function getContentTypeLabel(contentType: string): string {
   const labels: Record<string, string> = {
     COURS: "Cours",
     EXERCICE: "Exercice",
@@ -65,9 +65,7 @@ function getContentTypeLabel(
   return labels[contentType] || contentType;
 }
 
-function getContentFormatLabel(
-  contentFormat: string
-): string {
+function getContentFormatLabel(contentFormat: string): string {
   const labels: Record<string, string> = {
     TEXT: "Texte",
     PDF: "PDF",
@@ -80,6 +78,46 @@ function getContentFormatLabel(
   return labels[contentFormat] || contentFormat;
 }
 
+function cleanText(value: string): string {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function buildSeoTitle(content: PublicSeoContent): string {
+  const subject = content.subject_name
+    ? ` – ${content.subject_name}`
+    : "";
+
+  const levels =
+    content.level_names.length > 0
+      ? ` – ${content.level_names.slice(0, 2).join(", ")}`
+      : "";
+
+  const title = `${cleanText(content.title)}${subject}${levels}`;
+
+  return title.length > 60
+    ? `${cleanText(content.title)} | Gansekou`
+    : `${title} | Gansekou`;
+}
+
+function buildSeoDescription(content: PublicSeoContent): string {
+  if (content.description) {
+    return cleanText(content.description).slice(0, 160);
+  }
+
+  const typeLabel = getContentTypeLabel(content.content_type);
+
+  const subject = content.subject_name
+    ? ` de ${content.subject_name}`
+    : "";
+
+  const levels =
+    content.level_names.length > 0
+      ? ` pour ${content.level_names.slice(0, 2).join(" et ")}`
+      : "";
+
+  return `${typeLabel}${subject}${levels} au Cameroun. Consultez cette ressource pédagogique sur Gansekou pour apprendre, réviser et progresser.`;
+}
+
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -90,39 +128,50 @@ export async function generateMetadata({
     return {
       title: "Ressource introuvable | Gansekou",
       description:
-        "Cette ressource pédagogique n'est pas disponible.",
+        "Cette ressource pédagogique n'est pas disponible sur Gansekou.",
+      robots: {
+        index: false,
+        follow: false,
+      },
     };
   }
 
-  const title = `${content.title} | Gansekou`;
-
-  const description =
-    content.description ||
-    `Découvrez cette ressource pédagogique de ${content.subject_name || "Gansekou"}.`;
+  const title = buildSeoTitle(content);
+  const description = buildSeoDescription(content);
+  const canonicalUrl = `${SITE_URL}/ressources/${content.id}`;
 
   return {
     title,
     description,
 
     alternates: {
-      canonical: `/ressources/${content.id}`,
+      canonical: canonicalUrl,
     },
 
     openGraph: {
       title,
       description,
       type: "article",
-      url: `/ressources/${content.id}`,
+      url: canonicalUrl,
       siteName: "Gansekou",
       locale: "fr_CM",
-      images: content.thumbnail_url
-        ? [
-            {
-              url: content.thumbnail_url,
-              alt: content.title,
-            },
-          ]
-        : undefined,
+
+      ...(content.published_at
+        ? {
+            publishedTime: content.published_at,
+          }
+        : {}),
+
+      ...(content.thumbnail_url
+        ? {
+            images: [
+              {
+                url: content.thumbnail_url,
+                alt: content.title,
+              },
+            ],
+          }
+        : {}),
     },
 
     twitter: {
@@ -131,14 +180,21 @@ export async function generateMetadata({
         : "summary",
       title,
       description,
-      images: content.thumbnail_url
-        ? [content.thumbnail_url]
-        : undefined,
+
+      ...(content.thumbnail_url
+        ? {
+            images: [content.thumbnail_url],
+          }
+        : {}),
     },
 
     robots: {
       index: !content.is_premium,
       follow: true,
+      googleBot: {
+        index: !content.is_premium,
+        follow: true,
+      },
     },
   };
 }
@@ -161,8 +217,101 @@ export default async function PublicResourcePage({
     content.content_format
   );
 
+  const seoTitle = buildSeoTitle(content);
+  const seoDescription = buildSeoDescription(content);
+  const canonicalUrl = `${SITE_URL}/ressources/${content.id}`;
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "LearningResource",
+
+    "@id": canonicalUrl,
+
+    name: content.title,
+    description: seoDescription,
+    url: canonicalUrl,
+    inLanguage: "fr",
+
+    learningResourceType: contentTypeLabel,
+
+    isAccessibleForFree: !content.is_premium,
+
+    provider: {
+      "@type": "Organization",
+      name: "Gansekou",
+      url: SITE_URL,
+    },
+
+    ...(content.subject_name
+      ? {
+          about: {
+            "@type": "Thing",
+            name: content.subject_name,
+          },
+        }
+      : {}),
+
+    ...(content.level_names.length > 0
+      ? {
+          educationalLevel: content.level_names,
+        }
+      : {}),
+
+    ...(content.thumbnail_url
+      ? {
+          image: content.thumbnail_url,
+        }
+      : {}),
+
+    ...(content.published_at
+      ? {
+          datePublished: content.published_at,
+        }
+      : {}),
+  };
+
+  const breadcrumbData = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Accueil",
+        item: SITE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Ressources",
+        item: `${SITE_URL}/ressources`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: content.title,
+        item: canonicalUrl,
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-slate-50">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData),
+        }}
+      />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbData),
+        }}
+      />
+
       <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
         <nav
           aria-label="Fil d'Ariane"
