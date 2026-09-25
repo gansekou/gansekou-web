@@ -282,7 +282,7 @@ export default async function PublicResourcePage({
               </p>
 
               <Link
-                href="/connexion"
+                href="/login"
                 className="mt-4 inline-flex items-center justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
               >
                 Accéder à Gansekou
