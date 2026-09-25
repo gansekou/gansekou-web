@@ -1,61 +1,143 @@
+
 import type { Metadata, Viewport } from "next";
 import { PWARegistrar } from "@/components/premium/PWARegistrar";
 import { RouteProgress } from "@/components/ui/RouteProgress";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 import "./globals.css";
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.gansekou.com";
 
+const SITE_NAME = "Gansekou";
+
+const DEFAULT_TITLE =
+  "Gansekou | Plateforme éducative au Cameroun";
+
+const DEFAULT_DESCRIPTION =
+  "Gansekou est une plateforme éducative dédiée aux apprenants au Cameroun. Accédez à des cours, exercices, quiz et outils d'apprentissage pour progresser et réussir.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "https://gansekou.com"
-  ),
+  metadataBase: new URL(SITE_URL),
+
   title: {
-    default: "Gansekou | Plateforme educative premium",
+    default: DEFAULT_TITLE,
     template: "%s | Gansekou",
   },
-  description: "Plateforme educative intelligente pour le Cameroun: cours, quiz, IA pedagogique, progression et premium.",
-  applicationName: "Gansekou",
+
+  description: DEFAULT_DESCRIPTION,
+
+  applicationName: SITE_NAME,
+
+  generator: "Next.js",
+
+  keywords: [
+    "Gansekou",
+    "éducation au Cameroun",
+    "cours en ligne Cameroun",
+    "exercices scolaires",
+    "quiz éducatifs",
+    "BEPC",
+    "Probatoire",
+    "Baccalauréat",
+    "Terminale C",
+    "mathématiques Cameroun",
+  ],
+
+  authors: [
+    {
+      name: "Gansekou",
+      url: SITE_URL,
+    },
+  ],
+
+  creator: SITE_NAME,
+
+  publisher: SITE_NAME,
+
+  alternates: {
+    canonical: "/",
+  },
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+
   appleWebApp: {
     capable: true,
-    title: "Gansekou",
+    title: SITE_NAME,
     statusBarStyle: "black-translucent",
   },
-  // Browser tab favicon display size is controlled by the browser UI; these high-resolution sources maximize clarity.
+
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon.png", type: "image/png" },
+      {
+        url: "/favicon.ico",
+        sizes: "any",
+      },
+      {
+        url: "/icon.png",
+        type: "image/png",
+      },
     ],
+
     shortcut: "/favicon.ico",
-    apple: [{ url: "/apple-icon.png", type: "image/png" }],
+
+    apple: [
+      {
+        url: "/apple-icon.png",
+        type: "image/png",
+      },
+    ],
   },
+
   openGraph: {
-    title: "Gansekou | Plateforme educative premium",
-    description: "Cours, quiz, IA pedagogique, progression et premium pour les apprenants africains.",
-    siteName: "Gansekou",
+    title: DEFAULT_TITLE,
+
+    description: DEFAULT_DESCRIPTION,
+
+    url: SITE_URL,
+
+    siteName: SITE_NAME,
+
     locale: "fr_CM",
+
     type: "website",
+
     images: [
       {
         url: "/images/gansekou-logo.png",
         width: 512,
         height: 512,
-        alt: "Gansekou",
+        alt: "Logo de Gansekou",
       },
     ],
   },
+
   twitter: {
     card: "summary",
-    title: "Gansekou | Plateforme educative premium",
-    description: "Cours, quiz, IA pedagogique, progression et premium pour les apprenants africains.",
+
+    title: DEFAULT_TITLE,
+
+    description: DEFAULT_DESCRIPTION,
+
     images: ["/images/gansekou-logo.png"],
   },
+
   manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {
   themeColor: "#071d3a",
+
+  colorScheme: "light",
 };
 
 export default function RootLayout({
@@ -71,8 +153,11 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <RouteProgress />
+
         {children}
+
         <PWARegistrar />
+
         <ToastProvider />
       </body>
     </html>
