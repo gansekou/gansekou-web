@@ -224,62 +224,63 @@ export function ContentEditor({
     };
   }, [content?.id]);
 
+  
   async function saveFrenchTranslation(
     contentId: string,
     title: string,
     description: string,
   ): Promise<ContentTranslation> {
     const cleanTitle = title.trim();
-
+  
     if (!cleanTitle) {
       throw new Error("Le titre du contenu est obligatoire.");
     }
-
+  
     const translations =
       (await platformService.contents.translations(
         contentId,
       )) as ContentTranslation[];
-
+  
     const frenchTranslation = getFrenchTranslation(translations);
-
+  
     const translationPayload = {
       content_id: contentId,
       language: "FR",
       title: cleanTitle,
       description: description.trim() || null,
     };
-
-    if (frenchTranslation) {
-      await platformService.contents.updateTranslation(
-        frenchTranslation.id,
-        translationPayload,
-      );
-    } else {
-      await platformService.contents.createTranslation(
-        translationPayload,
-      );
-    }
-
-    // Relire la traduction pour vérifier ce qui a réellement été enregistré.
-    const savedTranslations =
-      (await platformService.contents.translations(
-        contentId,
-      )) as ContentTranslation[];
-
-    const savedFrenchTranslation =
-      getFrenchTranslation(savedTranslations);
-
+  
+    const savedTranslation = frenchTranslation
+      ? await platformService.contents.updateTranslation(
+          frenchTranslation.id,
+          translationPayload,
+        )
+      : await platformService.contents.createTranslation(
+          translationPayload,
+        );
+  
+    const result = savedTranslation as ContentTranslation;
+  
     if (
-      !savedFrenchTranslation ||
-      savedFrenchTranslation.title?.trim() !== cleanTitle
+      !result ||
+      typeof result !== "object" ||
+      !result.id ||
+      !result.title?.trim()
     ) {
       throw new Error(
-        "Le contenu a été enregistré, mais le titre français n'a pas pu être vérifié. Rechargez la page et réessayez.",
+        "L'API n'a pas confirmé l'enregistrement de la traduction française. Vérifiez la réponse de la requête dans l'onglet Réseau du navigateur.",
       );
     }
-
-    return savedFrenchTranslation;
+  
+    if (result.title.trim() !== cleanTitle) {
+      throw new Error(
+        "L'API a retourné un titre différent de celui saisi. Vérifiez la réponse de la requête dans l'onglet Réseau du navigateur.",
+      );
+    }
+  
+    return result;
   }
+
 
   async function submit() {
     if (!canSubmit || saving) {
