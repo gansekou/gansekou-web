@@ -1,18 +1,24 @@
+
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/app/StateViews";
 import { useI18n } from "@/hooks/useI18n";
-import { useEffect } from "react";
 import { ApiError } from "@/lib/api";
-import { canCreateContent, canEditContent, isAdminRole } from "@/lib/permissions";
+import {
+  canCreateContent,
+  canEditContent,
+  isAdminRole,
+} from "@/lib/permissions";
+import { contentService } from "@/services/content.service";
 import { platformService } from "@/services/platform.service";
 import type { Content, ContentFormat } from "@/types/content";
 import type { Level, Specialty, Subject } from "@/types/platform";
 import type { User } from "@/types/user";
 
-const inputClass = "rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-[#0f5f3a]";
+const inputClass =
+  "rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-[#0f5f3a]";
 
 export function ContentEditor({
   user,
@@ -40,67 +46,94 @@ export function ContentEditor({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useI18n(user);
-  const canSubmit = content ? canEditContent(user, content) : canCreateContent(user);
+
+  const canSubmit = content
+    ? canEditContent(user, content)
+    : canCreateContent(user);
+
+  const initialFrenchTranslation = content?.translations?.find(
+    (translation) =>
+      translation.language.trim().toUpperCase() === "FR"
+  );
+
   const [form, setForm] = useState({
-    title: content?.title || "",
-    description: content?.description || "",
-  
+    title:
+      initialFrenchTranslation?.title ||
+      content?.title ||
+      "",
+    description:
+      initialFrenchTranslation?.description ||
+      content?.description ||
+      "",
+
     subject_id:
       content?.subject_id ||
       searchParams.get("subject_id") ||
       "",
-  
+
     level_ids:
       content?.level_ids ||
       content?.levels?.map((level) => level.id) ||
       (searchParams.get("level_id")
         ? [searchParams.get("level_id")!]
         : []),
-  
+
     specialty_ids:
       content?.specialty_ids ||
       content?.specialties?.map((specialty) => specialty.id) ||
       [],
-  
+
     content_type:
       lockedType ||
       content?.content_type ||
       defaultType,
 
     content_format:
-      content?.content_format || "PDF",
-    
+      (content?.content_format || "PDF") as ContentFormat,
+
     content_details:
       content?.content_details || "",
-  
+
     file_url: content?.file_url || "",
     thumbnail_url: content?.thumbnail_url || "",
-  
+
     status: content?.status || "PENDING",
-  
+
     is_premium: Boolean(content?.is_premium),
-  
+
     is_available_offline:
       Boolean(content?.is_available_offline),
-  
+
     difficulty_level:
       content?.difficulty_level || "",
-  
+
     estimated_duration_minutes:
       content?.estimated_duration_minutes
         ? String(content.estimated_duration_minutes)
         : "",
-  
+
     tags: content?.tags || "",
   });
+
   const [file, setFile] = useState<File | null>(null);
   const [thumbnail, setThumbnail] = useState<File | null>(null);
+
   const [relatedContentIds, setRelatedContentIds] = useState<string[]>(
     content?.related_contents?.map((item) => item.id) || []
   );
-  const [availableContents, setAvailableContents] = useState<Content[]>([]);
 
+  const [availableContents, setAvailableContents] = useState<Content[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  /*
+   * Charge les contenus liés en fonction de la matière,
+   * du premier niveau sélectionné et du type de contenu.
+   */
   useEffect(() => {
+    let cancelled = false;
+
     async function loadRelatedContents() {
       try {
         if (
@@ -110,32 +143,35 @@ export function ContentEditor({
           setAvailableContents([]);
           return;
         }
-  
-        const currentType =
-          lockedType || form.content_type;
-  
+
         const contents =
           await platformService.contents.relatedOptions({
             level_id: form.level_ids[0],
             subject_id: form.subject_id,
-            target_type: currentType,
+            target_type: lockedType || form.content_type,
             exclude_id: content?.id,
           });
-  
-        setAvailableContents(contents);
-  
-      } catch (error) {
+
+        if (!cancelled) {
+          setAvailableContents(contents);
+        }
+      } catch (err) {
         console.error(
-          "Erreur chargement contenus liés",
-          error
+          "Erreur lors du chargement des contenus liés",
+          err
         );
-  
-        setAvailableContents([]);
+
+        if (!cancelled) {
+          setAvailableContents([]);
+        }
       }
     }
-  
-    loadRelatedContents();
-  
+
+    void loadRelatedContents();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     form.subject_id,
     form.level_ids,
@@ -143,16 +179,65 @@ export function ContentEditor({
     lockedType,
     content?.id,
   ]);
-  
-  const [saving, setSaving] = useState(false);
-  
-  const [status, setStatus] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+
+  /*
+   * Charge la véritable traduction française depuis l'API.
+   * Les valeurs présentes dans le contenu restent utilisées
+   * comme valeurs de secours si la requête échoue.
+   */
+  useEffect(() => {
+    if (!content?.id) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadFrenchTranslation() {
+      try {
+        const translations =
+          await contentService.getContentTranslations(content!.id);
+
+        if (cancelled) {
+          return;
+        }
+
+        const frenchTranslation = translations.find(
+          (translation) =>
+            translation.language.trim().toUpperCase() === "FR"
+        );
+
+        if (!frenchTranslation) {
+          return;
+        }
+
+        setForm((current) => ({
+          ...current,
+          title: frenchTranslation.title || "",
+          description: frenchTranslation.description || "",
+        }));
+      } catch (err) {
+        console.error(
+          "Erreur de chargement de la traduction française",
+          err
+        );
+      }
+    }
+
+    void loadFrenchTranslation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [content?.id]);
 
   async function submit() {
-    if (!canSubmit) return;
+    if (!canSubmit || saving) {
+      return;
+    }
+
     setStatus(null);
     setError(null);
+
     if (
       !form.subject_id ||
       form.level_ids.length === 0 ||
@@ -162,21 +247,22 @@ export function ContentEditor({
       setError(t("content.validation"));
       return;
     }
-    
-    if (
-      form.content_format === "TEXT" &&
-      !form.content_details.trim()
-    ) {
-      setError(
-        "Veuillez saisir le contenu textuel avant de continuer."
-      );
+
+    if (!form.title.trim()) {
+      setError("Le titre du contenu est obligatoire.");
       return;
     }
 
     setSaving(true);
+
     try {
       let fileUrl = form.file_url || null;
       let thumbnailUrl = form.thumbnail_url || null;
+
+      /*
+       * Le contenu TEXT est envoyé dans content_details.
+       * Aucun fichier n'est téléversé pour ce format.
+       */
       if (
         file &&
         form.content_format !== "TEXT" &&
@@ -188,101 +274,182 @@ export function ContentEditor({
             : form.content_format === "AUDIO"
               ? await platformService.uploads.contentAudio(file)
               : await platformService.uploads.contentFile(file);
-      
+
         fileUrl = upload.file_url;
       }
-      if (thumbnail) thumbnailUrl = (await platformService.uploads.contentThumbnail(thumbnail)).file_url;
 
+      if (thumbnail) {
+        const upload =
+          await platformService.uploads.contentThumbnail(thumbnail);
+
+        thumbnailUrl = upload.file_url;
+      }
+
+      /*
+       * content_details est facultatif dans le schéma backend.
+       * On conserve donc la possibilité d'enregistrer null.
+       * Le titre et la description sont enregistrés séparément
+       * dans ContentTranslation.
+       */
       const payload = {
         author_id: content?.author_id || user.id,
-      
         subject_id: form.subject_id,
-      
         level_ids: form.level_ids,
-      
         specialty_ids: form.specialty_ids,
-      
         related_content_ids: relatedContentIds,
-      
-        content_type:
-          lockedType || form.content_type,
-
+        content_type: lockedType || form.content_type,
         content_format: form.content_format,
-
-        content_details:
-          form.content_details.trim() || null,
-      
+        content_details: form.content_details.trim() || null,
         file_url: fileUrl,
-      
         thumbnail_url: thumbnailUrl,
-      
-        status: isAdminRole(user)
-          ? form.status
-          : "PENDING",
-      
+        status: isAdminRole(user) ? form.status : "PENDING",
         is_premium: form.is_premium,
-      
-        is_available_offline:
-          form.is_available_offline,
-      
+        is_available_offline: form.is_available_offline,
         version: content?.version || 1,
-      
-        title: form.title || null,
-      
-        description: form.description || null,
-      
-        difficulty_level:
-          form.difficulty_level || null,
-      
+
+        // Ces propriétés peuvent être ignorées par ContentCreate.
+        // La source de vérité du titre et de la description est
+        // la traduction française enregistrée ci-dessous.
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+
+        difficulty_level: form.difficulty_level || null,
         estimated_duration_minutes:
           form.estimated_duration_minutes
             ? Number(form.estimated_duration_minutes)
             : null,
-      
         tags: form.tags || null,
       };
+
+      /*
+       * Récupérer les traductions AVANT la modification permet
+       * de distinguer une traduction existante d'une nouvelle.
+       * En cas d'échec de lecture, on interrompt l'opération
+       * plutôt que de créer aveuglément un doublon.
+       */
+      const existingTranslations = content
+        ? await contentService.getContentTranslations(content.id)
+        : [];
+
+      const frenchTranslation = existingTranslations.find(
+        (translation) =>
+          translation.language.trim().toUpperCase() === "FR"
+      );
 
       const saved = content
         ? await platformService.contents.update(content.id, payload)
         : await platformService.contents.create(payload);
 
-      if (form.title.trim()) {
-        await platformService.contents.createTranslation({
-          content_id: saved.id,
-          language: "FR",
-          title: form.title.trim(),
-          description: form.description.trim() || undefined,
-        }).catch(() => undefined);
+      const translationPayload = {
+        content_id: saved.id,
+        language: "FR",
+        title: form.title.trim(),
+        description: form.description.trim() || null,
+      };
+
+      if (frenchTranslation) {
+        await contentService.updateTranslation(
+          frenchTranslation.id,
+          translationPayload
+        );
+      } else {
+        await contentService.createTranslation(
+          translationPayload
+        );
       }
 
       await reload();
+
       setStatus(t("common.success"));
-      const basePath = redirectBasePath || (scope === "admin" ? "/admin/contents" : scope === "teacher" ? "/teacher/contents" : scope === "exercises" ? "/exercises" : scope === "subjects" ? "/subjects" : "/courses");
+
+      const basePath =
+        redirectBasePath ||
+        (
+          scope === "admin"
+            ? "/admin/contents"
+            : scope === "teacher"
+              ? "/teacher/contents"
+              : scope === "exercises"
+                ? "/exercises"
+                : scope === "subjects"
+                  ? "/subjects"
+                  : "/courses"
+        );
+
       router.push(`${basePath}/${saved.id}`);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t("admin.errorSave"));
+      console.error("Erreur lors de l'enregistrement du contenu", err);
+
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : t("admin.errorSave")
+      );
     } finally {
       setSaving(false);
     }
   }
 
   if (!canSubmit) {
-    return <EmptyState title={t("subject.notAllowed")} message={t("subject.notAllowedHelp")} />;
+    return (
+      <EmptyState
+        title={t("subject.notAllowed")}
+        message={t("subject.notAllowedHelp")}
+      />
+    );
   }
 
   return (
     <section className="rounded-[2rem] bg-white p-7 shadow-xl shadow-[#082f1f]/5">
-      <p className="text-sm font-black uppercase tracking-[0.22em] text-[#b88a00]">{t("content.content")}</p>
-      <h3 className="mt-2 text-3xl font-black text-[#071d3a]">{content ? t("content.edit") : t("content.add")}</h3>
+      <p className="text-sm font-black uppercase tracking-[0.22em] text-[#b88a00]">
+        {t("content.content")}
+      </p>
+
+      <h3 className="mt-2 text-3xl font-black text-[#071d3a]">
+        {content ? t("content.edit") : t("content.add")}
+      </h3>
+
       <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <Field label={t("content.title")}><input value={form.title} onChange={(event) => setForm((current) => ({ ...current, title: event.target.value }))} className={inputClass} /></Field>
+        <Field label={t("content.title")}>
+          <input
+            value={form.title}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                title: event.target.value,
+              }))
+            }
+            className={inputClass}
+          />
+        </Field>
+
         <Field label={t("content.type")}>
           {lockedType ? (
-            <input value={lockedType} readOnly className={`${inputClass} bg-slate-50`} />
+            <input
+              value={lockedType}
+              readOnly
+              className={`${inputClass} bg-slate-50`}
+            />
           ) : (
-            <select value={form.content_type} onChange={(event) => setForm((current) => ({ ...current, content_type: event.target.value }))} className={inputClass}>{["COURS", "EXERCICE", "SUJET"].map((type, index) => <option key={`content-type-${type}-${index}`}>{type}</option>)}</select>
+            <select
+              value={form.content_type}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  content_type: event.target.value,
+                }))
+              }
+              className={inputClass}
+            >
+              {["COURS", "EXERCICE", "SUJET"].map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
           )}
         </Field>
+
         <Field label="Format du contenu">
           <select
             value={form.content_format}
@@ -302,12 +469,12 @@ export function ContentEditor({
             <option value="EXTERNAL">Lien externe</option>
           </select>
         </Field>
-        
+
         <Field label={t("common.level")}>
           <div className="max-h-48 space-y-2 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4">
             {levels.map((level) => {
               const checked = form.level_ids.includes(level.id);
-        
+
               return (
                 <label
                   key={level.id}
@@ -316,7 +483,7 @@ export function ContentEditor({
                   <input
                     type="checkbox"
                     checked={checked}
-                    onChange={(event) => {
+                    onChange={(event) =>
                       setForm((current) => ({
                         ...current,
                         level_ids: event.target.checked
@@ -324,11 +491,11 @@ export function ContentEditor({
                           : current.level_ids.filter(
                               (id) => id !== level.id
                             ),
-                      }));
-                    }}
+                      }))
+                    }
                     className="h-4 w-4 rounded border-slate-300"
                   />
-        
+
                   <span className="text-sm font-bold text-slate-700">
                     {level.name_fr}
                   </span>
@@ -336,16 +503,34 @@ export function ContentEditor({
               );
             })}
           </div>
-        
+
           {form.level_ids.length > 0 && (
             <p className="text-xs font-bold text-slate-500">
               {form.level_ids.length} niveau(x) sélectionné(s)
             </p>
           )}
         </Field>
-        
-        <Field label={t("common.subject")}><select value={form.subject_id} onChange={(event) => setForm((current) => ({ ...current, subject_id: event.target.value }))} className={inputClass}><option value="">{t("common.subject")}</option>{subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name_fr}</option>)}</select></Field>
-        
+
+        <Field label={t("common.subject")}>
+          <select
+            value={form.subject_id}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                subject_id: event.target.value,
+              }))
+            }
+            className={inputClass}
+          >
+            <option value="">{t("common.subject")}</option>
+            {subjects.map((subject) => (
+              <option key={subject.id} value={subject.id}>
+                {subject.name_fr}
+              </option>
+            ))}
+          </select>
+        </Field>
+
         <Field label={t("subject.specialty")}>
           <div className="max-h-48 space-y-2 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4">
             {specialties.length === 0 ? (
@@ -356,7 +541,7 @@ export function ContentEditor({
               specialties.map((specialty) => {
                 const checked =
                   form.specialty_ids.includes(specialty.id);
-        
+
                 return (
                   <label
                     key={specialty.id}
@@ -365,7 +550,7 @@ export function ContentEditor({
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={(event) => {
+                      onChange={(event) =>
                         setForm((current) => ({
                           ...current,
                           specialty_ids: event.target.checked
@@ -376,11 +561,11 @@ export function ContentEditor({
                             : current.specialty_ids.filter(
                                 (id) => id !== specialty.id
                               ),
-                        }));
-                      }}
+                        }))
+                      }
                       className="h-4 w-4 rounded border-slate-300"
                     />
-        
+
                     <span className="text-sm font-bold text-slate-700">
                       {specialty.name_fr}
                     </span>
@@ -389,19 +574,80 @@ export function ContentEditor({
               })
             )}
           </div>
-        
+
           {form.specialty_ids.length > 0 && (
             <p className="text-xs font-bold text-slate-500">
               {form.specialty_ids.length} spécialité(s) sélectionnée(s)
             </p>
           )}
         </Field>
-        
-        <Field label={t("content.difficulty")}><input value={form.difficulty_level} onChange={(event) => setForm((current) => ({ ...current, difficulty_level: event.target.value }))} className={inputClass} /></Field>
-        <Field label={t("content.duration")}><input type="number" value={form.estimated_duration_minutes} onChange={(event) => setForm((current) => ({ ...current, estimated_duration_minutes: event.target.value }))} className={inputClass} /></Field>
-        <Field label={t("content.tags")}><input value={form.tags} onChange={(event) => setForm((current) => ({ ...current, tags: event.target.value }))} className={inputClass} /></Field>
-        {isAdminRole(user) && <Field label={t("common.status")}><select value={form.status} onChange={(event) => setForm((current) => ({ ...current, status: event.target.value }))} className={inputClass}><option value="PENDING">{t("content.pendingReview")}</option><option value="APPROVED">{t("content.published")}</option><option value="ARCHIVED">{t("content.archived")}</option></select></Field>}
+
+        <Field label={t("content.difficulty")}>
+          <input
+            value={form.difficulty_level}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                difficulty_level: event.target.value,
+              }))
+            }
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label={t("content.duration")}>
+          <input
+            type="number"
+            value={form.estimated_duration_minutes}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                estimated_duration_minutes: event.target.value,
+              }))
+            }
+            className={inputClass}
+          />
+        </Field>
+
+        <Field label={t("content.tags")}>
+          <input
+            value={form.tags}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                tags: event.target.value,
+              }))
+            }
+            className={inputClass}
+          />
+        </Field>
+
+        {isAdminRole(user) && (
+          <Field label={t("common.status")}>
+            <select
+              value={form.status}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  status: event.target.value,
+                }))
+              }
+              className={inputClass}
+            >
+              <option value="PENDING">
+                {t("content.pendingReview")}
+              </option>
+              <option value="APPROVED">
+                {t("content.published")}
+              </option>
+              <option value="ARCHIVED">
+                {t("content.archived")}
+              </option>
+            </select>
+          </Field>
+        )}
       </div>
+
       <Field label="Détails du contenu (facultatif)">
         <textarea
           value={form.content_details}
@@ -411,17 +657,33 @@ export function ContentEditor({
               content_details: event.target.value,
             }))
           }
-          placeholder="Saisissez les explications, le cours ou les informations complémentaires..."
+          placeholder="Saisissez le cours, les explications ou les informations complémentaires..."
           className={`${inputClass} min-h-40`}
         />
+
         <p className="text-xs font-medium text-slate-500">
-          Ce champ est facultatif. Vous pouvez le laisser vide,
-          notamment pour les contenus PDF, vidéo ou audio.
+          Pour un contenu de type Texte, ce champ contient le corps
+          du cours. Pour les autres formats, il peut contenir des
+          explications complémentaires. Il reste facultatif selon
+          le schéma actuel du backend.
         </p>
       </Field>
-      <Field label={t("content.description")}><textarea value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className={`${inputClass} min-h-32`} /></Field>
+
+      <Field label={t("content.description")}>
+        <textarea
+          value={form.description}
+          onChange={(event) =>
+            setForm((current) => ({
+              ...current,
+              description: event.target.value,
+            }))
+          }
+          className={`${inputClass} min-h-32`}
+        />
+      </Field>
+
       {form.subject_id && form.level_ids.length > 0 && (
-      <Field label="Contenus liés (optionnel)">
+        <Field label="Contenus liés (optionnel)">
           <div className="max-h-60 space-y-2 overflow-y-auto rounded-xl border border-slate-200 bg-white p-4">
             {availableContents.length === 0 ? (
               <p className="text-sm text-slate-500">
@@ -429,8 +691,14 @@ export function ContentEditor({
               </p>
             ) : (
               availableContents.map((item) => {
-                const checked = relatedContentIds.includes(item.id);
-        
+                const checked =
+                  relatedContentIds.includes(item.id);
+
+                const frenchTitle = item.translations?.find(
+                  (translation) =>
+                    translation.language.trim().toUpperCase() === "FR"
+                )?.title;
+
                 return (
                   <label
                     key={item.id}
@@ -440,30 +708,27 @@ export function ContentEditor({
                       type="checkbox"
                       value={item.id}
                       checked={checked}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setRelatedContentIds((prev) => [
-                            ...prev,
-                            item.id,
-                          ]);
+                      onChange={(event) => {
+                        if (event.target.checked) {
+                          setRelatedContentIds((previous) =>
+                            previous.includes(item.id)
+                              ? previous
+                              : [...previous, item.id]
+                          );
                         } else {
-                          setRelatedContentIds((prev) =>
-                            prev.filter(
-                              (id) => id !== item.id
-                            )
+                          setRelatedContentIds((previous) =>
+                            previous.filter((id) => id !== item.id)
                           );
                         }
                       }}
                       className="h-4 w-4 rounded border-slate-300"
                     />
-        
+
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-slate-700">
-                        {item.translations?.[0]?.title ??
-                          item.title ??
-                          "Sans titre"}
+                        {frenchTitle || item.title || "Sans titre"}
                       </span>
-        
+
                       <span className="text-xs text-slate-400">
                         {item.content_type}
                       </span>
@@ -473,7 +738,7 @@ export function ContentEditor({
               })
             )}
           </div>
-        
+
           {relatedContentIds.length > 0 && (
             <p className="mt-2 text-xs text-slate-500">
               {relatedContentIds.length} contenu(s) sélectionné(s)
@@ -481,6 +746,7 @@ export function ContentEditor({
           )}
         </Field>
       )}
+
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <UploadField
           label={t("content.mainFile")}
@@ -498,29 +764,122 @@ export function ContentEditor({
                     : undefined
           }
         />
-        <UploadField label={t("content.thumbnail")} file={thumbnail} onChange={setThumbnail} accept="image/*" />
+
+        <UploadField
+          label={t("content.thumbnail")}
+          file={thumbnail}
+          onChange={setThumbnail}
+          accept="image/*"
+        />
       </div>
+
       <div className="mt-5 flex flex-wrap gap-4">
-        <Check label="Premium" checked={form.is_premium} onChange={(value) => setForm((current) => ({ ...current, is_premium: value }))} />
-        <Check label={t("content.offline")} checked={form.is_available_offline} onChange={(value) => setForm((current) => ({ ...current, is_available_offline: value }))} />
+        <Check
+          label="Premium"
+          checked={form.is_premium}
+          onChange={(value) =>
+            setForm((current) => ({
+              ...current,
+              is_premium: value,
+            }))
+          }
+        />
+
+        <Check
+          label={t("content.offline")}
+          checked={form.is_available_offline}
+          onChange={(value) =>
+            setForm((current) => ({
+              ...current,
+              is_available_offline: value,
+            }))
+          }
+        />
       </div>
-      <button onClick={submit} disabled={saving} className="mt-6 rounded-full bg-[#0f5f3a] px-6 py-3 font-black text-white disabled:opacity-60">{saving ? t("common.loading") : t("action.save")}</button>
-      {status && <p className="mt-4 text-sm font-black text-[#0f5f3a]">{status}</p>}
-      {error && <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">{error}</p>}
+
+      <button
+        onClick={submit}
+        disabled={saving}
+        className="mt-6 rounded-full bg-[#0f5f3a] px-6 py-3 font-black text-white disabled:opacity-60"
+      >
+        {saving ? t("common.loading") : t("action.save")}
+      </button>
+
+      {status && (
+        <p className="mt-4 text-sm font-black text-[#0f5f3a]">
+          {status}
+        </p>
+      )}
+
+      {error && (
+        <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">
+          {error}
+        </p>
+      )}
     </section>
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="mt-4 grid gap-2 text-sm font-black text-[#071d3a]">{label}{children}</label>;
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="mt-4 grid gap-2 text-sm font-black text-[#071d3a]">
+      {label}
+      {children}
+    </label>
+  );
 }
 
-function UploadField({ label, file, accept, onChange }: { label: string; file: File | null; accept?: string; onChange: (file: File | null) => void }) {
-  return <label className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm font-bold text-slate-500">{file?.name || label}<input className="hidden" type="file" accept={accept} onChange={(event) => onChange(event.target.files?.[0] || null)} /></label>;
+function UploadField({
+  label,
+  file,
+  accept,
+  onChange,
+}: {
+  label: string;
+  file: File | null;
+  accept?: string;
+  onChange: (file: File | null) => void;
+}) {
+  return (
+    <label className="rounded-2xl border border-dashed border-slate-200 p-4 text-sm font-bold text-slate-500">
+      {file?.name || label}
+      <input
+        className="hidden"
+        type="file"
+        accept={accept}
+        onChange={(event) =>
+          onChange(event.target.files?.[0] || null)
+        }
+      />
+    </label>
+  );
 }
 
-function Check({ label, checked, onChange }: { label: string; checked: boolean; onChange: (checked: boolean) => void }) {
-  return <label className="inline-flex items-center gap-2 text-sm font-bold text-slate-600"><input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />{label}</label>;
+function Check({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="inline-flex items-center gap-2 text-sm font-bold text-slate-600">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      {label}
+    </label>
+  );
 }
 
 function MultiSelect({
@@ -543,7 +902,10 @@ function MultiSelect({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-3">
+    <div
+      className="rounded-2xl border border-slate-200 bg-white p-3"
+      aria-label={placeholder}
+    >
       {options.length === 0 ? (
         <p className="px-2 py-2 text-sm text-slate-400">
           Aucun élément disponible
