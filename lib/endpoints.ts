@@ -317,6 +317,10 @@ export const ENDPOINTS = {
     verifyTransaction: (transactionId: string) =>
       `${API_BASE_URL}/payments/transactions/${transactionId}`,
     webhookMonetbil: `${API_BASE_URL}/payments/webhook/monetbil`,
+    
+    adminActivateSubscription: (userId: string) =>
+      `${API_BASE_URL}/payments/admin/users/${userId}/activate-subscription`,
+
   },
 
   system: {
