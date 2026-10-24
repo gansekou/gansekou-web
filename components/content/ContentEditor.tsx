@@ -6,12 +6,7 @@ import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/app/StateViews";
 import { useI18n } from "@/hooks/useI18n";
 import { ApiError } from "@/lib/api";
-import {
-  canCreateContent,
-  canEditContent,
-  isAdminRole,
-} from "@/lib/permissions";
-import { contentService } from "@/services/content.service";
+import { canCreateContent, canEditContent, isAdminRole } from "@/lib/permissions";
 import { platformService } from "@/services/platform.service";
 import type { Content, ContentFormat } from "@/types/content";
 import type { Level, Specialty, Subject } from "@/types/platform";
@@ -19,6 +14,14 @@ import type { User } from "@/types/user";
 
 const inputClass =
   "rounded-2xl border border-slate-200 px-4 py-3 font-bold outline-none focus:border-[#0f5f3a]";
+
+type ContentTranslation = {
+  id: string;
+  content_id: string;
+  language: string;
+  title: string;
+  description?: string | null;
+};
 
 export function ContentEditor({
   user,
@@ -52,66 +55,34 @@ export function ContentEditor({
     : canCreateContent(user);
 
   const initialFrenchTranslation = content?.translations?.find(
-    (translation) =>
-      translation.language.trim().toUpperCase() === "FR"
+    (translation) => translation.language.toUpperCase() === "FR",
   );
 
   const [form, setForm] = useState({
-    title:
-      initialFrenchTranslation?.title ||
-      content?.title ||
-      "",
+    title: initialFrenchTranslation?.title || content?.title || "",
     description:
-      initialFrenchTranslation?.description ||
-      content?.description ||
-      "",
-
-    subject_id:
-      content?.subject_id ||
-      searchParams.get("subject_id") ||
-      "",
-
+      initialFrenchTranslation?.description || content?.description || "",
+    subject_id: content?.subject_id || searchParams.get("subject_id") || "",
     level_ids:
       content?.level_ids ||
       content?.levels?.map((level) => level.id) ||
-      (searchParams.get("level_id")
-        ? [searchParams.get("level_id")!]
-        : []),
-
+      (searchParams.get("level_id") ? [searchParams.get("level_id")!] : []),
     specialty_ids:
       content?.specialty_ids ||
       content?.specialties?.map((specialty) => specialty.id) ||
       [],
-
-    content_type:
-      lockedType ||
-      content?.content_type ||
-      defaultType,
-
-    content_format:
-      (content?.content_format || "PDF") as ContentFormat,
-
-    content_details:
-      content?.content_details || "",
-
+    content_type: lockedType || content?.content_type || defaultType,
+    content_format: content?.content_format || "PDF",
+    content_details: content?.content_details || "",
     file_url: content?.file_url || "",
     thumbnail_url: content?.thumbnail_url || "",
-
     status: content?.status || "PENDING",
-
     is_premium: Boolean(content?.is_premium),
-
-    is_available_offline:
-      Boolean(content?.is_available_offline),
-
-    difficulty_level:
-      content?.difficulty_level || "",
-
-    estimated_duration_minutes:
-      content?.estimated_duration_minutes
-        ? String(content.estimated_duration_minutes)
-        : "",
-
+    is_available_offline: Boolean(content?.is_available_offline),
+    difficulty_level: content?.difficulty_level || "",
+    estimated_duration_minutes: content?.estimated_duration_minutes
+      ? String(content.estimated_duration_minutes)
+      : "",
     tags: content?.tags || "",
   });
 
@@ -119,7 +90,7 @@ export function ContentEditor({
   const [thumbnail, setThumbnail] = useState<File | null>(null);
 
   const [relatedContentIds, setRelatedContentIds] = useState<string[]>(
-    content?.related_contents?.map((item) => item.id) || []
+    content?.related_contents?.map((item) => item.id) || [],
   );
 
   const [availableContents, setAvailableContents] = useState<Content[]>([]);
@@ -127,39 +98,30 @@ export function ContentEditor({
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  /*
-   * Charge les contenus liés en fonction de la matière,
-   * du premier niveau sélectionné et du type de contenu.
-   */
   useEffect(() => {
     let cancelled = false;
 
     async function loadRelatedContents() {
       try {
-        if (
-          !form.subject_id ||
-          form.level_ids.length === 0
-        ) {
+        if (!form.subject_id || form.level_ids.length === 0) {
           setAvailableContents([]);
           return;
         }
 
-        const contents =
-          await platformService.contents.relatedOptions({
-            level_id: form.level_ids[0],
-            subject_id: form.subject_id,
-            target_type: lockedType || form.content_type,
-            exclude_id: content?.id,
-          });
+        const currentType = lockedType || form.content_type;
+
+        const contents = await platformService.contents.relatedOptions({
+          level_id: form.level_ids[0],
+          subject_id: form.subject_id,
+          target_type: currentType,
+          exclude_id: content?.id,
+        });
 
         if (!cancelled) {
           setAvailableContents(contents);
         }
       } catch (err) {
-        console.error(
-          "Erreur lors du chargement des contenus liés",
-          err
-        );
+        console.error("Erreur chargement contenus liés", err);
 
         if (!cancelled) {
           setAvailableContents([]);
@@ -180,11 +142,6 @@ export function ContentEditor({
     content?.id,
   ]);
 
-  /*
-   * Charge la véritable traduction française depuis l'API.
-   * Les valeurs présentes dans le contenu restent utilisées
-   * comme valeurs de secours si la requête échoue.
-   */
   useEffect(() => {
     if (!content?.id) {
       return;
@@ -195,15 +152,16 @@ export function ContentEditor({
     async function loadFrenchTranslation() {
       try {
         const translations =
-          await contentService.getContentTranslations(content!.id);
+          (await platformService.contents.translations(
+            content!.id,
+          )) as ContentTranslation[];
 
         if (cancelled) {
           return;
         }
 
         const frenchTranslation = translations.find(
-          (translation) =>
-            translation.language.trim().toUpperCase() === "FR"
+          (translation) => translation.language.toUpperCase() === "FR",
         );
 
         if (!frenchTranslation) {
@@ -217,8 +175,8 @@ export function ContentEditor({
         }));
       } catch (err) {
         console.error(
-          "Erreur de chargement de la traduction française",
-          err
+          "Erreur de chargement de la traduction française du contenu",
+          err,
         );
       }
     }
@@ -253,16 +211,17 @@ export function ContentEditor({
       return;
     }
 
+    if (form.content_format === "TEXT" && !form.content_details.trim()) {
+      setError("Veuillez saisir le contenu textuel avant de continuer.");
+      return;
+    }
+
     setSaving(true);
 
     try {
       let fileUrl = form.file_url || null;
       let thumbnailUrl = form.thumbnail_url || null;
 
-      /*
-       * Le contenu TEXT est envoyé dans content_details.
-       * Aucun fichier n'est téléversé pour ce format.
-       */
       if (
         file &&
         form.content_format !== "TEXT" &&
@@ -279,18 +238,11 @@ export function ContentEditor({
       }
 
       if (thumbnail) {
-        const upload =
-          await platformService.uploads.contentThumbnail(thumbnail);
-
-        thumbnailUrl = upload.file_url;
+        thumbnailUrl = (
+          await platformService.uploads.contentThumbnail(thumbnail)
+        ).file_url;
       }
 
-      /*
-       * content_details est facultatif dans le schéma backend.
-       * On conserve donc la possibilité d'enregistrer null.
-       * Le titre et la description sont enregistrés séparément
-       * dans ContentTranslation.
-       */
       const payload = {
         author_id: content?.author_id || user.id,
         subject_id: form.subject_id,
@@ -298,7 +250,7 @@ export function ContentEditor({
         specialty_ids: form.specialty_ids,
         related_content_ids: relatedContentIds,
         content_type: lockedType || form.content_type,
-        content_format: form.content_format,
+        content_format: form.content_format as ContentFormat,
         content_details: form.content_details.trim() || null,
         file_url: fileUrl,
         thumbnail_url: thumbnailUrl,
@@ -306,56 +258,48 @@ export function ContentEditor({
         is_premium: form.is_premium,
         is_available_offline: form.is_available_offline,
         version: content?.version || 1,
-
-        // Ces propriétés peuvent être ignorées par ContentCreate.
-        // La source de vérité du titre et de la description est
-        // la traduction française enregistrée ci-dessous.
         title: form.title.trim(),
         description: form.description.trim() || null,
-
         difficulty_level: form.difficulty_level || null,
-        estimated_duration_minutes:
-          form.estimated_duration_minutes
-            ? Number(form.estimated_duration_minutes)
-            : null,
+        estimated_duration_minutes: form.estimated_duration_minutes
+          ? Number(form.estimated_duration_minutes)
+          : null,
         tags: form.tags || null,
       };
-
-      /*
-       * Récupérer les traductions AVANT la modification permet
-       * de distinguer une traduction existante d'une nouvelle.
-       * En cas d'échec de lecture, on interrompt l'opération
-       * plutôt que de créer aveuglément un doublon.
-       */
-      const existingTranslations = content
-        ? await contentService.getContentTranslations(content.id)
-        : [];
-
-      const frenchTranslation = existingTranslations.find(
-        (translation) =>
-          translation.language.trim().toUpperCase() === "FR"
-      );
 
       const saved = content
         ? await platformService.contents.update(content.id, payload)
         : await platformService.contents.create(payload);
 
+      /*
+       * Le contenu pédagogique est conservé dans content_details.
+       * Le titre et la description en français sont enregistrés
+       * dans la ressource de traduction associée au contenu.
+       */
+      const translations =
+        (await platformService.contents.translations(
+          saved.id,
+        )) as ContentTranslation[];
+
+      const frenchTranslation = translations.find(
+        (translation) => translation.language.toUpperCase() === "FR",
+      );
+
       const translationPayload = {
         content_id: saved.id,
         language: "FR",
         title: form.title.trim(),
-        description: form.description.trim() || null,
+        // L'API de traduction attend une chaîne ou undefined, pas null.
+        description: form.description.trim() || undefined,
       };
 
       if (frenchTranslation) {
-        await contentService.updateTranslation(
+        await platformService.contents.updateTranslation(
           frenchTranslation.id,
-          translationPayload
+          translationPayload,
         );
       } else {
-        await contentService.createTranslation(
-          translationPayload
-        );
+        await platformService.contents.createTranslation(translationPayload);
       }
 
       await reload();
@@ -364,26 +308,20 @@ export function ContentEditor({
 
       const basePath =
         redirectBasePath ||
-        (
-          scope === "admin"
-            ? "/admin/contents"
-            : scope === "teacher"
-              ? "/teacher/contents"
-              : scope === "exercises"
-                ? "/exercises"
-                : scope === "subjects"
-                  ? "/subjects"
-                  : "/courses"
-        );
+        (scope === "admin"
+          ? "/admin/contents"
+          : scope === "teacher"
+            ? "/teacher/contents"
+            : scope === "exercises"
+              ? "/exercises"
+              : scope === "subjects"
+                ? "/subjects"
+                : "/courses");
 
       router.push(`${basePath}/${saved.id}`);
     } catch (err) {
-      console.error("Erreur lors de l'enregistrement du contenu", err);
-
       setError(
-        err instanceof ApiError
-          ? err.message
-          : t("admin.errorSave")
+        err instanceof ApiError ? err.message : t("admin.errorSave"),
       );
     } finally {
       setSaving(false);
@@ -420,6 +358,7 @@ export function ContentEditor({
               }))
             }
             className={inputClass}
+            required
           />
         </Field>
 
@@ -483,16 +422,16 @@ export function ContentEditor({
                   <input
                     type="checkbox"
                     checked={checked}
-                    onChange={(event) =>
+                    onChange={(event) => {
                       setForm((current) => ({
                         ...current,
                         level_ids: event.target.checked
                           ? [...current.level_ids, level.id]
                           : current.level_ids.filter(
-                              (id) => id !== level.id
+                              (id) => id !== level.id,
                             ),
-                      }))
-                    }
+                      }));
+                    }}
                     className="h-4 w-4 rounded border-slate-300"
                   />
 
@@ -539,8 +478,7 @@ export function ContentEditor({
               </p>
             ) : (
               specialties.map((specialty) => {
-                const checked =
-                  form.specialty_ids.includes(specialty.id);
+                const checked = form.specialty_ids.includes(specialty.id);
 
                 return (
                   <label
@@ -550,19 +488,16 @@ export function ContentEditor({
                     <input
                       type="checkbox"
                       checked={checked}
-                      onChange={(event) =>
+                      onChange={(event) => {
                         setForm((current) => ({
                           ...current,
                           specialty_ids: event.target.checked
-                            ? [
-                                ...current.specialty_ids,
-                                specialty.id,
-                              ]
+                            ? [...current.specialty_ids, specialty.id]
                             : current.specialty_ids.filter(
-                                (id) => id !== specialty.id
+                                (id) => id !== specialty.id,
                               ),
-                        }))
-                      }
+                        }));
+                      }}
                       className="h-4 w-4 rounded border-slate-300"
                     />
 
@@ -598,6 +533,7 @@ export function ContentEditor({
         <Field label={t("content.duration")}>
           <input
             type="number"
+            min="0"
             value={form.estimated_duration_minutes}
             onChange={(event) =>
               setForm((current) => ({
@@ -634,15 +570,9 @@ export function ContentEditor({
               }
               className={inputClass}
             >
-              <option value="PENDING">
-                {t("content.pendingReview")}
-              </option>
-              <option value="APPROVED">
-                {t("content.published")}
-              </option>
-              <option value="ARCHIVED">
-                {t("content.archived")}
-              </option>
+              <option value="PENDING">{t("content.pendingReview")}</option>
+              <option value="APPROVED">{t("content.published")}</option>
+              <option value="ARCHIVED">{t("content.archived")}</option>
             </select>
           </Field>
         )}
@@ -657,15 +587,13 @@ export function ContentEditor({
               content_details: event.target.value,
             }))
           }
-          placeholder="Saisissez le cours, les explications ou les informations complémentaires..."
+          placeholder="Saisissez les explications, le cours ou les informations complémentaires..."
           className={`${inputClass} min-h-40`}
         />
 
         <p className="text-xs font-medium text-slate-500">
-          Pour un contenu de type Texte, ce champ contient le corps
-          du cours. Pour les autres formats, il peut contenir des
-          explications complémentaires. Il reste facultatif selon
-          le schéma actuel du backend.
+          Pour un contenu de type Texte, saisissez le contenu pédagogique
+          ici. Pour un PDF, une vidéo ou un audio, ce champ peut rester vide.
         </p>
       </Field>
 
@@ -691,13 +619,7 @@ export function ContentEditor({
               </p>
             ) : (
               availableContents.map((item) => {
-                const checked =
-                  relatedContentIds.includes(item.id);
-
-                const frenchTitle = item.translations?.find(
-                  (translation) =>
-                    translation.language.trim().toUpperCase() === "FR"
-                )?.title;
+                const checked = relatedContentIds.includes(item.id);
 
                 return (
                   <label
@@ -710,14 +632,13 @@ export function ContentEditor({
                       checked={checked}
                       onChange={(event) => {
                         if (event.target.checked) {
-                          setRelatedContentIds((previous) =>
-                            previous.includes(item.id)
-                              ? previous
-                              : [...previous, item.id]
-                          );
+                          setRelatedContentIds((previous) => [
+                            ...previous,
+                            item.id,
+                          ]);
                         } else {
                           setRelatedContentIds((previous) =>
-                            previous.filter((id) => id !== item.id)
+                            previous.filter((id) => id !== item.id),
                           );
                         }
                       }}
@@ -726,7 +647,9 @@ export function ContentEditor({
 
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-slate-700">
-                        {frenchTitle || item.title || "Sans titre"}
+                        {item.translations?.[0]?.title ||
+                          item.title ||
+                          "Sans titre"}
                       </span>
 
                       <span className="text-xs text-slate-400">
@@ -778,10 +701,7 @@ export function ContentEditor({
           label="Premium"
           checked={form.is_premium}
           onChange={(value) =>
-            setForm((current) => ({
-              ...current,
-              is_premium: value,
-            }))
+            setForm((current) => ({ ...current, is_premium: value }))
           }
         />
 
@@ -798,7 +718,8 @@ export function ContentEditor({
       </div>
 
       <button
-        onClick={submit}
+        type="button"
+        onClick={() => void submit()}
         disabled={saving}
         className="mt-6 rounded-full bg-[#0f5f3a] px-6 py-3 font-black text-white disabled:opacity-60"
       >
@@ -806,9 +727,7 @@ export function ContentEditor({
       </button>
 
       {status && (
-        <p className="mt-4 text-sm font-black text-[#0f5f3a]">
-          {status}
-        </p>
+        <p className="mt-4 text-sm font-black text-[#0f5f3a]">{status}</p>
       )}
 
       {error && (
@@ -853,9 +772,7 @@ function UploadField({
         className="hidden"
         type="file"
         accept={accept}
-        onChange={(event) =>
-          onChange(event.target.files?.[0] || null)
-        }
+        onChange={(event) => onChange(event.target.files?.[0] || null)}
       />
     </label>
   );
@@ -879,70 +796,5 @@ function Check({
       />
       {label}
     </label>
-  );
-}
-
-function MultiSelect({
-  options,
-  selected,
-  onChange,
-  placeholder,
-}: {
-  options: { id: string; label: string }[];
-  selected: string[];
-  onChange: (values: string[]) => void;
-  placeholder: string;
-}) {
-  const toggle = (id: string) => {
-    if (selected.includes(id)) {
-      onChange(selected.filter((value) => value !== id));
-    } else {
-      onChange([...selected, id]);
-    }
-  };
-
-  return (
-    <div
-      className="rounded-2xl border border-slate-200 bg-white p-3"
-      aria-label={placeholder}
-    >
-      {options.length === 0 ? (
-        <p className="px-2 py-2 text-sm text-slate-400">
-          Aucun élément disponible
-        </p>
-      ) : (
-        <div className="max-h-52 space-y-1 overflow-y-auto">
-          {options.map((option) => {
-            const checked = selected.includes(option.id);
-
-            return (
-              <label
-                key={option.id}
-                className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-50"
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggle(option.id)}
-                  className="h-4 w-4 rounded border-slate-300"
-                />
-
-                <span className="text-sm font-bold text-slate-700">
-                  {option.label}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      )}
-
-      {selected.length > 0 && (
-        <div className="mt-3 border-t border-slate-100 pt-2">
-          <span className="text-xs font-bold text-slate-500">
-            {selected.length} sélectionné(s)
-          </span>
-        </div>
-      )}
-    </div>
   );
 }
