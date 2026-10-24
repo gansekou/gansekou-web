@@ -3,6 +3,7 @@ import { ENDPOINTS } from "@/lib/endpoints";
 import type {
   Content,
   ContentCreatePayload,
+  ContentTranslation,
 } from "@/types/content";
 import type { CreateQuestionPayload, Question, TeacherAnswer } from "@/types/question";
 import type { User } from "@/types/user";
@@ -214,17 +215,54 @@ export const platformService = {
         method: "POST",
       }),
     
-    translations: (id: UUID) => apiFetch(ENDPOINTS.contents.contentTranslations(id)),
-    createTranslation: (payload: {
-      content_id: UUID;
-      language: string;
-      title: string;
-      description?: string;
-    }) =>
-      apiFetch(ENDPOINTS.contents.translations, {
-        method: "POST",
-        body: payload,
-      }),
+        // =========================
+        // TRANSLATIONS
+        // =========================
+    
+        translations: (id: UUID) =>
+          apiFetch<ContentTranslation[]>(
+            ENDPOINTS.contents.contentTranslations(id)
+          ),
+    
+        createTranslation: (payload: {
+          content_id: UUID;
+          language: string;
+          title: string;
+          description?: string | null;
+        }) =>
+          apiFetch<ContentTranslation>(
+            ENDPOINTS.contents.translations,
+            {
+              method: "POST",
+              body: payload,
+            }
+          ),
+    
+        updateTranslation: (
+          translationId: UUID,
+          payload: {
+            content_id: UUID;
+            language: string;
+            title: string;
+            description?: string | null;
+          }
+        ) =>
+          apiFetch<ContentTranslation>(
+            ENDPOINTS.contents.translationById(translationId),
+            {
+              method: "PUT",
+              body: payload,
+            }
+          ),
+    
+        deleteTranslation: (translationId: UUID) =>
+          apiFetch<ContentTranslation>(
+            ENDPOINTS.contents.translationById(translationId),
+            {
+              method: "DELETE",
+            }
+          ),
+    
     analytics: (id: UUID) => apiFetch(ENDPOINTS.contents.analytics(id)),
         related: (id: UUID) =>
       apiFetch<Content[]>(ENDPOINTS.contents.related(id)),
