@@ -1,12 +1,16 @@
 
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/app/StateViews";
 import { useI18n } from "@/hooks/useI18n";
 import { ApiError } from "@/lib/api";
-import { canCreateContent, canEditContent, isAdminRole } from "@/lib/permissions";
+import {
+  canCreateContent,
+  canEditContent,
+  isAdminRole,
+} from "@/lib/permissions";
 import { platformService } from "@/services/platform.service";
 import type { Content, ContentFormat } from "@/types/content";
 import type { Level, Specialty, Subject } from "@/types/platform";
@@ -22,6 +26,22 @@ type ContentTranslation = {
   title: string;
   description?: string | null;
 };
+
+function normalizeLanguage(language?: string | null): string {
+  return (language || "")
+    .trim()
+    .replace("_", "-")
+    .split("-")[0]
+    .toUpperCase();
+}
+
+function getFrenchTranslation(
+  translations: ContentTranslation[] | null | undefined,
+): ContentTranslation | undefined {
+  return translations?.find(
+    (translation) => normalizeLanguage(translation.language) === "FR",
+  );
+}
 
 export function ContentEditor({
   user,
@@ -54,35 +74,51 @@ export function ContentEditor({
     ? canEditContent(user, content)
     : canCreateContent(user);
 
-  const initialFrenchTranslation = content?.translations?.find(
-    (translation) => translation.language.toUpperCase() === "FR",
+  const initialFrenchTranslation = getFrenchTranslation(
+    content?.translations as ContentTranslation[] | undefined,
   );
 
   const [form, setForm] = useState({
-    title: initialFrenchTranslation?.title || content?.title || "",
+    title:
+      initialFrenchTranslation?.title ||
+      content?.title ||
+      "",
     description:
-      initialFrenchTranslation?.description || content?.description || "",
-    subject_id: content?.subject_id || searchParams.get("subject_id") || "",
+      initialFrenchTranslation?.description ||
+      content?.description ||
+      "",
+    subject_id:
+      content?.subject_id ||
+      searchParams.get("subject_id") ||
+      "",
     level_ids:
       content?.level_ids ||
       content?.levels?.map((level) => level.id) ||
-      (searchParams.get("level_id") ? [searchParams.get("level_id")!] : []),
+      (searchParams.get("level_id")
+        ? [searchParams.get("level_id")!]
+        : []),
     specialty_ids:
       content?.specialty_ids ||
       content?.specialties?.map((specialty) => specialty.id) ||
       [],
-    content_type: lockedType || content?.content_type || defaultType,
-    content_format: content?.content_format || "PDF",
-    content_details: content?.content_details || "",
+    content_type:
+      lockedType ||
+      content?.content_type ||
+      defaultType,
+    content_format:
+      content?.content_format || "PDF",
+    content_details:
+      content?.content_details || "",
     file_url: content?.file_url || "",
     thumbnail_url: content?.thumbnail_url || "",
     status: content?.status || "PENDING",
     is_premium: Boolean(content?.is_premium),
     is_available_offline: Boolean(content?.is_available_offline),
     difficulty_level: content?.difficulty_level || "",
-    estimated_duration_minutes: content?.estimated_duration_minutes
-      ? String(content.estimated_duration_minutes)
-      : "",
+    estimated_duration_minutes:
+      content?.estimated_duration_minutes
+        ? String(content.estimated_duration_minutes)
+        : "",
     tags: content?.tags || "",
   });
 
@@ -104,7 +140,9 @@ export function ContentEditor({
     async function loadRelatedContents() {
       try {
         if (!form.subject_id || form.level_ids.length === 0) {
-          setAvailableContents([]);
+          if (!cancelled) {
+            setAvailableContents([]);
+          }
           return;
         }
 
@@ -160,9 +198,7 @@ export function ContentEditor({
           return;
         }
 
-        const frenchTranslation = translations.find(
-          (translation) => translation.language.toUpperCase() === "FR",
-        );
+        const frenchTranslation = getFrenchTranslation(translations);
 
         if (!frenchTranslation) {
           return;
@@ -188,6 +224,63 @@ export function ContentEditor({
     };
   }, [content?.id]);
 
+  async function saveFrenchTranslation(
+    contentId: string,
+    title: string,
+    description: string,
+  ): Promise<ContentTranslation> {
+    const cleanTitle = title.trim();
+
+    if (!cleanTitle) {
+      throw new Error("Le titre du contenu est obligatoire.");
+    }
+
+    const translations =
+      (await platformService.contents.translations(
+        contentId,
+      )) as ContentTranslation[];
+
+    const frenchTranslation = getFrenchTranslation(translations);
+
+    const translationPayload = {
+      content_id: contentId,
+      language: "FR",
+      title: cleanTitle,
+      description: description.trim() || null,
+    };
+
+    if (frenchTranslation) {
+      await platformService.contents.updateTranslation(
+        frenchTranslation.id,
+        translationPayload,
+      );
+    } else {
+      await platformService.contents.createTranslation(
+        translationPayload,
+      );
+    }
+
+    // Relire la traduction pour vérifier ce qui a réellement été enregistré.
+    const savedTranslations =
+      (await platformService.contents.translations(
+        contentId,
+      )) as ContentTranslation[];
+
+    const savedFrenchTranslation =
+      getFrenchTranslation(savedTranslations);
+
+    if (
+      !savedFrenchTranslation ||
+      savedFrenchTranslation.title?.trim() !== cleanTitle
+    ) {
+      throw new Error(
+        "Le contenu a été enregistré, mais le titre français n'a pas pu être vérifié. Rechargez la page et réessayez.",
+      );
+    }
+
+    return savedFrenchTranslation;
+  }
+
   async function submit() {
     if (!canSubmit || saving) {
       return;
@@ -206,13 +299,18 @@ export function ContentEditor({
       return;
     }
 
-    if (!form.title.trim()) {
-      setError("Le titre du contenu est obligatoire.");
+    if (
+      form.content_format === "TEXT" &&
+      !form.content_details.trim()
+    ) {
+      setError(
+        "Veuillez saisir le contenu textuel avant de continuer.",
+      );
       return;
     }
 
-    if (form.content_format === "TEXT" && !form.content_details.trim()) {
-      setError("Veuillez saisir le contenu textuel avant de continuer.");
+    if (!form.title.trim()) {
+      setError("Le titre du contenu est obligatoire.");
       return;
     }
 
@@ -238,11 +336,15 @@ export function ContentEditor({
       }
 
       if (thumbnail) {
-        thumbnailUrl = (
-          await platformService.uploads.contentThumbnail(thumbnail)
-        ).file_url;
+        const uploadedThumbnail =
+          await platformService.uploads.contentThumbnail(thumbnail);
+
+        thumbnailUrl = uploadedThumbnail.file_url;
       }
 
+      // Le titre et la description ne sont pas des champs persistés
+      // par le schéma ContentCreate du backend.
+      // Ils sont enregistrés séparément dans content_translations.
       const payload = {
         author_id: content?.author_id || user.id,
         subject_id: form.subject_id,
@@ -250,7 +352,7 @@ export function ContentEditor({
         specialty_ids: form.specialty_ids,
         related_content_ids: relatedContentIds,
         content_type: lockedType || form.content_type,
-        content_format: form.content_format as ContentFormat,
+        content_format: form.content_format,
         content_details: form.content_details.trim() || null,
         file_url: fileUrl,
         thumbnail_url: thumbnailUrl,
@@ -258,12 +360,11 @@ export function ContentEditor({
         is_premium: form.is_premium,
         is_available_offline: form.is_available_offline,
         version: content?.version || 1,
-        title: form.title.trim(),
-        description: form.description.trim() || null,
         difficulty_level: form.difficulty_level || null,
-        estimated_duration_minutes: form.estimated_duration_minutes
-          ? Number(form.estimated_duration_minutes)
-          : null,
+        estimated_duration_minutes:
+          form.estimated_duration_minutes
+            ? Number(form.estimated_duration_minutes)
+            : null,
         tags: form.tags || null,
       };
 
@@ -271,36 +372,18 @@ export function ContentEditor({
         ? await platformService.contents.update(content.id, payload)
         : await platformService.contents.create(payload);
 
-      /*
-       * Le contenu pédagogique est conservé dans content_details.
-       * Le titre et la description en français sont enregistrés
-       * dans la ressource de traduction associée au contenu.
-       */
-      const translations =
-        (await platformService.contents.translations(
-          saved.id,
-        )) as ContentTranslation[];
-
-      const frenchTranslation = translations.find(
-        (translation) => translation.language.toUpperCase() === "FR",
-      );
-
-      const translationPayload = {
-        content_id: saved.id,
-        language: "FR",
-        title: form.title.trim(),
-        // L'API de traduction attend une chaîne ou undefined, pas null.
-        description: form.description.trim() || undefined,
-      };
-
-      if (frenchTranslation) {
-        await platformService.contents.updateTranslation(
-          frenchTranslation.id,
-          translationPayload,
+      if (!saved?.id) {
+        throw new Error(
+          "L'API n'a pas retourné l'identifiant du contenu enregistré.",
         );
-      } else {
-        await platformService.contents.createTranslation(translationPayload);
       }
+
+      // Enregistrer le titre et la description dans la traduction FR.
+      await saveFrenchTranslation(
+        saved.id,
+        form.title,
+        form.description,
+      );
 
       await reload();
 
@@ -320,8 +403,14 @@ export function ContentEditor({
 
       router.push(`${basePath}/${saved.id}`);
     } catch (err) {
+      console.error("Erreur lors de l'enregistrement du contenu", err);
+
       setError(
-        err instanceof ApiError ? err.message : t("admin.errorSave"),
+        err instanceof ApiError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : t("admin.errorSave"),
       );
     } finally {
       setSaving(false);
@@ -492,7 +581,10 @@ export function ContentEditor({
                         setForm((current) => ({
                           ...current,
                           specialty_ids: event.target.checked
-                            ? [...current.specialty_ids, specialty.id]
+                            ? [
+                                ...current.specialty_ids,
+                                specialty.id,
+                              ]
                             : current.specialty_ids.filter(
                                 (id) => id !== specialty.id,
                               ),
@@ -570,9 +662,15 @@ export function ContentEditor({
               }
               className={inputClass}
             >
-              <option value="PENDING">{t("content.pendingReview")}</option>
-              <option value="APPROVED">{t("content.published")}</option>
-              <option value="ARCHIVED">{t("content.archived")}</option>
+              <option value="PENDING">
+                {t("content.pendingReview")}
+              </option>
+              <option value="APPROVED">
+                {t("content.published")}
+              </option>
+              <option value="ARCHIVED">
+                {t("content.archived")}
+              </option>
             </select>
           </Field>
         )}
@@ -590,10 +688,9 @@ export function ContentEditor({
           placeholder="Saisissez les explications, le cours ou les informations complémentaires..."
           className={`${inputClass} min-h-40`}
         />
-
         <p className="text-xs font-medium text-slate-500">
-          Pour un contenu de type Texte, saisissez le contenu pédagogique
-          ici. Pour un PDF, une vidéo ou un audio, ce champ peut rester vide.
+          Ce champ est facultatif. Vous pouvez le laisser vide,
+          notamment pour les contenus PDF, vidéo ou audio.
         </p>
       </Field>
 
@@ -620,6 +717,9 @@ export function ContentEditor({
             ) : (
               availableContents.map((item) => {
                 const checked = relatedContentIds.includes(item.id);
+                const frenchTranslation = getFrenchTranslation(
+                  item.translations as ContentTranslation[] | undefined,
+                );
 
                 return (
                   <label
@@ -647,11 +747,10 @@ export function ContentEditor({
 
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-slate-700">
-                        {item.translations?.[0]?.title ||
+                        {frenchTranslation?.title ||
                           item.title ||
                           "Sans titre"}
                       </span>
-
                       <span className="text-xs text-slate-400">
                         {item.content_type}
                       </span>
@@ -701,7 +800,10 @@ export function ContentEditor({
           label="Premium"
           checked={form.is_premium}
           onChange={(value) =>
-            setForm((current) => ({ ...current, is_premium: value }))
+            setForm((current) => ({
+              ...current,
+              is_premium: value,
+            }))
           }
         />
 
@@ -721,17 +823,22 @@ export function ContentEditor({
         type="button"
         onClick={() => void submit()}
         disabled={saving}
-        className="mt-6 rounded-full bg-[#0f5f3a] px-6 py-3 font-black text-white disabled:opacity-60"
+        className="mt-6 rounded-full bg-[#0f5f3a] px-6 py-3 font-black text-white disabled:cursor-not-allowed disabled:opacity-60"
       >
         {saving ? t("common.loading") : t("action.save")}
       </button>
 
       {status && (
-        <p className="mt-4 text-sm font-black text-[#0f5f3a]">{status}</p>
+        <p className="mt-4 text-sm font-black text-[#0f5f3a]">
+          {status}
+        </p>
       )}
 
       {error && (
-        <p className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700">
+        <p
+          role="alert"
+          className="mt-4 rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700"
+        >
           {error}
         </p>
       )}
@@ -772,7 +879,9 @@ function UploadField({
         className="hidden"
         type="file"
         accept={accept}
-        onChange={(event) => onChange(event.target.files?.[0] || null)}
+        onChange={(event) =>
+          onChange(event.target.files?.[0] || null)
+        }
       />
     </label>
   );
