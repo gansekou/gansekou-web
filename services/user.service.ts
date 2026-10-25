@@ -17,6 +17,25 @@ type AdminSubscriptionActivationResponse = {
   is_premium: boolean;
 };
 
+
+export type AdminUserSubscriptionStatus = {
+  user_id: string;
+  is_premium: boolean;
+  remaining_seconds: number;
+  remaining_days: number;
+  subscription: {
+    id: string;
+    status: string;
+    plan_id: string;
+    plan_name: string | null;
+    period: string | null;
+    starts_at: string;
+    expires_at: string;
+    auto_renew: boolean;
+  } | null;
+};
+
+
 export const userService = {
   me: () => apiFetch<User>(ENDPOINTS.users.meProfile),
 
@@ -75,4 +94,13 @@ export const userService = {
         body: { period },
       },
     ),
+
+  
+  adminGetSubscriptionStatus: (userId: string) =>
+    apiFetch<AdminUserSubscriptionStatus>(
+      ENDPOINTS.payments.adminUserSubscriptionStatus(userId),
+    ),
+
+
+  
 };
