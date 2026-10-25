@@ -212,8 +212,8 @@ export function UserSubscriptionManager({
                 </p>
                 <p className="mt-1 flex items-center gap-2 font-black text-slate-800">
                   <Clock3 size={17} />
-                  {subscription.remaining_days} jour
-                  {subscription.remaining_days > 1 ? "s" : ""}
+                  {subscription?.remaining_days ?? 0} jour
+                  {(subscription?.remaining_days ?? 0) > 1 ? "s" : ""}
                 </p>
               </div>
 
