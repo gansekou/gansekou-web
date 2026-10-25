@@ -320,6 +320,9 @@ export const ENDPOINTS = {
     
     adminActivateSubscription: (userId: string) =>
       `${API_BASE_URL}/payments/admin/users/${userId}/activate-subscription`,
+    
+    adminUserSubscriptionStatus: (userId: string) =>
+      `${API_BASE_URL}/payments/admin/users/${userId}/subscription-status`,
 
   },
 
