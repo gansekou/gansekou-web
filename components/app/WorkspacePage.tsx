@@ -59,6 +59,13 @@ import type {
 const AdminEducationManager = dynamic(() => import("@/components/admin/AdminEducationManager").then((mod) => mod.AdminEducationManager), { loading: () => <LoadingState /> });
 const AdminSchoolsManager = dynamic(() => import("@/components/admin/AdminSchoolsManager").then((mod) => mod.AdminSchoolsManager), { loading: () => <LoadingState /> });
 const UserRoleManager = dynamic(() => import("@/components/admin/UserRoleManager").then((mod) => mod.UserRoleManager), { loading: () => <LoadingState /> });
+const UserRegistrationDetails = dynamic(
+  () =>
+    import("@/components/admin/UserRegistrationDetails").then(
+      (mod) => mod.UserRegistrationDetails,
+    ),
+  { loading: () => <LoadingState /> },
+);
 const SubjectDetail = dynamic(() => import("@/components/education/SubjectDetail").then((mod) => mod.SubjectDetail), { loading: () => <LoadingState /> });
 const SubjectForm = dynamic(() => import("@/components/education/SubjectForm").then((mod) => mod.SubjectForm), { loading: () => <LoadingState /> });
 const SubjectManager = dynamic(() => import("@/components/education/SubjectManager").then((mod) => mod.SubjectManager), { loading: () => <LoadingState /> });
@@ -1072,6 +1079,7 @@ function AdminPanel({ kind, data, user, reload }: { kind: string; data: PageData
       {selectedUser ? (
         <div className="grid gap-5">
           <ProfilePanel user={selectedUser} />
+          <UserRegistrationDetails user={selectedUser} />
           <UserRoleManager user={selectedUser} reload={reload} />
           {selectedUser.role === "ENSEIGNANT_EN_ATTENTE" && (
             <TeacherSubjectsPanel subjects={(data.teacherSubjects as unknown[]) || []} />
