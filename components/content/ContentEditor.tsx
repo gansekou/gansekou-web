@@ -470,7 +470,7 @@ export function ContentEditor({
               }
               className={inputClass}
             >
-              {["COURS", "EXERCICE", "SUJET"].map((type) => (
+              {["COURS", "EXERCICE", "SUJET", "LIVRE"].map((type) => (
                 <option key={type} value={type}>
                   {type}
                 </option>
