@@ -1,4 +1,8 @@
-export type ContentType = "COURS" | "EXERCICE" | "SUJET";
+export type ContentType =
+  | "COURS"
+  | "EXERCICE"
+  | "SUJET"
+  | "LIVRE";
 
 export type ContentFormat =
   | "TEXT"
